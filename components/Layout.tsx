@@ -118,7 +118,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
   return (
     <div className="flex flex-col md:flex-row h-[100dvh] bg-[#f3f7f6] overflow-hidden">
       <header className="md:hidden h-16 bg-emerald-950 text-white flex items-center justify-between px-4 z-50 shrink-0 shadow-lg">
-        <div className="flex items-center gap-2 overflow-hidden">
+        <div className="flex items-center gap-2 overflow-hidden cursor-pointer" onClick={() => handleNavClick('dashboard')}>
           <img
             src="/nobreza_erp_logo_white_horizontal.png"
             alt="Nobreza ERP"
@@ -156,7 +156,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
           </button>
 
           {!collapsed ? (
-            <div className="flex items-center gap-3 px-2">
+            <div className="flex items-center gap-3 px-2 cursor-pointer" onClick={() => setActiveView('dashboard')}>
               <img
                 src="/nobreza_erp_logo_white_horizontal.png"
                 alt="Nobreza ERP"
@@ -164,7 +164,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
               />
             </div>
           ) : (
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center cursor-pointer" onClick={() => setActiveView('dashboard')}>
               <img
                 src="/NERP ICONE.png"
                 alt="N"
