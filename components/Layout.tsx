@@ -143,6 +143,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
 
       <aside className={`
         fixed inset-0 z-40 bg-emerald-950 text-white flex flex-col shadow-xl transition-all duration-300
+        pt-20 md:pt-0
         md:relative md:translate-x-0
         ${collapsed ? 'md:w-20' : 'md:w-60'}
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
