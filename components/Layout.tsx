@@ -173,7 +173,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
           )}
         </div>
 
-        <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto custom-scrollbar min-h-0">
           {getSidebarItems(companyInfo.language || 'pt-MZ').filter(item => {
             if (item.id === 'SUPER_ADMIN') {
               return user.email === 'admin@nobreza.site';
