@@ -117,12 +117,20 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-[#f3f7f6] overflow-hidden">
-      <header className="md:hidden h-16 bg-emerald-950 text-white flex items-center justify-between px-6 z-50 shrink-0 shadow-lg">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-black flex items-center gap-1">
-            <span className="text-white">NOBREZA</span>
-            <span className="text-emerald-500">ERP</span>
-          </h1>
+      <header className="md:hidden h-16 bg-emerald-950 text-white flex items-center justify-between px-4 z-50 shrink-0 shadow-lg">
+        <div className="flex items-center gap-2 overflow-hidden">
+          {companyInfo.logoHorizontal || companyInfo.logo ? (
+            <img
+              src={companyInfo.logoHorizontal || companyInfo.logo}
+              alt={companyInfo.name}
+              className="h-10 w-auto object-contain"
+            />
+          ) : (
+            <h1 className="text-lg font-black flex items-center gap-1">
+              <span className="text-white">NOBREZA</span>
+              <span className="text-emerald-500">ERP</span>
+            </h1>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -155,11 +163,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
 
           {!collapsed ? (
             <div className="flex items-center gap-3 px-2">
-              <img src="/nobreza_erp_logo_white_horizontal.png" alt="Nobreza ERP" className="h-16 w-auto object-contain" />
+              <img
+                src={companyInfo.logoHorizontal || companyInfo.logo || "/nobreza_erp_logo_white_horizontal.png"}
+                alt={companyInfo.name}
+                className="h-12 w-auto object-contain"
+              />
             </div>
           ) : (
             <div className="flex flex-col items-center">
-              <img src="/NERP ICONE.png" alt="N" className="w-12 h-12 object-contain" />
+              <img
+                src={companyInfo.logo || "/NERP ICONE.png"}
+                alt="N"
+                className="w-10 h-10 object-contain"
+              />
             </div>
           )}
         </div>

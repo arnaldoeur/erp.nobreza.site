@@ -302,10 +302,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
   return (
     <div className="h-full flex flex-col gap-6 animate-in fade-in duration-500 overflow-hidden">
 
-      {/* Top Section: Greeting + Clock + Quote = Fixed Height ~20% */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 shrink-0 h-[18%] min-h-[140px]">
+      {/* Top Section: Greeting + Clock + Quote = Fluid Height */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 shrink-0">
         {/* Left: Greeting & Clock */}
-        <div className="lg:col-span-2 flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-5 md:p-6 rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden relative h-full">
+        <div className="lg:col-span-2 flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden relative">
           <div className="relative z-10 flex items-center gap-4">
             <div className="w-14 h-14 bg-emerald-950/5 rounded-2xl flex items-center justify-center overflow-hidden shrink-0">
               {user?.photo ? (
