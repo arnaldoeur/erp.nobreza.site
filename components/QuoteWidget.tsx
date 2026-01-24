@@ -23,13 +23,18 @@ export const QuoteWidget: React.FC = () => {
     const [quote, setQuote] = useState("");
 
     useEffect(() => {
-        const now = new Date();
-        const start = new Date(now.getFullYear(), 0, 0);
-        const diff = now.getTime() - start.getTime();
-        const oneDay = 1000 * 60 * 60 * 24;
-        const dayOfYear = Math.floor(diff / oneDay);
+        const today = new Date();
+        // Use a more stable day identification (YYYY-MM-DD)
+        const dateStr = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
 
-        const index = dayOfYear % QUOTES.length;
+        // Simple hash of the date string to get an index
+        let hash = 0;
+        for (let i = 0; i < dateStr.length; i++) {
+            hash = ((hash << 5) - hash) + dateStr.charCodeAt(i);
+            hash |= 0;
+        }
+
+        const index = Math.abs(hash) % QUOTES.length;
         setQuote(QUOTES[index]);
     }, []);
 

@@ -92,20 +92,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
   }, [companyInfo?.shifts, timeVal]);
 
   // Strict Business Status based on Opening/Closing Time
+  // Strict Business Status based on Opening/Closing Time
   const isOpenStatus = useMemo(() => {
-    if (!companyInfo?.openingTime || !companyInfo?.closingTime) return activeShift !== null; // Fallback to shift if no hours
+    if (!companyInfo?.openingTime || !companyInfo?.closingTime) return activeShift !== null;
 
-    const [openH, openM] = companyInfo.openingTime.split(':').map(Number);
-    const [closeH, closeM] = companyInfo.closingTime.split(':').map(Number);
+    try {
+      const [openH, openM] = companyInfo.openingTime.split(':').map(Number);
+      const [closeH, closeM] = companyInfo.closingTime.split(':').map(Number);
 
-    const openVal = openH + openM / 60;
-    const closeVal = closeH + closeM / 60;
+      const openVal = openH + (openM || 0) / 60;
+      const closeVal = closeH + (closeM || 0) / 60;
 
-    if (openVal <= closeVal) {
-      return timeVal >= openVal && timeVal < closeVal;
-    } else {
-      // Crossing midnight (e.g. 18:00 to 02:00)
-      return timeVal >= openVal || timeVal < closeVal;
+      if (openVal <= closeVal) {
+        return timeVal >= openVal && timeVal < closeVal;
+      } else {
+        return timeVal >= openVal || timeVal < closeVal;
+      }
+    } catch (e) {
+      return activeShift !== null;
     }
   }, [companyInfo, timeVal, activeShift]);
 
@@ -370,7 +374,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
   };
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-500 pb-20 md:pb-0">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-500 pb-20 md:pb-0 w-full">
 
       {/* Top Section: Greeting + Clock + Quote = Fluid Height */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 shrink-0">
@@ -470,9 +474,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
       </div>
 
       {/* Bottom Section: Chart + Critical Alerts = Takes Remaining Space */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full lg:flex-1 min-h-0">
         {/* Sales Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col h-[400px] lg:h-auto">
+        <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col h-[400px] lg:h-auto w-full">
           <div className="flex justify-between items-center mb-4 shrink-0">
             <h3 className="text-base font-black flex items-center gap-3 text-gray-800 uppercase tracking-tight">
               <TrendingUp size={20} className="text-emerald-600" />
@@ -571,11 +575,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
         </div>
       </div>
 
-      {/* Drill Down Modal */}
       {activeModal && (
-        <div className="fixed inset-0 bg-black/60 z-[300] p-4 flex items-center justify-center backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200 relative">
-            <button onClick={() => setActiveModal(null)} className="absolute top-6 right-6 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500 transition-colors"><X size={20} /></button>
+        <div className="fixed inset-0 bg-emerald-950/40 z-[300] p-4 flex items-center justify-center backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden">
+            <button onClick={() => setActiveModal(null)} className="absolute top-6 right-6 p-2 bg-gray-50 hover:bg-gray-100 rounded-full text-gray-400 transition-colors z-10"><X size={20} /></button>
             {renderModalContent()}
           </div>
         </div>
