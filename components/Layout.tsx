@@ -116,7 +116,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-[#f3f7f6] overflow-hidden">
+    <div className="flex flex-col md:flex-row h-[100dvh] bg-[#f3f7f6] overflow-hidden">
       <header className="md:hidden h-16 bg-emerald-950 text-white flex items-center justify-between px-4 z-50 shrink-0 shadow-lg">
         <div className="flex items-center gap-2 overflow-hidden">
           <img
