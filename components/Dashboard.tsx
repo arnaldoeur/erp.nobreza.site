@@ -65,6 +65,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
   };
 
   const companyTime = getCompanyTimeParts(currentTime);
+
+  // Helper to parse "HH:MM" into total minutes from midnight
+  const parseToMinutes = (timeStr?: string) => {
+    if (!timeStr || typeof timeStr !== 'string') return 0;
+    const clean = timeStr.trim().toLowerCase();
+    if (!clean || !clean.includes(':')) return 0;
+
+    const isPM = clean.includes('pm');
+    const isAM = clean.includes('am');
+    const timePart = clean.replace(/[apm\s]/g, '');
+    const [hStr, mStr] = timePart.split(':');
+    let h = parseInt(hStr, 10) || 0;
+    const m = parseInt(mStr, 10) || 0;
+
+    if (isPM && h < 12) h += 12;
+    if (isAM && h === 12) h = 0;
+
+    return h * 60 + m;
+  };
+
+  const currentTotalMinutes = useMemo(() => companyTime.hour * 60 + companyTime.minute, [companyTime.hour, companyTime.minute]);
   const timeVal = companyTime.hour + companyTime.minute / 60;
 
   const getGreeting = () => {
@@ -77,45 +98,46 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
     if (!companyInfo?.shifts || companyInfo.shifts.length === 0) return null;
 
     return companyInfo.shifts.find(s => {
-      const [startH, startM] = s.start.split(':').map(Number);
-      const [endH, endM] = s.end.split(':').map(Number);
-      const startVal = startH + startM / 60;
-      const endVal = endH + endM / 60;
+      const startMins = parseToMinutes(s.start);
+      const endMins = parseToMinutes(s.end);
 
-      // Handle shifts crossing midnight
-      if (startVal <= endVal) {
-        return timeVal >= startVal && timeVal < endVal;
+      if (startMins <= endMins) {
+        return currentTotalMinutes >= startMins && currentTotalMinutes < endMins;
       } else {
-        return timeVal >= startVal || timeVal < endVal;
+        // Shift crosses midnight
+        return currentTotalMinutes >= startMins || currentTotalMinutes < endMins;
       }
     });
-  }, [companyInfo?.shifts, timeVal]);
+  }, [companyInfo?.shifts, currentTotalMinutes]);
 
-  // Strict Business Status based on Opening/Closing Time
+  // Strict Business Status based on Opening/Closing Time AND Shifts
   const isOpenStatus = useMemo(() => {
-    if (!companyInfo?.openingTime || !companyInfo?.closingTime) return activeShift !== null;
+    if (!companyInfo) return false;
 
-    try {
-      // Current time in company timezone as total minutes since midnight
-      const currentTotalMinutes = companyTime.hour * 60 + companyTime.minute;
+    // 1. Check strict opening hours if set
+    const hasConfig = !!(companyInfo.openingTime && companyInfo.closingTime);
+    let withinRange = true;
 
-      const [openH, openM] = companyInfo.openingTime.split(':').map(Number);
-      const [closeH, closeM] = companyInfo.closingTime.split(':').map(Number);
+    if (hasConfig) {
+      const openMins = parseToMinutes(companyInfo.openingTime);
+      const closeMins = parseToMinutes(companyInfo.closingTime);
 
-      const openTotalMinutes = openH * 60 + (openM || 0);
-      const closeTotalMinutes = closeH * 60 + (closeM || 0);
-
-      if (openTotalMinutes <= closeTotalMinutes) {
-        return currentTotalMinutes >= openTotalMinutes && currentTotalMinutes < closeTotalMinutes;
+      if (openMins <= closeMins) {
+        withinRange = currentTotalMinutes >= openMins && currentTotalMinutes < closeMins;
       } else {
-        // Business stays open past midnight (e.g. 22:00 to 06:00)
-        return currentTotalMinutes >= openTotalMinutes || currentTotalMinutes < closeTotalMinutes;
+        // Business stays open past midnight
+        withinRange = currentTotalMinutes >= openMins || currentTotalMinutes < closeMins;
       }
-    } catch (e) {
-      console.error("Error parsing opening hours:", e);
-      return activeShift !== null;
     }
-  }, [companyInfo, companyTime.hour, companyTime.minute, activeShift]);
+
+    // 2. Shift check: If shifts are defined, we MUST be in one to be "Aberto"
+    const hasShifts = !!(companyInfo.shifts && companyInfo.shifts.length > 0);
+    if (hasShifts) {
+      return withinRange && activeShift !== null;
+    }
+
+    return withinRange && hasConfig;
+  }, [companyInfo, currentTotalMinutes, activeShift]);
 
   const today = new Date().toLocaleDateString();
   const salesToday = sales.filter(s => new Date(s.timestamp).toLocaleDateString() === today);
