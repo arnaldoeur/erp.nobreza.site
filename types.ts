@@ -51,6 +51,10 @@ export interface CompanyInfo {
   };
   shifts?: Shift[];
   paymentMethods?: string[];
+  phone2?: string;
+  isDarkMode?: boolean;
+  language?: 'pt-MZ' | 'en-US';
+  timezone?: string;
 }
 
 export interface Product {
@@ -88,6 +92,12 @@ export interface BillingDocument {
   items: SaleItem[];
   total: number;
   targetName: string;
+  targetDetails?: {
+    nuit?: string;
+    address?: string;
+    email?: string;
+    contact?: string;
+  };
   status: 'PENDING' | 'PAID' | 'SENT';
   performedBy: string;
 }

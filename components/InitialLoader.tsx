@@ -33,7 +33,7 @@ export const InitialLoader: React.FC<InitialLoaderProps> = ({ onComplete }) => {
         <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-emerald-950 transition-opacity duration-700 ${stage === 3 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
             <div className={`relative transition-all duration-1000 transform ${stage >= 1 ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`}>
                 <div className="absolute inset-0 bg-emerald-500 blur-3xl opacity-20 animate-pulse rounded-full" />
-                <img src="/Nobreza ERP - Logos, Icones, Favicon/NERP ICONE.png" alt="Nobreza ERP" className="w-24 h-24 object-contain relative z-10 drop-shadow-2xl" />
+                <img src="/nobreza_erp_logo_white_vertical.png" alt="Nobreza ERP" className="w-24 h-24 object-contain relative z-10 drop-shadow-2xl" />
             </div>
 
             <div className="mt-8 text-center overflow-hidden">

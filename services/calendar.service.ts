@@ -10,18 +10,18 @@ export const CalendarService = {
         const { data, error } = await supabase
             .from('erp_events')
             .select(`
-        *,
-        attendees:erp_event_attendees(
-            user_id, status, 
-            user:user_id(name, email) -- Linked via public table relation usually
-        )
-      `)
-            .eq('company_id', user.companyId)
+                *,
+                attendees:erp_event_attendees(
+                    user_id, 
+                    status
+                )
+            `)
+            .eq('company_id', Number(user.companyId))
             .order('start_time', { ascending: true });
 
         if (error) {
             console.error("Error fetching events", error);
-            return [];
+            throw error;
         }
 
         return data.map((e: any) => ({
@@ -47,41 +47,51 @@ export const CalendarService = {
     },
 
     createEvent: async (event: Partial<CalendarEvent>, attendeeIds: string[] = []): Promise<CalendarEvent | null> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) throw new Error("Unauthorized");
+        try {
+            const user = AuthService.getCurrentUser();
+            if (!user) throw new Error("Utilizador não autenticado.");
+            if (!user.companyId) {
+                throw new Error("Erro de Sessão: Identificador da empresa em falta. Por favor, faça login novamente.");
+            }
 
-        const dbEvent = {
-            company_id: user.companyId,
-            title: event.title,
-            description: event.description,
-            start_time: event.startTime,
-            end_time: event.endTime,
-            location: event.location,
-            type: event.type || 'MEETING',
-            priority: event.priority || 'MEDIUM',
-            status: event.status || 'PENDING',
-            is_personal: event.isPersonal || false,
-            created_by: user.id
-        };
+            const dbEvent = {
+                company_id: Number(user.companyId),
+                title: event.title,
+                description: event.description,
+                start_time: event.startTime instanceof Date ? event.startTime.toISOString() : event.startTime,
+                end_time: event.endTime instanceof Date ? event.endTime.toISOString() : event.endTime,
+                location: event.location,
+                type: event.type || 'MEETING',
+                priority: event.priority || 'MEDIUM',
+                status: event.status || 'PENDING',
+                is_personal: event.isPersonal || false,
+                created_by: user.id
+            };
 
-        const { data: newEvent, error: eventError } = await supabase
-            .from('erp_events')
-            .insert(dbEvent)
-            .select()
-            .single();
+            const { data: newEvent, error: eventError } = await supabase
+                .from('erp_events')
+                .insert(dbEvent)
+                .select()
+                .single();
 
-        if (eventError) throw eventError;
+            if (eventError) {
+                throw eventError;
+            }
 
-        if (attendeeIds.length > 0) {
-            const attendees = attendeeIds.map(uid => ({
-                event_id: newEvent.id,
-                user_id: uid,
-                status: 'PENDING'
-            }));
-            await supabase.from('erp_event_attendees').insert(attendees);
+            if (attendeeIds.length > 0) {
+                const attendees = attendeeIds.map(uid => ({
+                    event_id: newEvent.id,
+                    user_id: uid,
+                    status: 'PENDING'
+                }));
+                await supabase.from('erp_event_attendees').insert(attendees);
+            }
+
+            return { ...newEvent, startTime: new Date(newEvent.start_time), endTime: new Date(newEvent.end_time) } as any;
+        } catch (e: any) {
+            console.error("CATCH BLOCO SERVICE:", e);
+            throw e;
         }
-
-        return { ...newEvent, startTime: new Date(newEvent.start_time), endTime: new Date(newEvent.end_time) } as any;
     },
 
     updateEvent: async (id: string, updates: Partial<CalendarEvent>): Promise<void> => {

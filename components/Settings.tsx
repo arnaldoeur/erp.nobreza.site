@@ -4,6 +4,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { createPortal } from "react-dom";
 import {
+  Hash,
   Building2,
   Users,
   Save,
@@ -48,7 +49,8 @@ import {
   Smartphone,
   CreditCard,
   ShieldCheck,
-  Plus
+  Plus,
+  Copy
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 import { CompanyInfo, User, UserRole, DailyClosure, SystemLog, Sale, Product, PaymentMethod } from '../types';
@@ -776,14 +778,14 @@ export const Settings: React.FC<SettingsProps> = ({
               <div className="w-px h-6 bg-gray-200 mx-2"></div>
               <button
                 onClick={async () => {
-                  if (confirm("Tem a certeza? Isso apagarÃ¡ todo o histÃ³rico de logs da empresa.")) {
+                  if (confirm("Tem a certeza? Isso apagará todo o histórico de logs da empresa.")) {
                     await LogService.clearAll();
-                    alert("HistÃ³rico limpo com sucesso.");
+                    alert("Histórico limpo com sucesso.");
                     window.location.reload();
                   }
                 }}
                 className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                title="Limpar HistÃ³rico"
+                title="Limpar Histórico"
               >
                 <Trash2 size={18} />
               </button>
@@ -886,7 +888,7 @@ export const Settings: React.FC<SettingsProps> = ({
               </div>
               <p className="text-white/80 font-medium text-sm italic leading-relaxed">
                 "No Período de {months[reportFilter.month]}, a receita totalizou <span className="text-white font-black underline decoration-emerald-500 underline-offset-4">MT {analytics.totalInMonth.toLocaleString()}</span>.
-                Despesa acumulada de <span className="text-red-400 font-black">MT {analytics.totalExpenses.toLocaleString()}</span>, resultando num lucro lÃ­quido de <span className="text-emerald-400 font-black">MT {analytics.netProfit.toLocaleString()}</span>.
+                Despesa acumulada de <span className="text-red-400 font-black">MT {analytics.totalExpenses.toLocaleString()}</span>, resultando num lucro líquido de <span className="text-emerald-400 font-black">MT {analytics.netProfit.toLocaleString()}</span>.
                 {analytics.totalDivergence < 0 ? ` Atenção: Quebra de caixa detectada no valor de MT ${Math.abs(analytics.totalDivergence).toLocaleString()}.` : ' Operação de fluxo de caixa estável.'}"
               </p>
             </div>
@@ -978,7 +980,7 @@ export const Settings: React.FC<SettingsProps> = ({
                               </td>
                               <td className="p-4 text-center">
                                 <span className="text-[10px] font-bold text-gray-500">{start.toLocaleDateString()}</span>
-                                <p className="text-[9px] text-gray-400 font-mono mt-0.5">{start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {end && `â†’ ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</p>
+                                <p className="text-[9px] text-gray-400 font-mono mt-0.5">{start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {end && `→ ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</p>
                               </td>
                               <td className="p-4 text-center">
                                 {end ? (
@@ -989,7 +991,7 @@ export const Settings: React.FC<SettingsProps> = ({
                               </td>
                               <td className="p-4 text-right pr-8">
                                 <span className={`text-[9px] font-black uppercase tracking-tight px-2 py-1 rounded-lg ${end ? 'bg-gray-100 text-gray-500' : 'bg-emerald-500 text-white'}`}>
-                                  {end ? 'ConcluÃ­do' : 'Ativo'}
+                                  {end ? 'Concluído' : 'Ativo'}
                                 </span>
                               </td>
                             </tr>
@@ -1016,6 +1018,18 @@ export const Settings: React.FC<SettingsProps> = ({
       )} {activeTab === 'COMPANY' && (
         <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden">
           <div className="bg-emerald-950 p-8 flex flex-col items-center gap-6 relative">
+            {/* Company ID Badge */}
+            <div className="absolute top-6 left-6 flex items-center gap-2 text-emerald-400/50 hover:text-emerald-400 transition-colors cursor-pointer group/id"
+              title="Clique para copiar ID"
+              onClick={() => {
+                navigator.clipboard.writeText(`NE-${1000 + parseInt(companyInfo.id)}`);
+                alert("ID da Empresa copiado!");
+              }}>
+              <Hash size={14} className="group-hover/id:scale-110 transition-transform" />
+              <span className="font-mono font-bold text-xs tracking-widest">NE-{1000 + parseInt(companyInfo.id)}</span>
+              <Copy size={10} className="opacity-0 group-hover/id:opacity-100 transition-opacity" />
+            </div>
+
             <h3 className="text-xl font-black text-white uppercase tracking-tight mb-4">Identidade Visual</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
@@ -1066,7 +1080,10 @@ export const Settings: React.FC<SettingsProps> = ({
               <SettingInput label="Slogan Fatura" val={tempInfo.slogan} setVal={v => setTempInfo({ ...tempInfo, slogan: v })} icon={Sparkles} />
             </div>
             <SettingInput label="Email Oficial" val={tempInfo.email} setVal={v => setTempInfo({ ...tempInfo, email: v })} icon={Mail} />
-            <SettingInput label="Telefone" val={tempInfo.phone} setVal={v => setTempInfo({ ...tempInfo, phone: v })} icon={Phone} />
+            <div className="grid grid-cols-2 gap-4">
+              <SettingInput label="Telefone Principal" val={tempInfo.phone} setVal={v => setTempInfo({ ...tempInfo, phone: v })} icon={Phone} />
+              <SettingInput label="Contacto Alternativo" val={tempInfo.phone2 || ''} setVal={v => setTempInfo({ ...tempInfo, phone2: v })} icon={Phone} />
+            </div>
             <SettingInput label="Endereço" val={tempInfo.address} setVal={v => setTempInfo({ ...tempInfo, address: v })} icon={MapPin} />
             <div className="grid grid-cols-2 gap-4">
               <SettingInput label="Horário de Fecho (Fim de Turno)" val={tempInfo.closingTime || ''} setVal={v => setTempInfo({ ...tempInfo, closingTime: v })} icon={Clock} type="time" />
@@ -1221,7 +1238,7 @@ export const Settings: React.FC<SettingsProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-black text-emerald-950 uppercase text-xs truncate">{member.name}</p>
-                  <p className="text-[10px] text-emerald-600 font-bold uppercase truncate">{member.role} â€¢ {member.responsibility}</p>
+                  <p className="text-[10px] text-emerald-600 font-bold uppercase truncate">{member.role} • {member.responsibility}</p>
                 </div>
                 <button onClick={() => { setEditingEmployee(member); setIsEmployeeModalOpen(true); }} className="p-3 text-gray-300 hover:text-emerald-700"><Edit2 size={18} /></button>
               </div>
@@ -1232,7 +1249,10 @@ export const Settings: React.FC<SettingsProps> = ({
         <SystemSettings
           companyInfo={companyInfo}
           currentUser={currentUser}
-          onUpdateCompany={setCompanyInfo}
+          onUpdateCompany={(updated) => {
+            setCompanyInfo(updated);
+            setTempInfo(updated);
+          }}
         />
       )}
 
@@ -1305,49 +1325,69 @@ export const Settings: React.FC<SettingsProps> = ({
                         <input name="location" placeholder="Cidade" defaultValue={editingEmployee?.location} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all" />
                       </div>
                     </div>
+                  </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Cargo / Função</label>
-                      <div className="relative">
-                        <select name="role" required defaultValue={editingEmployee?.role} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm appearance-none cursor-pointer transition-all">
-                          {Object.values(UserRole).map(r => <option key={r} value={r}>{r}</option>)}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><ChevronRight size={16} className="rotate-90" /></div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Responsabilidade</label>
-                      <input name="responsibility" placeholder="Ex: Gestor de Vendas" required defaultValue={editingEmployee?.responsibility} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">INSS / NUIT</label>
-                        <input name="socialSecurityNumber" placeholder="---" defaultValue={editingEmployee?.socialSecurityNumber} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Salário Base (MT)</label>
-                        <input name="baseSalary" type="number" step="0.01" placeholder="0.00" defaultValue={editingEmployee?.baseSalary} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Horas Base (Mensal)</label>
-                        <input name="baseHours" type="number" step="1" placeholder="160" defaultValue={editingEmployee?.baseHours || 160} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Data de Adesão</label>
-                        <input name="hireDate" type="date" required defaultValue={editingEmployee?.hireDate ? new Date(editingEmployee.hireDate).toISOString().split('T')[0] : ''} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all" />
-                      </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Cargo / Função</label>
+                    <div className="relative">
+                      <select name="role" required defaultValue={editingEmployee?.role} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm appearance-none cursor-pointer transition-all">
+                        {Object.values(UserRole).map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><ChevronRight size={16} className="rotate-90" /></div>
                     </div>
                   </div>
 
-                  <div className="pt-2">
-                    <button type="submit" className="w-full bg-emerald-950 hover:bg-emerald-900 text-white py-4 rounded-xl font-black uppercase text-xs shadow-xl shadow-emerald-900/10 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-4">
-                      <Save size={18} />
-                      Guardar Colaborador
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Responsabilidade</label>
+                    <input name="responsibility" placeholder="Ex: Gestor de Vendas" required defaultValue={editingEmployee?.responsibility} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">INSS / NUIT</label>
+                      <input name="socialSecurityNumber" placeholder="---" defaultValue={editingEmployee?.socialSecurityNumber} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Salário Base (MT)</label>
+                      <input name="baseSalary" type="number" step="0.01" placeholder="0.00" defaultValue={editingEmployee?.baseSalary} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Horas Base (Mensal)</label>
+                      <input name="baseHours" type="number" step="1" placeholder="160" defaultValue={editingEmployee?.baseHours || 160} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Data de Adesão</label>
+                      <input name="hireDate" type="date" required defaultValue={editingEmployee?.hireDate ? new Date(editingEmployee.hireDate).toISOString().split('T')[0] : ''} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all" />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-100 flex flex-col gap-4">
+                    {/* User ID Section */}
+                    {editingEmployee?.id && (
+                      <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 flex items-center justify-between cursor-pointer group/user-id"
+                        onClick={() => {
+                          const formattedId = `NU-${1000 + parseInt(editingEmployee.id)}`;
+                          navigator.clipboard.writeText(formattedId);
+                          alert(`ID do Utilizador (${formattedId}) copiado!`);
+                        }}
+                        title="Clique para copiar">
+                        <div>
+                          <span className="text-[10px] font-black uppercase text-emerald-800 tracking-widest block">ID do Utilizador</span>
+                          <span className="text-lg font-black text-emerald-950 font-mono tracking-wider flex items-center gap-2">
+                            NU-{1000 + parseInt(editingEmployee.id)}
+                            <Copy size={14} className="opacity-40 group-hover/user-id:opacity-100 transition-opacity" />
+                          </span>
+                        </div>
+                        <div className="bg-white p-2 rounded-lg shadow-sm">
+                          <Fingerprint className="text-emerald-600" size={20} />
+                        </div>
+                      </div>
+                    )}
+
+                    <button type="submit" className="w-full bg-emerald-700 text-white py-5 rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all outline-none focus:ring-4 focus:ring-emerald-500/20 hover:bg-emerald-800">
+                      {editingEmployee ? 'Atualizar Membro' : 'Adicionar Membro'}
                     </button>
                   </div>
-
                 </form>
               </div>
             </div>
@@ -1356,63 +1396,59 @@ export const Settings: React.FC<SettingsProps> = ({
         )
       }
 
-
-
       {/* Adjustment Modal */}
-      {isAdjustmentModalOpen && createPortal(
-        <AdjustmentModal
-          isOpen={isAdjustmentModalOpen}
-          onClose={() => setIsAdjustmentModalOpen(false)}
-          onConfirm={async (type, amount, method, desc) => {
-            try {
-              const val = type === 'ENTRY' ? amount : -amount;
-              // We create a fake sale or expense or dedicated transaction.
-              // For simplicity and to reflect in cash map:
-              if (type === 'ENTRY') {
-                // Create a "Direct Sale" type or similar
-                const adjustmentSale: Sale = {
-                  id: `ADJ-${Date.now()}`,
-                  companyId: currentUser.companyId,
-                  timestamp: new Date(),
-                  items: [{
-                    productId: 'ADJUSTMENT',
+      {
+        isAdjustmentModalOpen && createPortal(
+          <AdjustmentModal
+            isOpen={isAdjustmentModalOpen}
+            onClose={() => setIsAdjustmentModalOpen(false)}
+            onConfirm={async (type, amount, method, desc) => {
+              try {
+                const val = type === 'ENTRY' ? amount : -amount;
+                if (type === 'ENTRY') {
+                  const adjustmentSale: Sale = {
+                    id: `ADJ-${Date.now()}`,
                     companyId: currentUser.companyId,
-                    productName: desc || 'Ajuste de Caixa',
-                    quantity: 1,
-                    unitPrice: amount,
-                    total: amount
-                  }],
-                  total: amount,
-                  type: 'DIRECT',
-                  paymentMethod: method,
-                  performedBy: currentUser.name,
-                  customerName: 'Ajuste Interno'
-                };
-                await onAddSale?.(adjustmentSale);
-                alert("Ajuste de entrada realizado com sucesso!");
-              } else {
-                // Expense
-                const { error } = await supabase.from('expenses').insert([{
-                  company_id: currentUser.companyId,
-                  user_id: currentUser.id,
-                  amount: amount,
-                  description: desc || 'Ajuste de Saída',
-                  type: 'Other', // or create a specfic type
-                  date: new Date().toISOString()
-                }]);
-                if (error) throw error;
-                alert("Ajuste de saída realizado com sucesso!");
-                window.location.reload(); // Simple reload to refresh expenses
+                    timestamp: new Date(),
+                    items: [{
+                      productId: 'ADJUSTMENT',
+                      companyId: currentUser.companyId,
+                      productName: desc || 'Ajuste de Caixa',
+                      quantity: 1,
+                      unitPrice: amount,
+                      total: amount
+                    }],
+                    total: amount,
+                    type: 'DIRECT',
+                    paymentMethod: method,
+                    performedBy: currentUser.name,
+                    customerName: 'Ajuste Interno'
+                  };
+                  await onAddSale?.(adjustmentSale);
+                  alert("Ajuste de entrada realizado com sucesso!");
+                } else {
+                  const { error } = await supabase.from('expenses').insert([{
+                    company_id: currentUser.companyId,
+                    user_id: currentUser.id,
+                    amount: amount,
+                    description: desc || 'Ajuste de Saída',
+                    type: 'Other',
+                    date: new Date().toISOString()
+                  }]);
+                  if (error) throw error;
+                  alert("Ajuste de saída realizado com sucesso!");
+                  window.location.reload();
+                }
+                setIsAdjustmentModalOpen(false);
+              } catch (e: any) {
+                alert("Erro ao realizar ajuste: " + e.message);
               }
-              setIsAdjustmentModalOpen(false);
-            } catch (e: any) {
-              alert("Erro ao realizar ajuste: " + e.message);
-            }
-          }}
-          paymentMethods={['CASH', 'MPESA', 'EMOLA', 'POS', ...(companyInfo.paymentMethods || [])]}
-        />,
-        document.body
-      )}
+            }}
+            paymentMethods={['CASH', 'MPESA', 'EMOLA', 'POS', ...(companyInfo.paymentMethods || [])]}
+          />,
+          document.body
+        )
+      }
 
       {/* Report Preview Modal */}
       {
@@ -1750,7 +1786,7 @@ export const Settings: React.FC<SettingsProps> = ({
           </div>
           , document.body)
       }
-    </div>
+    </div >
   )
 }
 
@@ -1759,7 +1795,7 @@ export const Settings: React.FC<SettingsProps> = ({
 function UserProfileEditor({ currentUser, onUpdate, sales }: { currentUser: User, onUpdate: (user: User) => void, sales: Sale[] }) {
   const [user, setUser] = useState(currentUser);
 
-  if (!user) return <div className="p-10 text-center text-gray-400">Dados do utilizador indisponÃ­veis</div>;
+  if (!user) return <div className="p-10 text-center text-gray-400">Dados do utilizador indisponíveis</div>;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1797,7 +1833,16 @@ function UserProfileEditor({ currentUser, onUpdate, sales }: { currentUser: User
             </div>
             <div>
               <h2 className="text-2xl font-black text-emerald-950 tracking-tight">{user.name}</h2>
-              <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-lg inline-block mt-2">{user.role}</p>
+              <div className="flex items-center gap-2 mt-2">
+                <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-lg">{user.role}</p>
+                <div onClick={() => {
+                  navigator.clipboard.writeText(`NU-${1000 + parseInt(user.id)}`);
+                  alert("ID de Utilizador copiado!");
+                }} className="text-[10px] font-black text-gray-400 font-mono bg-gray-50 px-2 py-1 rounded-lg border border-gray-100 cursor-pointer hover:bg-emerald-50 hover:text-emerald-600 transition-all flex items-center gap-1">
+                  NU-{1000 + parseInt(user.id)}
+                  <Copy size={10} />
+                </div>
+              </div>
             </div>
             <input
               id="profile-photo-input"
@@ -1856,7 +1901,7 @@ function UserProfileEditor({ currentUser, onUpdate, sales }: { currentUser: User
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <SettingInput label="Nome Completo" val={user.name} setVal={v => setUser({ ...user, name: v })} icon={UserIcon} />
             <SettingInput label="Email Profissional" val={user.email} setVal={v => setUser({ ...user, email: v })} icon={Mail} />
-            <SettingInput label="Contacto TelefÃ³nico" val={user.contact || ''} setVal={v => setUser({ ...user, contact: v })} icon={Phone} />
+            <SettingInput label="Contacto Telefónico" val={user.contact || ''} setVal={v => setUser({ ...user, contact: v })} icon={Phone} />
             <SettingInput label="Cidade / Localização" val={user.location || ''} setVal={v => setUser({ ...user, location: v })} icon={MapPin} />
             <SettingInput label="NÂº Segurança Social / NUIT" val={user.socialSecurityNumber || ''} setVal={v => setUser({ ...user, socialSecurityNumber: v })} icon={Fingerprint} />
 
@@ -2023,7 +2068,7 @@ function CatalogPerformanceReport({ sales, filter, products }: any) {
               <tr>
                 <td colSpan={4} className="p-20 text-center">
                   <Package size={48} className="mx-auto text-gray-200 mb-4" />
-                  <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Nenhuma venda de catÃ¡logo no Período</p>
+                  <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Nenhuma venda de catálogo no Período</p>
                 </td>
               </tr>
             )}
@@ -2214,10 +2259,10 @@ function ExpensesView({ expenses, team, currentUser }: { expenses: any[], team: 
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Tem a certeza que deseja remover esta despesa?")) return;
+    if (!confirm("Tem a certeza que deseja apagar? Isso é irreversível.")) return;
     try {
-      // Soft Delete
-      const { error } = await supabase.from('expenses').update({ deleted: true }).eq('id', id);
+      // Hard Delete
+      const { error } = await supabase.from('expenses').delete().eq('id', id);
       if (error) throw error;
 
       setLocalExpenses(localExpenses.filter(e => e.id !== id));

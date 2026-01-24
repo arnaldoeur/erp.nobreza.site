@@ -27,9 +27,10 @@ interface SuppliersProps {
   onGenerateOrder: (doc: BillingDocument) => void;
   initialModalOpen?: boolean;
   onModalHandled?: () => void;
+  currentUser: any; // Using any to avoid importing User type if not already there, but better to import
 }
 
-export const Suppliers: React.FC<SuppliersProps> = ({ suppliers, setSuppliers, products, onGenerateOrder, initialModalOpen, onModalHandled }) => {
+export const Suppliers: React.FC<SuppliersProps> = ({ suppliers, setSuppliers, products, onGenerateOrder, initialModalOpen, onModalHandled, currentUser }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
@@ -131,14 +132,20 @@ export const Suppliers: React.FC<SuppliersProps> = ({ suppliers, setSuppliers, p
       items: orderItems,
       total: orderItems.reduce((sum, i) => sum + i.total, 0),
       targetName: selectedSupplierForOrder.name,
+      targetDetails: {
+        nuit: selectedSupplierForOrder.nuit,
+        address: selectedSupplierForOrder.location,
+        email: selectedSupplierForOrder.email,
+        contact: selectedSupplierForOrder.contact
+      },
       status: 'SENT',
-      performedBy: MOCK_USER.name,
-      companyId: selectedSupplierForOrder.companyId || ''
+      performedBy: currentUser.name, // Use actual current user
+      companyId: selectedSupplierForOrder.companyId || currentUser.companyId
     };
 
     onGenerateOrder(newDoc);
     setIsOrderView(false);
-    alert(`Pedido de compra gerado com sucesso para ${selectedSupplierForOrder.name}`);
+    alert(`Pedido de compra gerado com sucesso para ${selectedSupplierForOrder.name}!\nVocê será redirecionado para a área de Documentos.`);
   };
 
   if (isOrderView && selectedSupplierForOrder) {

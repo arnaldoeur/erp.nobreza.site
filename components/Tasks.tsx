@@ -26,15 +26,20 @@ export const Tasks: React.FC<TasksProps> = ({ currentUser, team }) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
 
+        if (!currentUser.companyId) {
+            alert("Erro de Sessão: Identificador da empresa em falta. Faça login novamente.");
+            return;
+        }
+
         const task: CollabTask = {
             ...editingTask,
             company_id: currentUser.companyId,
             creator_id: currentUser.id,
             title: formData.get('title') as string,
-            description: (formData.get('description') as string) || null, // Handle empty string
+            description: (formData.get('description') as string) || null,
             status: formData.get('status') as any,
             priority: formData.get('priority') as any,
-            assigned_to: (formData.get('assigned_to') as string) || null, // Fix: Invalid UUID syntax
+            assigned_to: (formData.get('assigned_to') as string) || null,
             due_date: (formData.get('due_date') as string) || null,
             location: (formData.get('location') as string) || null,
         };
@@ -48,11 +53,12 @@ export const Tasks: React.FC<TasksProps> = ({ currentUser, team }) => {
             setIsModalOpen(false);
             setEditingTask(null);
             loadTasks();
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            alert("Erro ao salvar tarefa.");
+            alert(`Erro ao salvar tarefa: ${e.message || 'Tente novamente.'}`);
         }
     };
+
 
     const handleDelete = async (id: string) => {
         if (!confirm("Excluir esta tarefa?")) return;

@@ -292,7 +292,16 @@ const DocumentPreview = ({ doc, companyInfo, onEdit, onDelete }: { doc: BillingD
             <div>
                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-2">Para:</p>
                <p className="font-bold text-sm text-emerald-950 uppercase">{doc.targetName}</p>
-               <p className="text-xs text-gray-500 mt-1">Cliente / Fornecedor</p>
+               {doc.targetDetails ? (
+                  <div className="text-xs text-gray-500 mt-1 space-y-0.5">
+                     {doc.targetDetails.nuit && <p>NUIT: {doc.targetDetails.nuit}</p>}
+                     {doc.targetDetails.address && <p>{doc.targetDetails.address}</p>}
+                     {doc.targetDetails.contact && <p>Tel: {doc.targetDetails.contact}</p>}
+                     {doc.targetDetails.email && <p>{doc.targetDetails.email}</p>}
+                  </div>
+               ) : (
+                  <p className="text-xs text-gray-500 mt-1">Cliente / Fornecedor</p>
+               )}
             </div>
          </div>
 

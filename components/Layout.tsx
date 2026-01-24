@@ -26,10 +26,12 @@ import {
   Calendar as CalendarIcon,
   PlayCircle,
   StopCircle,
-  Clock
+  Clock,
+  Fingerprint
 } from 'lucide-react';
 import { User, UserRole, CompanyInfo } from '../types';
 import { WorkShift } from '../services/time-tracking.service';
+import { t, Language } from '../utils/i18n';
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -38,19 +40,19 @@ interface SidebarItem {
   roles: UserRole[];
 }
 
-const SIDEBAR_ITEMS: SidebarItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard', roles: Object.values(UserRole) },
-  { icon: ShoppingCart, label: 'Vendas (POS)', id: 'pos', roles: [UserRole.ADMIN, UserRole.COMMERCIAL, UserRole.TECHNICIAN] },
-  { icon: Package, label: 'Stock', id: 'stock', roles: [UserRole.ADMIN, UserRole.COMMERCIAL] },
-  { icon: FileText, label: 'Faturação', id: 'billing', roles: [UserRole.ADMIN, UserRole.ADMINISTRATIVE] },
-  { icon: FolderCheck, label: 'Documentos', id: 'documents', roles: Object.values(UserRole) },
-  { icon: CheckSquare, label: 'Tarefas', id: 'tasks', roles: Object.values(UserRole) },
-  { icon: CalendarIcon, label: 'Agenda', id: 'calendar', roles: Object.values(UserRole) },
+const getSidebarItems = (lang: Language): SidebarItem[] => [
+  { icon: LayoutDashboard, label: t('nav.dashboard', lang), id: 'dashboard', roles: Object.values(UserRole) },
+  { icon: ShoppingCart, label: t('nav.sales', lang) + ' (POS)', id: 'pos', roles: [UserRole.ADMIN, UserRole.COMMERCIAL, UserRole.TECHNICIAN] },
+  { icon: Package, label: t('nav.stock', lang), id: 'stock', roles: [UserRole.ADMIN, UserRole.COMMERCIAL] },
+  { icon: FileText, label: t('nav.billing', lang), id: 'billing', roles: [UserRole.ADMIN, UserRole.ADMINISTRATIVE] },
+  { icon: FolderCheck, label: t('nav.docs', lang), id: 'documents', roles: Object.values(UserRole) },
+  { icon: CheckSquare, label: t('nav.tasks', lang), id: 'tasks', roles: Object.values(UserRole) },
+  { icon: CalendarIcon, label: t('nav.agenda', lang), id: 'calendar', roles: Object.values(UserRole) },
   { icon: MessageSquare, label: 'Chat Equipe', id: 'social', roles: Object.values(UserRole) },
-  { icon: Truck, label: 'Fornecedores', id: 'suppliers', roles: [UserRole.ADMIN, UserRole.COMMERCIAL] },
-  { icon: Users, label: 'Clientes', id: 'customers', roles: [UserRole.ADMIN, UserRole.ADMINISTRATIVE] },
-  { icon: SettingsIcon, label: 'Administração', id: 'administration', roles: [UserRole.ADMIN] },
-  { icon: ShieldCheck, label: 'Suporte', id: 'support', roles: Object.values(UserRole) },
+  { icon: Truck, label: t('nav.suppliers', lang), id: 'suppliers', roles: [UserRole.ADMIN, UserRole.COMMERCIAL] },
+  { icon: Users, label: t('nav.customers', lang), id: 'customers', roles: [UserRole.ADMIN, UserRole.ADMINISTRATIVE] },
+  { icon: SettingsIcon, label: t('nav.settings', lang), id: 'administration', roles: [UserRole.ADMIN] },
+  { icon: ShieldCheck, label: t('nav.support', lang), id: 'support', roles: Object.values(UserRole) },
   { icon: Lock, label: 'Boss Admin', id: 'SUPER_ADMIN', roles: [UserRole.ADMIN] },
 ];
 
@@ -153,17 +155,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
 
           {!collapsed ? (
             <div className="flex items-center gap-3 px-2">
-              <img src="/Nobreza ERP - Logos, Icones, Favicon/nobreza_erp_logo_white_horizontal.png" alt="Nobreza ERP" className="h-12 w-auto object-contain" />
+              <img src="/nobreza_erp_logo_white_horizontal.png" alt="Nobreza ERP" className="h-16 w-auto object-contain" />
             </div>
           ) : (
             <div className="flex flex-col items-center">
-              <img src="/Nobreza ERP - Logos, Icones, Favicon/NERP ICONE.png" alt="N" className="w-10 h-10 object-contain" />
+              <img src="/NERP ICONE.png" alt="N" className="w-12 h-12 object-contain" />
             </div>
           )}
         </div>
 
         <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto custom-scrollbar">
-          {SIDEBAR_ITEMS.filter(item => {
+          {getSidebarItems(companyInfo.language || 'pt-MZ').filter(item => {
             if (item.id === 'SUPER_ADMIN') {
               return user.email === 'admin@nobreza.site';
             }
@@ -178,7 +180,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
                 } ${collapsed ? 'justify-center px-0' : ''}`}
               title={collapsed ? item.label : undefined}
             >
-              <item.icon size={18} className={activeView === item.id ? 'text-white' : 'text-emerald-500 group-hover:text-emerald-400'} />
+              <item.icon size={18} className={activeView === item.id ? 'text-white' : 'text-emerald-50 group-hover:text-emerald-400'} />
               {!collapsed && <span className="text-[10px] font-bold uppercase tracking-wider truncate">{item.label}</span>}
             </button>
           ))}
@@ -276,7 +278,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
         <header className="hidden md:flex h-20 bg-white border-b border-gray-100 items-center justify-between px-10 shadow-sm z-10 shrink-0">
           <div className="flex flex-col">
             <h2 className="text-xl font-black text-emerald-950 uppercase tracking-tight">
-              {SIDEBAR_ITEMS.find(i => i.id === activeView)?.label || 'Bem-vindo'}
+              {getSidebarItems(companyInfo.language || 'pt-MZ').find(i => i.id === activeView)?.label || 'Bem-vindo'}
             </h2>
             {notification && (
               <div className="absolute top-20 left-0 right-0 bg-amber-400 text-emerald-950 px-4 py-1 text-xs font-black uppercase text-center animate-in slide-in-from-top-2 z-50">

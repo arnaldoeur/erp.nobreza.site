@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   TrendingUp,
   Package,
@@ -41,24 +41,55 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
     return () => clearInterval(timer);
   }, []);
 
+  const getCompanyTimeParts = (date: Date) => {
+    try {
+      const options: Intl.DateTimeFormatOptions = {
+        timeZone: companyInfo?.timezone || 'Africa/Maputo',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: false
+      };
+      const formatter = new Intl.DateTimeFormat('en-US', options);
+      const parts = formatter.formatToParts(date);
+      return {
+        hour: parseInt(parts.find(p => p.type === 'hour')?.value || '0'),
+        minute: parseInt(parts.find(p => p.type === 'minute')?.value || '0'),
+        second: parseInt(parts.find(p => p.type === 'second')?.value || '0')
+      };
+    } catch (e) {
+      return { hour: date.getHours(), minute: date.getMinutes(), second: date.getSeconds() };
+    }
+  };
+
+  const companyTime = getCompanyTimeParts(currentTime);
+  const timeVal = companyTime.hour + companyTime.minute / 60;
+
   const getGreeting = () => {
-    const hour = currentTime.getHours();
-    if (hour < 12) return "Bom dia";
-    if (hour < 18) return "Boa tarde";
+    if (companyTime.hour < 12) return "Bom dia";
+    if (companyTime.hour < 18) return "Boa tarde";
     return "Boa noite";
   };
 
-  const getShift = (date: Date) => {
-    const timeVal = date.getHours() + date.getMinutes() / 60;
-    if (timeVal >= 8 && timeVal < 13.5) return "Turno da Manhã";
-    if (timeVal >= 13.5 && timeVal <= 19.5) return "Turno da Tarde";
-    return "Turno Extra";
-  };
+  const activeShift = useMemo(() => {
+    if (!companyInfo?.shifts || companyInfo.shifts.length === 0) return null;
 
-  const isOpen = () => {
-    const timeVal = currentTime.getHours() + currentTime.getMinutes() / 60;
-    return timeVal >= 8 && timeVal <= 19.5;
-  };
+    return companyInfo.shifts.find(s => {
+      const [startH, startM] = s.start.split(':').map(Number);
+      const [endH, endM] = s.end.split(':').map(Number);
+      const startVal = startH + startM / 60;
+      const endVal = endH + endM / 60;
+
+      // Handle shifts crossing midnight
+      if (startVal <= endVal) {
+        return timeVal >= startVal && timeVal < endVal;
+      } else {
+        return timeVal >= startVal || timeVal < endVal;
+      }
+    });
+  }, [companyInfo?.shifts, timeVal]);
+
+  const isOpenStatus = activeShift !== null;
 
   const today = new Date().toLocaleDateString();
   const salesToday = sales.filter(s => new Date(s.timestamp).toLocaleDateString() === today);
@@ -289,11 +320,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
               </h1>
               <p className="text-[10px] text-gray-500 font-medium mt-0.5">Visão geral do sistema.</p>
               <div className="flex flex-wrap items-center gap-2 mt-2">
-                <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${isOpen() ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                  {isOpen() ? 'Aberto' : 'Fechado'}
+                <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${isOpenStatus ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                  {isOpenStatus ? 'Aberto' : 'Fechado'}
                 </span>
                 <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-[9px] font-black uppercase tracking-widest">
-                  {getShift(currentTime)}
+                  {isOpenStatus ? activeShift?.name : 'Fora de Horário'}
                 </span>
               </div>
             </div>

@@ -55,9 +55,36 @@ export const CollabService = {
         return data;
     },
     saveTask: async (task: CollabTask) => {
-        const { data, error } = await supabase.from('tasks').upsert(task).select().single();
+        const { data: savedTask, error } = await supabase.from('tasks').upsert(task).select().single();
         if (error) throw error;
-        return data;
+
+        // Auto-sync to Calendar
+        // Only if it's a new task (no ID provided in input) or we want to update (logic below assumes new for simplicity or upsert)
+        // For robust sync, we might need a link, but let fire-and-forget for now as requested "create -> reflect"
+        try {
+            if (task.due_date) {
+                const eventData = {
+                    company_id: task.company_id,
+                    title: `Tarefa: ${task.title}`,
+                    description: task.description || 'Tarefa sincronizada',
+                    start_time: task.due_date, // Tasks usually have due date
+                    end_time: task.due_date,   // Duration 0 or 1 hour? Let's assume point in time
+                    location: task.location || 'Escritório',
+                    type: 'TASK',
+                    priority: task.priority || 'MEDIUM',
+                    status: task.status === 'DONE' ? 'COMPLETED' : 'PENDING',
+                    is_personal: false,
+                    created_by: task.creator_id
+                    // We could add a 'related_task_id' if schema supported it
+                };
+                await supabase.from('erp_events').insert(eventData);
+            }
+        } catch (syncError) {
+            console.warn("Autosync to calendar failed", syncError);
+            // Don't block task creation
+        }
+
+        return savedTask;
     },
     deleteTask: async (id: string) => {
         const { error } = await supabase.from('tasks').delete().eq('id', id);

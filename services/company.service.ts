@@ -46,7 +46,10 @@ export const CompanyService = {
                 paymentMethods: data.payment_methods || [],
                 closingTime: data.closing_time,
                 workingHours: data.working_hours,
-                shifts: data.shifts || []
+                shifts: data.shifts || [],
+                timezone: data.timezone || 'Africa/Maputo',
+                language: data.language || 'pt-MZ',
+                isDarkMode: data.is_dark_mode || false
             };
         } catch (error) {
             console.error('Error fetching company info:', error);
@@ -72,7 +75,10 @@ export const CompanyService = {
             payment_methods: info.paymentMethods,
             closing_time: info.closingTime,
             working_hours: info.workingHours,
-            shifts: info.shifts || []
+            shifts: info.shifts || [],
+            timezone: info.timezone || 'Africa/Maputo',
+            language: info.language,
+            is_dark_mode: info.isDarkMode
         };
 
         try {

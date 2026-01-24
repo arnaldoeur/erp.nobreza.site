@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Globe, Moon, Sun, Shield, Save, RefreshCw, LayoutTemplate, Palette, Eye } from 'lucide-react';
+import { Download, Globe, Moon, Sun, Shield, Save, RefreshCw, LayoutTemplate, Palette, Eye, Clock } from 'lucide-react';
 import { CompanyInfo, User } from '../types';
 import { t, Language } from '../utils/i18n';
 
@@ -11,9 +11,9 @@ interface SystemSettingsProps {
 
 export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, currentUser, onUpdateCompany }) => {
     const [loading, setLoading] = useState(false);
-    const [language, setLanguage] = useState<Language>('pt-MZ');
+    const [language, setLanguage] = useState<Language>(companyInfo.language || 'pt-MZ');
     const [contrastMode, setContrastMode] = useState(false);
-    const [nightMode, setNightMode] = useState(false);
+    const [nightMode, setNightMode] = useState(companyInfo.isDarkMode || false);
     const [tempColors, setTempColors] = useState({
         primary: companyInfo.themeColor || '#10b981',
         secondary: companyInfo.themeColorSecondary || '#6366f1'
@@ -60,10 +60,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
     };
 
     const toggleNightMode = () => {
-        setNightMode(!nightMode);
-        if (!nightMode) {
+        const newState = !nightMode;
+        setNightMode(newState);
+        if (newState) {
             document.documentElement.classList.add('dark');
-            // Force background change if tailwind dark mode isn't fully configured
             document.body.style.backgroundColor = '#111827';
             document.body.style.color = '#f3f4f6';
         } else {
@@ -71,6 +71,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
             document.body.style.backgroundColor = '';
             document.body.style.color = '';
         }
+        onUpdateCompany({ ...companyInfo, isDarkMode: newState });
     };
 
     const updateTheme = (primary: string, secondary: string) => {
@@ -121,7 +122,11 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
                             </div>
                             <select
                                 value={language}
-                                onChange={(e) => setLanguage(e.target.value as Language)}
+                                onChange={(e) => {
+                                    const newLang = e.target.value as Language;
+                                    setLanguage(newLang);
+                                    onUpdateCompany({ ...companyInfo, language: newLang });
+                                }}
                                 className="bg-white dark:bg-slate-800 border text-xs font-bold border-gray-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg px-3 py-2 outline-none focus:border-purple-500"
                             >
                                 <option value="pt-MZ">Português (MZ)</option>
@@ -157,6 +162,33 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
                                 <input type="checkbox" className="sr-only peer" checked={contrastMode} onChange={toggleContrast} />
                                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                             </label>
+                        </div>
+
+                        {/* Timezone */}
+                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700">
+                            <div className="flex items-center gap-3">
+                                <Clock size={20} className="text-blue-500" />
+                                <div>
+                                    <p className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">{t('system.timezone', language)}</p>
+                                    <p className="text-[10px] text-gray-400 font-bold">{t('system.timezone.desc', language)}</p>
+                                </div>
+                            </div>
+                            <select
+                                value={companyInfo.timezone || 'Africa/Maputo'}
+                                onChange={(e) => {
+                                    onUpdateCompany({ ...companyInfo, timezone: e.target.value });
+                                }}
+                                className="bg-white dark:bg-slate-800 border text-[10px] font-bold border-gray-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg px-2 py-2 outline-none focus:border-blue-500 max-w-[150px]"
+                            >
+                                <option value="Africa/Maputo">Maputo (GMT+2)</option>
+                                <option value="Africa/Johannesburg">Johannesburg (GMT+2)</option>
+                                <option value="Europe/Lisbon">Lisbon (GMT+0/1)</option>
+                                <option value="Atlantic/Cape_Verde">Cape Verde (GMT-1)</option>
+                                <option value="Africa/Luanda">Luanda (GMT+1)</option>
+                                <option value="Africa/Bissau">Bissau (GMT+0)</option>
+                                <option value="America/Sao_Paulo">São Paulo (GMT-3)</option>
+                                <option value="UTC">UTC/GMT</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -234,13 +266,36 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
                             </div>
                             <div className="flex gap-2 justify-center">
                                 <button
-                                    onClick={() => {
-                                        onUpdateCompany({ ...companyInfo, themeColor: tempColors.primary, themeColorSecondary: tempColors.secondary });
-                                        alert("Configurações do sistema salvas com sucesso!");
+                                    onClick={async () => {
+                                        setLoading(true);
+                                        try {
+                                            const updated = {
+                                                ...companyInfo,
+                                                themeColor: tempColors.primary,
+                                                themeColorSecondary: tempColors.secondary,
+                                                language: language,
+                                                isDarkMode: nightMode
+                                            };
+                                            const { CompanyService } = await import('../services');
+                                            await CompanyService.update(updated);
+                                            onUpdateCompany(updated);
+                                            alert(t('common.success', language) + ": Configurações salvas.");
+                                        } catch (e: any) {
+                                            console.error(e);
+                                            // Handle the specific "DADOS SALVOS" warning from CompanyService
+                                            if (e.message && e.message.includes("DADOS SALVOS")) {
+                                                alert("✅ " + e.message);
+                                            } else {
+                                                alert(t('common.error', language) + ": " + e.message);
+                                            }
+                                        } finally {
+                                            setLoading(false);
+                                        }
                                     }}
-                                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black uppercase text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                                    disabled={loading}
+                                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black uppercase text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
-                                    <Save size={16} /> Salvar
+                                    <Save size={16} /> {loading ? t('system.loading', language) : 'Salvar'}
                                 </button>
                                 <button
                                     onClick={() => window.location.reload()}

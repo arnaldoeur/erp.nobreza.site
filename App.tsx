@@ -160,6 +160,19 @@ const App: React.FC = () => {
     initApp();
   }, [isAuthenticated]);
 
+  // Handle Dark Mode
+  useEffect(() => {
+    if (companyInfo.isDarkMode) {
+      document.documentElement.classList.add('dark');
+      document.body.style.backgroundColor = '#111827';
+      document.body.style.color = '#f3f4f6';
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.style.backgroundColor = '';
+      document.body.style.color = '';
+    }
+  }, [companyInfo.isDarkMode]);
+
   const currentUser = AuthService.getCurrentUser() || team[0];
 
   useEffect(() => {
@@ -727,7 +740,7 @@ const App: React.FC = () => {
         {activeView === 'stock' && <Stock products={products} setProducts={setProducts} suppliers={suppliers} initialModalOpen={pendingAction === 'new_product'} onModalHandled={() => setPendingAction(null)} />}
         {activeView === 'daily-close' && <DailyClose sales={salesHistory} dailyClosures={dailyClosures} onConfirmClosure={handleAddClosure} user={currentUser} />}
         {activeView === 'billing' && <Billing products={products} companyInfo={companyInfo} documents={billingDocuments} onAddDocument={handleAddDocument} onDeleteDocument={handleDeleteDocument} initialCreateMode={pendingAction === 'new_invoice' || pendingAction === 'new_purchase'} initialType={pendingAction === 'new_purchase' ? 'PURCHASE_ORDER' : 'INVOICE'} onModeHandled={() => setPendingAction(null)} suppliers={suppliers} customers={customers} currentUser={currentUser} />}
-        {activeView === 'suppliers' && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} products={products} onGenerateOrder={handleAddDocument} initialModalOpen={pendingAction === 'new_supplier'} onModalHandled={() => setPendingAction(null)} />}
+        {activeView === 'suppliers' && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} products={products} onGenerateOrder={(doc) => { handleAddDocument(doc); setActiveView('billing'); }} initialModalOpen={pendingAction === 'new_supplier'} onModalHandled={() => setPendingAction(null)} currentUser={currentUser} />}
         {activeView === 'customers' && <Customers customers={customers} setCustomers={setCustomers} sales={salesHistory} initialModalOpen={pendingAction === 'new_customer'} onModalHandled={() => setPendingAction(null)} currentUser={currentUser} />}
         {activeView === 'expenses' && <Expenses />}
         {activeView === 'documents' && <Documents currentUser={currentUser} />}
@@ -735,6 +748,7 @@ const App: React.FC = () => {
         {activeView === 'social' && <SocialChat currentUser={currentUser} team={team} />}
         {activeView === 'calendar' && <Calendar currentUser={currentUser} team={team} />}
         {activeView === 'support' && <Support currentUser={currentUser} sales={salesHistory} products={products} customers={customers} dailyClosures={dailyClosures} />}
+        {activeView === 'SUPER_ADMIN' && <SuperAdmin />}
         {activeView === 'administration' &&
           <Settings
             companyInfo={companyInfo || { name: 'Nome da Empresa', address: '', contact: '', nuit: '', email: '' }}
