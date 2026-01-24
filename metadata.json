@@ -1,0 +1,7 @@
+{
+  "name": "NOBREZA ERP",
+  "description": "Integrated pharmaceutical management system for Nobreza Pharmacy, featuring POS, inventory tracking, daily closure workflows, and AI-powered image analysis.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
