@@ -332,10 +332,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
 
           <div className="relative z-10 text-left md:text-right mt-4 md:mt-0">
             <p className="text-2xl md:text-4xl font-black text-emerald-950 tracking-tighter font-mono">
-              {currentTime.toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' })}
+              {currentTime.toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit', timeZone: companyInfo?.timezone || 'Africa/Maputo' })}
             </p>
             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">
-              {currentTime.toLocaleDateString('pt-MZ', { day: 'numeric', month: 'long' })}
+              {currentTime.toLocaleDateString('pt-MZ', { day: 'numeric', month: 'long', timeZone: companyInfo?.timezone || 'Africa/Maputo' })}
             </p>
           </div>
         </div>
