@@ -48,16 +48,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
         hour: 'numeric',
         minute: 'numeric',
         second: 'numeric',
-        hour12: false
+        hourCycle: 'h23'
       };
-      const formatter = new Intl.DateTimeFormat('en-US', options);
+      const formatter = new Intl.DateTimeFormat('en-GB', options);
       const parts = formatter.formatToParts(date);
-      return {
-        hour: parseInt(parts.find(p => p.type === 'hour')?.value || '0'),
-        minute: parseInt(parts.find(p => p.type === 'minute')?.value || '0'),
-        second: parseInt(parts.find(p => p.type === 'second')?.value || '0')
-      };
+
+      const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
+      const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
+      const second = parseInt(parts.find(p => p.type === 'second')?.value || '0');
+
+      return { hour, minute, second };
     } catch (e) {
+      console.error("Timezone error:", e);
       return { hour: date.getHours(), minute: date.getMinutes(), second: date.getSeconds() };
     }
   };

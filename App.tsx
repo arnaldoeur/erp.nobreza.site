@@ -735,7 +735,7 @@ const App: React.FC = () => {
           } catch (e) { alert("Erro ao finalizar turno."); }
         }}
       >
-        {activeView === 'dashboard' && <Dashboard products={products} sales={salesHistory} onQuickAction={navigateWithAction} user={currentUser} expenses={expenses} />}
+        {activeView === 'dashboard' && <Dashboard products={products} sales={salesHistory} onQuickAction={navigateWithAction} user={currentUser} expenses={expenses} companyInfo={companyInfo} />}
         {activeView === 'pos' && <POS products={products} customers={customers} companyInfo={companyInfo} onSaleComplete={handleSale} onQuickAddCustomer={handleAddCustomer} salesHistory={salesHistory} currentUser={currentUser} />}
         {activeView === 'stock' && <Stock products={products} setProducts={setProducts} suppliers={suppliers} initialModalOpen={pendingAction === 'new_product'} onModalHandled={() => setPendingAction(null)} />}
         {activeView === 'daily-close' && <DailyClose sales={salesHistory} dailyClosures={dailyClosures} onConfirmClosure={handleAddClosure} user={currentUser} />}
