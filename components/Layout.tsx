@@ -116,8 +116,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-[100dvh] bg-[#f3f7f6] overflow-hidden">
-      <header className="md:hidden h-16 bg-emerald-950 text-white flex items-center justify-between px-4 z-50 shrink-0 shadow-lg">
+    <div className="flex flex-col md:flex-row h-[100dvh] bg-[rgb(var(--bg-app))] overflow-hidden transition-colors duration-300">
+      <header className="md:hidden h-16 bg-emerald-950 dark:bg-black text-white flex items-center justify-between px-4 z-50 shrink-0 shadow-lg">
         <div className="flex items-center gap-2 overflow-hidden cursor-pointer" onClick={() => handleNavClick('dashboard')}>
           <img
             src="/nobreza_erp_logo_white_horizontal.png"
@@ -254,7 +254,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all font-black text-[10px] uppercase tracking-widest text-left"
                 >
                   <LogOut size={16} />
-                  Sair do Sistema
+                  {t('profile.logout', companyInfo.language || 'pt-MZ')}
                 </button>
               </div>
             </div>
@@ -285,7 +285,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
       </aside >
 
       <main className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="hidden md:flex h-20 bg-white border-b border-gray-100 items-center justify-between px-10 shadow-sm z-10 shrink-0">
+        <header className="hidden md:flex h-20 bg-[rgb(var(--bg-surface))] dark:bg-black border-b border-gray-100 dark:border-white/5 items-center justify-between px-10 shadow-sm z-10 shrink-0">
           <div className="flex flex-col">
             <h2 className="text-xl font-black text-emerald-950 uppercase tracking-tight">
               {getSidebarItems(companyInfo.language || 'pt-MZ').find(i => i.id === activeView)?.label || 'Bem-vindo'}
@@ -306,10 +306,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
 
 
             <div className="flex flex-col items-end">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Estado do Sistema</span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('common.system_status', companyInfo.language || 'pt-MZ')}</span>
               <span className="flex items-center gap-2 text-xs font-bold text-emerald-600">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                Ligado / Online
+                {t('common.online', companyInfo.language || 'pt-MZ')}
               </span>
             </div>
             <button
@@ -317,7 +317,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
               className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-2xl font-black flex items-center gap-2 shadow-xl shadow-red-900/20 transition-all active:scale-95 group"
             >
               <Lock size={18} className="group-hover:rotate-12 transition-transform" />
-              FECHO DO DIA
+              {t('common.daily_close', companyInfo.language || 'pt-MZ')}
             </button>
           </div>
         </header>

@@ -18,8 +18,24 @@
   --color-primary-900: 6 78 59;
   --color-primary-950: 2 44 34;
 
-  --color-bg: 243, 244, 246;
-  /* Gray 100 */
+  /* Semantic Core */
+  --bg-app: 243 247 246;
+  --bg-surface: 255 255 255;
+  --text-main: 2 44 34;
+  --text-muted: 107 114 128;
+  --border-subtle: 243 244 246;
+}
+
+.dark {
+  --bg-app: 11 15 14;
+  --bg-surface: 20 28 26;
+  --text-main: 243 255 252;
+  --text-muted: 148 163 184;
+  --border-subtle: 30 41 39;
+
+  /* Adjust Primary for Dark mode contrast */
+  --color-primary-50: 2 44 34;
+  --color-primary-950: 236 253 245;
 }
 
 @layer utilities {

@@ -21,6 +21,7 @@ import {
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Product, Sale, CompanyInfo, User } from '../types';
 import { QuoteWidget } from './QuoteWidget';
+import { t } from '../utils/i18n';
 
 interface DashboardProps {
   products: Product[];
@@ -89,9 +90,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
   const timeVal = companyTime.hour + companyTime.minute / 60;
 
   const getGreeting = () => {
-    if (companyTime.hour < 12) return "Bom dia";
-    if (companyTime.hour < 18) return "Boa tarde";
-    return "Boa noite";
+    const lang = companyInfo?.language || 'pt-MZ';
+    if (companyTime.hour < 12) return t('dashboard.greeting.morning', lang);
+    if (companyTime.hour < 18) return t('dashboard.greeting.afternoon', lang);
+    return t('dashboard.greeting.night', lang);
   };
 
   const activeShift = useMemo(() => {
@@ -219,11 +221,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
     .slice(0, 3);
 
   const quickActions = [
-    { label: 'Nova Venda', icon: ShoppingCart, view: 'pos', action: 'new_sale', color: 'text-red-600' },
-    { label: 'Proforma', icon: FileText, view: 'billing', action: 'new_invoice', color: 'text-emerald-600' },
-    { label: 'P. Compra', icon: Truck, view: 'billing', action: 'new_purchase', color: 'text-blue-600' },
-    { label: 'Novo Item', icon: Package, view: 'stock', action: 'new_product', color: 'text-purple-600' },
+    { label: t('dashboard.quick_sale', companyInfo?.language || 'pt-MZ'), icon: ShoppingCart, view: 'pos', action: 'new_sale', color: 'text-red-600' },
+    { label: t('dashboard.quick_proforma', companyInfo?.language || 'pt-MZ'), icon: FileText, view: 'billing', action: 'new_invoice', color: 'text-emerald-600' },
+    { label: t('dashboard.quick_purchase', companyInfo?.language || 'pt-MZ'), icon: Truck, view: 'billing', action: 'new_purchase', color: 'text-blue-600' },
+    { label: t('dashboard.quick_item', companyInfo?.language || 'pt-MZ'), icon: Package, view: 'stock', action: 'new_product', color: 'text-purple-600' },
   ];
+
+  const lang = companyInfo?.language || 'pt-MZ';
 
   /* Modal renderers */
   const renderModalContent = () => {
@@ -232,7 +236,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
         return (
           <div className="space-y-4">
             <div className="flex items-baseline gap-2 border-b pb-4">
-              <h3 className="text-lg font-black text-emerald-950 uppercase">Vendas de Hoje</h3>
+              <h3 className="text-lg font-black text-[rgb(var(--text-main))] dark:text-white uppercase">{t('dashboard.sales_today', lang)}</h3>
               <span className="text-lg font-black text-gray-400">-</span>
               <span className="text-lg font-black text-emerald-600">Total: MT {totalSalesToday.toLocaleString()}</span>
             </div>
@@ -263,7 +267,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
         return (
           <div className="space-y-6">
             <div className="flex items-baseline gap-2 border-b pb-4">
-              <h3 className="text-lg font-black text-blue-950 uppercase">Valor do Stock</h3>
+              <h3 className="text-lg font-black text-[rgb(var(--text-main))] dark:text-white uppercase">{t('dashboard.stock_value', lang)}</h3>
               <span className="text-lg font-black text-gray-400">-</span>
               <span className="text-lg font-black text-blue-600">Total: MT {totalStockValue.toLocaleString()}</span>
             </div>
@@ -305,7 +309,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
         return (
           <div className="space-y-6">
             <div className="flex items-baseline gap-2 border-b pb-4">
-              <h3 className="text-lg font-black text-red-950 uppercase">Ruptura de Stock</h3>
+              <h3 className="text-lg font-black text-[rgb(var(--text-main))] dark:text-white uppercase">{t('dashboard.low_stock', lang)}</h3>
               <span className="text-lg font-black text-gray-400">-</span>
               <span className="text-lg font-black text-red-600">{allLowStock.length} Itens</span>
             </div>
@@ -359,7 +363,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-center border-b pb-4">
-              <h3 className="text-lg font-black text-amber-950 uppercase">Detalhes de Caixa</h3>
+              <h3 className="text-lg font-black text-[rgb(var(--text-main))] dark:text-white uppercase">{t('dashboard.cash_details', lang)}</h3>
               <span className="text-sm font-black text-amber-600">Total: MT {totalSalesToday.toLocaleString()}</span>
             </div>
 
@@ -408,7 +412,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
       {/* Top Section: Greeting + Clock + Quote = Fluid Height */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 shrink-0">
         {/* Left: Greeting & Clock */}
-        <div className="lg:col-span-2 flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden relative">
+        <div className="lg:col-span-2 flex flex-col md:flex-row justify-between items-start md:items-center bg-[rgb(var(--bg-surface))] dark:bg-black/40 p-6 rounded-[2rem] shadow-sm border border-[rgb(var(--border-subtle))] dark:border-white/5 overflow-hidden relative">
           <div className="relative z-10 flex items-center gap-4">
             <div className="w-14 h-14 bg-emerald-950/5 rounded-2xl flex items-center justify-center overflow-hidden shrink-0">
               {user?.photo ? (
@@ -420,23 +424,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
               )}
             </div>
             <div>
-              <h1 className="text-lg md:text-xl font-black text-emerald-950 tracking-tighter">
+              <h1 className="text-lg md:text-xl font-black text-[rgb(var(--text-main))] dark:text-white tracking-tighter">
                 {getGreeting()}, <span className="text-emerald-600">{user?.name?.split(' ')[0] || 'Gestor'}</span>
               </h1>
-              <p className="text-[10px] text-gray-500 font-medium mt-0.5">Visão geral do sistema.</p>
+              <p className="text-[10px] text-gray-400 font-medium mt-0.5">{companyInfo?.slogan || t('system.settings.subtitle', lang)}</p>
               <div className="flex flex-wrap items-center gap-2 mt-2">
-                <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${isOpenStatus ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                  {isOpenStatus ? 'Aberto' : 'Fechado'}
+                <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${isOpenStatus ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
+                  {isOpenStatus ? t('dashboard.status.open', lang) : t('dashboard.status.closed', lang)}
                 </span>
-                <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-[9px] font-black uppercase tracking-widest">
-                  {isOpenStatus ? activeShift?.name : 'Fora de Horário'}
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 rounded-full text-[9px] font-black uppercase tracking-widest">
+                  {isOpenStatus ? activeShift?.name : t('dashboard.status.closed', lang)}
                 </span>
               </div>
             </div>
           </div>
 
           <div className="relative z-10 text-left md:text-right mt-4 md:mt-0">
-            <p className="text-2xl md:text-4xl font-black text-emerald-950 tracking-tighter font-mono">
+            <p className="text-2xl md:text-4xl font-black text-[rgb(var(--text-main))] dark:text-white tracking-tighter font-mono">
               {currentTime.toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit', timeZone: companyInfo?.timezone || 'Africa/Maputo' })}
             </p>
             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">
@@ -455,7 +459,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 shrink-0">
         <StatCard
           icon={TrendingUp}
-          label="Vendas do Dia"
+          label={t('dashboard.sales_today', lang)}
           value={`MT ${totalSalesToday.toFixed(0)}`}
           change={`${salesToday.length} transações`}
           color="emerald"
@@ -463,7 +467,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
         />
         <StatCard
           icon={Package}
-          label="Valor em Stock"
+          label={t('dashboard.stock_value', lang)}
           value={`MT ${totalStockValue.toLocaleString()}`}
           change={`${products.length} itens`}
           color="blue"
@@ -471,7 +475,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
         />
         <StatCard
           icon={AlertCircle}
-          label="Stock Baixo"
+          label={t('dashboard.low_stock', lang)}
           value={`${lowStockCount}`}
           change="Atenção"
           color="red"
@@ -479,7 +483,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
         />
         <StatCard
           icon={Wallet}
-          label="Em Caixa"
+          label={t('dashboard.cash_details', lang)}
           value={`MT ${totalSalesToday.toFixed(0)}`}
           change="Líquido"
           color="amber"
@@ -505,21 +509,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
       {/* Bottom Section: Chart + Critical Alerts = Takes Remaining Space */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full lg:flex-1 min-h-0">
         {/* Sales Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col h-[500px] lg:h-[480px] w-full">
+        <div className="lg:col-span-2 bg-[rgb(var(--bg-surface))] dark:bg-black/20 p-6 rounded-[2rem] shadow-sm border border-[rgb(var(--border-subtle))] dark:border-white/5 flex flex-col h-[500px] lg:h-[480px] w-full">
           <div className="flex justify-between items-center mb-4 shrink-0">
-            <h3 className="text-base font-black flex items-center gap-3 text-gray-800 uppercase tracking-tight">
+            <h3 className="text-base font-black flex items-center gap-3 text-[rgb(var(--text-main))] dark:text-white uppercase tracking-tight">
               <TrendingUp size={20} className="text-emerald-600" />
-              Fluxo Financeiro
+              {t('nav.sales', lang)}
             </h3>
-            <div className="flex bg-gray-50 rounded-xl p-1 gap-1">
+            <div className="flex bg-gray-50 dark:bg-white/5 rounded-xl p-1 gap-1">
               {(['daily', '15days', '1month', '3months'] as const).map((period) => (
                 <button
                   key={period}
                   onClick={() => setChartPeriod(period)}
-                  className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${chartPeriod === period ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                  className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${chartPeriod === period ? 'bg-[rgb(var(--bg-surface))] dark:bg-emerald-600 dark:text-white text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                     }`}
                 >
-                  {period === 'daily' && 'Diário'}
+                  {period === 'daily' && t('daily-close.today', lang) || 'Diário'}
                   {period === '15days' && '15 Dias'}
                   {period === '1month' && '1 Mês'}
                   {period === '3months' && '3 Meses'}
@@ -536,18 +540,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-gray-100 dark:text-white/5" />
                 <XAxis
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  tick={{ fontSize: 10, fill: 'currentColor' }}
+                  className="text-gray-400 dark:text-gray-600"
                   interval={chartPeriod === 'daily' ? 0 : 'preserveStartEnd'}
                 />
                 <YAxis hide />
                 <Tooltip
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
-                  formatter={(value: any) => [`MT ${value.toLocaleString()}`, 'Vendas']}
+                  contentStyle={{
+                    backgroundColor: 'rgb(var(--bg-surface))',
+                    borderRadius: '16px',
+                    border: 'none',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value: any) => [`MT ${value.toLocaleString()}`, t('nav.sales', lang)]}
                 />
                 <Area type="monotone" dataKey="sales" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
               </AreaChart>
@@ -556,58 +566,58 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
         </div>
 
         {/* Notificações */}
-        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col h-[500px] lg:h-[480px] overflow-hidden">
-          <h3 className="text-base font-black flex items-center gap-3 text-gray-800 uppercase tracking-tight mb-4 shrink-0">
+        <div className="bg-[rgb(var(--bg-surface))] dark:bg-black/20 p-6 rounded-[2rem] shadow-sm border border-[rgb(var(--border-subtle))] dark:border-white/5 flex flex-col h-[500px] lg:h-[480px] overflow-hidden">
+          <h3 className="text-base font-black flex items-center gap-3 text-[rgb(var(--text-main))] dark:text-white uppercase tracking-tight mb-4 shrink-0">
             <Zap size={20} className="text-amber-500" />
             Notificações
           </h3>
           <div className="space-y-3 flex-1 overflow-y-auto pr-1 custom-scrollbar">
             {/* Recent Sales Notifications */}
             {sales.slice(0, 3).map((sale, idx) => (
-              <div key={`sale-${idx}`} className="flex items-center justify-between p-3 bg-emerald-50 rounded-2xl border border-emerald-100 group shrink-0">
+              <div key={`sale-${idx}`} className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-500/10 group shrink-0">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <ShoppingCart size={10} className="text-emerald-600" />
-                    <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Nova Venda</span>
+                    <ShoppingCart size={10} className="text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">{t('dashboard.quick_sale', lang)}</span>
                   </div>
-                  <p className="font-black text-emerald-950 text-xs leading-tight uppercase truncate">
+                  <p className="font-black text-emerald-950 dark:text-emerald-50 text-xs leading-tight uppercase truncate">
                     {sale.items.map(i => i.productName).join(', ')}
                   </p>
-                  <p className="text-[9px] text-emerald-600 font-bold uppercase mt-1">MT {sale.total.toLocaleString()} • {new Date(sale.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                  <p className="text-[9px] text-emerald-600 dark:text-emerald-400/70 font-bold uppercase mt-1">MT {sale.total.toLocaleString()} • {new Date(sale.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
-                <ChevronRight size={14} className="text-emerald-300" />
+                <ChevronRight size={14} className="text-emerald-300 dark:text-emerald-700" />
               </div>
             ))}
 
             {/* Low Stock Notifications */}
             {topLowStock.map((item, idx) => (
-              <div key={`stock-${idx}`} className="flex items-center justify-between p-3 bg-red-50 rounded-2xl border border-red-100 group shrink-0">
+              <div key={`stock-${idx}`} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-100 dark:border-red-500/10 group shrink-0">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <AlertCircle size={10} className="text-red-500" />
-                    <span className="text-[8px] font-black text-red-500 uppercase tracking-widest">Stock Baixo</span>
+                    <AlertCircle size={10} className="text-red-500 dark:text-red-400" />
+                    <span className="text-[8px] font-black text-red-500 dark:text-red-400 uppercase tracking-widest">{t('dashboard.low_stock', lang)}</span>
                   </div>
-                  <p className="font-black text-red-950 text-xs leading-tight uppercase truncate">{item.name}</p>
-                  <p className="text-[9px] text-red-600 font-bold uppercase mt-1">Stock Atual: {item.quantity}</p>
+                  <p className="font-black text-red-950 dark:text-red-50 text-xs leading-tight uppercase truncate">{item.name}</p>
+                  <p className="text-[9px] text-red-600 dark:text-red-400/70 font-bold uppercase mt-1">Stock Atual: {item.quantity}</p>
                 </div>
-                <ChevronRight size={14} className="text-red-300" />
+                <ChevronRight size={14} className="text-red-300 dark:text-red-700" />
               </div>
             ))}
 
             {topLowStock.length === 0 && sales.length === 0 && (
-              <div className="text-center py-10 bg-gray-50 rounded-2xl text-gray-400 font-bold text-xs uppercase tracking-widest">Nenhuma atividade recente.</div>
+              <div className="text-center py-10 bg-gray-50 dark:bg-white/5 rounded-2xl text-gray-400 font-bold text-xs uppercase tracking-widest">Nenhuma atividade recente.</div>
             )}
           </div>
-          <button onClick={() => setActiveModal('LOW_STOCK')} className="w-full py-3 mt-2 text-[9px] text-gray-400 hover:text-emerald-600 font-black text-center uppercase tracking-widest border-t border-dashed shrink-0">
-            Ver Alertas Completos
+          <button onClick={() => setActiveModal('LOW_STOCK')} className="w-full py-3 mt-2 text-[9px] text-gray-400 hover:text-emerald-600 font-black text-center uppercase tracking-widest border-t border-dashed dark:border-white/10 shrink-0">
+            {t('common.edit', lang)} Alertas
           </button>
         </div>
       </div>
 
       {activeModal && (
         <div className="fixed inset-0 bg-emerald-950/40 z-[300] p-4 flex items-center justify-center backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden">
-            <button onClick={() => setActiveModal(null)} className="absolute top-6 right-6 p-2 bg-gray-50 hover:bg-gray-100 rounded-full text-gray-400 transition-colors z-10"><X size={20} /></button>
+          <div className="bg-[rgb(var(--bg-surface))] dark:bg-slate-900 w-full max-w-2xl rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden border dark:border-white/10">
+            <button onClick={() => setActiveModal(null)} className="absolute top-6 right-6 p-2 bg-gray-50 dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/20 rounded-full text-gray-400 transition-colors z-10"><X size={20} /></button>
             {renderModalContent()}
           </div>
         </div>
@@ -620,27 +630,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
 const StatCard = ({ icon: Icon, label, value, change, color, onClick }: any) => {
   const styles: any = {
     emerald: {
-      bg: 'hover:bg-emerald-50 border-emerald-100',
-      iconBg: 'bg-emerald-100 text-emerald-600',
-      text: 'text-emerald-950',
+      bg: 'hover:bg-emerald-50 dark:hover:bg-emerald-900/10 border-emerald-100 dark:border-emerald-500/20',
+      iconBg: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
+      text: 'text-emerald-950 dark:text-emerald-50',
       subtext: 'text-emerald-600'
     },
     blue: {
-      bg: 'hover:bg-blue-50 border-blue-100',
-      iconBg: 'bg-blue-100 text-blue-600',
-      text: 'text-blue-950',
+      bg: 'hover:bg-blue-50 dark:hover:bg-blue-900/10 border-blue-100 dark:border-blue-500/20',
+      iconBg: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+      text: 'text-blue-950 dark:text-blue-50',
       subtext: 'text-blue-600'
     },
     red: {
-      bg: 'hover:bg-red-50 border-red-100',
-      iconBg: 'bg-red-100 text-red-600',
-      text: 'text-red-950',
+      bg: 'hover:bg-red-50 dark:hover:bg-red-900/10 border-red-100 dark:border-red-500/20',
+      iconBg: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
+      text: 'text-red-950 dark:text-red-50',
       subtext: 'text-red-600'
     },
     amber: {
-      bg: 'hover:bg-amber-50 border-amber-100',
-      iconBg: 'bg-amber-100 text-amber-600',
-      text: 'text-amber-950',
+      bg: 'hover:bg-amber-50 dark:hover:bg-amber-900/10 border-amber-100 dark:border-amber-500/20',
+      iconBg: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
+      text: 'text-amber-950 dark:text-amber-50',
       subtext: 'text-amber-600'
     },
   };
@@ -650,7 +660,7 @@ const StatCard = ({ icon: Icon, label, value, change, color, onClick }: any) => 
   return (
     <div
       onClick={onClick}
-      className={`bg-white p-4 rounded-[1.5rem] shadow-sm border border-gray-100 group active:scale-95 transition-all cursor-pointer hover:shadow-md ${style.bg} flex flex-col items-center justify-center text-center gap-1.5 h-full`}
+      className={`bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-4 rounded-[1.5rem] shadow-sm border border-[rgb(var(--border-subtle))] dark:border-white/5 group active:scale-95 transition-all cursor-pointer hover:shadow-md ${style.bg} flex flex-col items-center justify-center text-center gap-1.5 h-full transition-colors`}
     >
       <div className={`w-10 h-10 rounded-full ${style.iconBg} flex items-center justify-center shrink-0 shadow-inner mb-0.5`}>
         <Icon size={20} />
