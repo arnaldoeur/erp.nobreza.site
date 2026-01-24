@@ -19,6 +19,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
         secondary: companyInfo.themeColorSecondary || '#6366f1'
     });
 
+    useEffect(() => {
+        setNightMode(companyInfo.isDarkMode || false);
+    }, [companyInfo.isDarkMode]);
+
     const handleBackup = async () => {
         setLoading(true);
         try {
@@ -62,15 +66,6 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
     const toggleNightMode = () => {
         const newState = !nightMode;
         setNightMode(newState);
-        if (newState) {
-            document.documentElement.classList.add('dark');
-            document.body.style.backgroundColor = '#111827';
-            document.body.style.color = '#f3f4f6';
-        } else {
-            document.documentElement.classList.remove('dark');
-            document.body.style.backgroundColor = '';
-            document.body.style.color = '';
-        }
         onUpdateCompany({ ...companyInfo, isDarkMode: newState });
     };
 

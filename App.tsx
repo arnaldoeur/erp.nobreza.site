@@ -83,6 +83,19 @@ const App: React.FC = () => {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [activeShift, setActiveShift] = useState<WorkShift | null>(null);
 
+  // Handle Theme & Dark Mode Globally
+  useEffect(() => {
+    if (companyInfo?.isDarkMode) {
+      document.documentElement.classList.add('dark');
+      document.body.style.backgroundColor = '#111827';
+      document.body.style.color = '#f3f4f6';
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.style.backgroundColor = '';
+      document.body.style.color = '';
+    }
+  }, [companyInfo?.isDarkMode]);
+
   // Initial Data Load & Session Sync
   useEffect(() => {
     const initApp = async () => {
