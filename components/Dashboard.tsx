@@ -91,7 +91,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
     });
   }, [companyInfo?.shifts, timeVal]);
 
-  const isOpenStatus = activeShift !== null;
+  // Strict Business Status based on Opening/Closing Time
+  const isOpenStatus = useMemo(() => {
+    if (!companyInfo?.openingTime || !companyInfo?.closingTime) return activeShift !== null; // Fallback to shift if no hours
+
+    const [openH, openM] = companyInfo.openingTime.split(':').map(Number);
+    const [closeH, closeM] = companyInfo.closingTime.split(':').map(Number);
+
+    const openVal = openH + openM / 60;
+    const closeVal = closeH + closeM / 60;
+
+    if (openVal <= closeVal) {
+      return timeVal >= openVal && timeVal < closeVal;
+    } else {
+      // Crossing midnight (e.g. 18:00 to 02:00)
+      return timeVal >= openVal || timeVal < closeVal;
+    }
+  }, [companyInfo, timeVal, activeShift]);
 
   const today = new Date().toLocaleDateString();
   const salesToday = sales.filter(s => new Date(s.timestamp).toLocaleDateString() === today);
@@ -112,10 +128,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
     const data: { name: string; sales: number }[] = [];
 
     if (chartPeriod === 'daily') {
-      // Daily Logic (Hourly)
-      return Array.from({ length: 13 }, (_, i) => i + 8).map(hour => {
-        const hourLabel = `${hour.toString().padStart(2, '0')}:00`;
-        const salesInHour = salesToday.filter(s => new Date(s.timestamp).getHours() === hour);
+      // Daily Logic (Hourly based on Company Hours)
+      let startHour = 8;
+      let endHour = 20;
+
+      if (companyInfo?.openingTime && companyInfo?.closingTime) {
+        startHour = parseInt(companyInfo.openingTime.split(':')[0]);
+        endHour = parseInt(companyInfo.closingTime.split(':')[0]);
+        if (endHour < startHour) endHour += 24; // Handle Next Day closing for chart ??? Complex. 
+        // Simplified: If closes next day, show until 23h or extend. 
+        // For visualization, usually we just show the operating window.
+        // Let's assume standard day operation for chart x-axis simplicity or 0-23 if 24h.
+        if (startHour > endHour) { endHour = 23; startHour = 0; } // Fallback for complex shifts
+      }
+
+      const length = Math.max(1, endHour - startHour + 1);
+
+      return Array.from({ length }, (_, i) => i + startHour).map(hour => {
+        const h = hour % 24;
+        const hourLabel = `${h.toString().padStart(2, '0')}:00`;
+        const salesInHour = salesToday.filter(s => new Date(s.timestamp).getHours() === h);
         const amount = salesInHour.reduce((sum, s) => sum + s.total, 0);
         return { name: hourLabel, sales: amount };
       });
@@ -147,7 +179,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
 
       return Array.from(dateMap.entries()).map(([name, val]) => ({ name, sales: val }));
     }
-  }, [sales, chartPeriod, salesToday]);
+  }, [sales, chartPeriod, salesToday, companyInfo]);
 
   const topLowStock = products
     .filter(p => p.quantity <= p.minStock)

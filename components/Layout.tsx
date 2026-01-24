@@ -156,15 +156,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
           </button>
 
           {!collapsed ? (
-            <div className="flex items-center gap-3 px-2 cursor-pointer" onClick={() => setActiveView('dashboard')}>
+            <div className="flex items-center gap-3 px-2 cursor-pointer w-full" onClick={() => setActiveView('dashboard')}>
               <img
                 src="/nobreza_erp_logo_white_horizontal.png"
                 alt="Nobreza ERP"
-                className="h-10 w-auto object-contain"
+                className="h-10 w-auto object-contain max-w-full"
               />
             </div>
           ) : (
-            <div className="flex flex-col items-center cursor-pointer" onClick={() => setActiveView('dashboard')}>
+            <div className="flex flex-col items-center cursor-pointer w-full" onClick={() => setActiveView('dashboard')}>
               <img
                 src="/NERP ICONE.png"
                 alt="N"
