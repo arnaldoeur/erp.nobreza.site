@@ -476,7 +476,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
       {/* Bottom Section: Chart + Critical Alerts = Takes Remaining Space */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full lg:flex-1 min-h-0">
         {/* Sales Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col h-[500px] lg:h-[600px] w-full">
+        <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col h-[500px] lg:h-[480px] w-full">
           <div className="flex justify-between items-center mb-4 shrink-0">
             <h3 className="text-base font-black flex items-center gap-3 text-gray-800 uppercase tracking-tight">
               <TrendingUp size={20} className="text-emerald-600" />
@@ -527,7 +527,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
         </div>
 
         {/* Notificações */}
-        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col h-[500px] lg:h-[600px] overflow-hidden">
+        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col h-[500px] lg:h-[480px] overflow-hidden">
           <h3 className="text-base font-black flex items-center gap-3 text-gray-800 uppercase tracking-tight mb-4 shrink-0">
             <Zap size={20} className="text-amber-500" />
             Notificações
