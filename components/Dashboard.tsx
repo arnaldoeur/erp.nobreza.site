@@ -92,26 +92,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
   }, [companyInfo?.shifts, timeVal]);
 
   // Strict Business Status based on Opening/Closing Time
-  // Strict Business Status based on Opening/Closing Time
   const isOpenStatus = useMemo(() => {
     if (!companyInfo?.openingTime || !companyInfo?.closingTime) return activeShift !== null;
 
     try {
+      // Current time in company timezone as total minutes since midnight
+      const currentTotalMinutes = companyTime.hour * 60 + companyTime.minute;
+
       const [openH, openM] = companyInfo.openingTime.split(':').map(Number);
       const [closeH, closeM] = companyInfo.closingTime.split(':').map(Number);
 
-      const openVal = openH + (openM || 0) / 60;
-      const closeVal = closeH + (closeM || 0) / 60;
+      const openTotalMinutes = openH * 60 + (openM || 0);
+      const closeTotalMinutes = closeH * 60 + (closeM || 0);
 
-      if (openVal <= closeVal) {
-        return timeVal >= openVal && timeVal < closeVal;
+      if (openTotalMinutes <= closeTotalMinutes) {
+        return currentTotalMinutes >= openTotalMinutes && currentTotalMinutes < closeTotalMinutes;
       } else {
-        return timeVal >= openVal || timeVal < closeVal;
+        // Business stays open past midnight (e.g. 22:00 to 06:00)
+        return currentTotalMinutes >= openTotalMinutes || currentTotalMinutes < closeTotalMinutes;
       }
     } catch (e) {
+      console.error("Error parsing opening hours:", e);
       return activeShift !== null;
     }
-  }, [companyInfo, timeVal, activeShift]);
+  }, [companyInfo, companyTime.hour, companyTime.minute, activeShift]);
 
   const today = new Date().toLocaleDateString();
   const salesToday = sales.filter(s => new Date(s.timestamp).toLocaleDateString() === today);
