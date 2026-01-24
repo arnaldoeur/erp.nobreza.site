@@ -70,5 +70,77 @@ export const SupportService = {
 
 
     // --- AI Logic (Integrated) ---
+    generateAIResponse: async (
+        chatId: string,
+        history: ChatMessage[],
+        userQuestion: string,
+        contextData: {
+            userName: string;
+            role: string;
+            companyId: number;
+            sales: any[];
+            products: any[];
+        }
+    ) => {
+        try {
+            // 1. Prepare Context
+            const basePrompt = `
+                ${SYSTEM_KNOWLEDGE.CONTEXT_INSTRUCTIONS}
+                
+                ${SYSTEM_KNOWLEDGE.NAVIGATION_MAP}
+                
+                Info do Utilizador:
+                - Nome: {{USER_NAME}}
+                - Cargo: {{USER_ROLE}}
+                
+                Dados da Empresa:
+                {{COMPANY_CONTEXT}}
+                
+                {{DATA_CONTEXT}}
+            `;
 
+            const systemPrompt = basePrompt
+                .replace('{{USER_NAME}}', contextData.userName)
+                .replace('{{USER_ROLE}}', contextData.role)
+                .replace('{{COMPANY_CONTEXT}}', `Company ID: ${contextData.companyId}`)
+                // Inject real data summary
+                .replace('{{DATA_CONTEXT}}', `
+                    Resumo de Dados Atuais:
+                    - Vendas Recentes: ${JSON.stringify(contextData.sales.slice(0, 5))}
+                    - Produtos Principais: ${JSON.stringify(contextData.products.slice(0, 5))}
+                `);
+
+            // 2. Call OpenRouter / LLM
+            const response = await fetch(OPENROUTER_URL, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${API_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: "openai/gpt-4o-mini", // Cost-effective
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        ...history.map(m => ({
+                            role: m.role === 'user' ? 'user' : 'assistant',
+                            content: m.content
+                        })),
+                        { role: "user", content: userQuestion }
+                    ]
+                })
+            });
+
+            if (!response.ok) throw new Error('AI Service Error');
+
+            const aiData = await response.json();
+            const aiText = aiData.choices?.[0]?.message?.content || "Desculpe, não consegui processar sua solicitação.";
+
+            // 3. Save AI Answer to DB
+            await SupportService.sendMessage(chatId, 'assistant', aiText);
+
+        } catch (error) {
+            console.error("AI Generation Failed:", error);
+            await SupportService.sendMessage(chatId, 'assistant', "⚠️ Estou com dificuldades técnicas momentâneas. Tente novamente em instantes.");
+        }
+    }
 };

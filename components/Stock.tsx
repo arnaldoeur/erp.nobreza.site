@@ -491,16 +491,15 @@ export const Stock: React.FC<StockProps> = ({ products, setProducts, suppliers, 
 
 
         {/* Tab Navigation */}
-        <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 w-full md:w-fit mx-auto">
-          {/* ... Keep Tabs ... */}
-          <button onClick={() => setActiveTab('STOCK')} className={`flex-1 md:px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === 'STOCK' ? 'bg-emerald-700 text-white shadow-md' : 'text-gray-400'}`}>
-            <LayoutGrid size={16} /> Gestão de Stock
+        <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 w-full md:w-fit mx-auto overflow-x-auto custom-scrollbar no-scrollbar">
+          <button onClick={() => setActiveTab('STOCK')} className={`flex-1 md:flex-none md:px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shrink-0 ${activeTab === 'STOCK' ? 'bg-emerald-700 text-white shadow-md' : 'text-gray-400'}`}>
+            <LayoutGrid size={16} /> <span className="whitespace-nowrap">Gestão de Stock</span>
           </button>
-          <button onClick={() => setActiveTab('REGISTRY')} className={`flex-1 md:px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === 'REGISTRY' ? 'bg-emerald-700 text-white shadow-md' : 'text-gray-400'}`}>
-            <List size={16} /> Cadastro de Produtos
+          <button onClick={() => setActiveTab('REGISTRY')} className={`flex-1 md:flex-none md:px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shrink-0 ${activeTab === 'REGISTRY' ? 'bg-emerald-700 text-white shadow-md' : 'text-gray-400'}`}>
+            <List size={16} /> <span className="whitespace-nowrap">Cadastro de Produtos</span>
           </button>
-          <button onClick={() => setActiveTab('HEALTH_PLANS')} className={`flex-1 md:px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === 'HEALTH_PLANS' ? 'bg-emerald-700 text-white shadow-md' : 'text-gray-400'}`}>
-            <ShieldCheck size={16} /> Planos de Saúde
+          <button onClick={() => setActiveTab('HEALTH_PLANS')} className={`flex-1 md:flex-none md:px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shrink-0 ${activeTab === 'HEALTH_PLANS' ? 'bg-emerald-700 text-white shadow-md' : 'text-gray-400'}`}>
+            <ShieldCheck size={16} /> <span className="whitespace-nowrap">Planos de Saúde</span>
           </button>
         </div>
 

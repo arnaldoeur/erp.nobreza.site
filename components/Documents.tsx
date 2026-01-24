@@ -166,8 +166,8 @@ export const Documents: React.FC<DocumentsProps> = ({ currentUser }) => {
             </div>
 
             <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden flex-1 flex flex-col min-h-0">
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    <table className="w-full text-left">
+                <div className="flex-1 overflow-auto custom-scrollbar">
+                    <table className="w-full text-left min-w-[800px]">
                         <thead className="bg-slate-50 border-b border-slate-100 sticky top-0 z-10">
                             <tr>
                                 <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nome do Arquivo</th>

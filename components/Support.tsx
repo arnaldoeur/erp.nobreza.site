@@ -219,8 +219,8 @@ export const Support: React.FC<SupportProps> = ({ currentUser, sales, products, 
                                     <MenuIcon size={20} />
                                 </button>
 
-                                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 border border-emerald-200 overflow-hidden">
-                                    <img src="/Nobreza ERP - Logos, Icones, Favicon/NERP ICONE.png" className="w-full h-full object-cover" />
+                                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 border border-emerald-200 overflow-hidden shrink-0">
+                                    <img src="/NERP ICONE.png" className="w-full h-full object-cover" />
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-slate-900 leading-tight text-sm md:text-base">Nobreza AI</h3>
@@ -368,8 +368,8 @@ export const Support: React.FC<SupportProps> = ({ currentUser, sales, products, 
                 ) : (
                     /* Check if threads exist to show different 'Empty State' */
                     <div className="h-full flex flex-col items-center justify-center text-slate-300 p-8 text-center bg-slate-50/50">
-                        <div className="w-32 h-32 bg-slate-100 rounded-full flex items-center justify-center mb-6 shadow-inner overflow-hidden">
-                            <img src="/Nobreza ERP - Logos, Icones, Favicon/NERP ICONE.png" className="w-full h-full object-cover opacity-50 grayscale" />
+                        <div className="w-24 h-24 md:w-32 md:h-32 bg-slate-100 rounded-full flex items-center justify-center mb-6 shadow-inner overflow-hidden shrink-0">
+                            <img src="/NERP ICONE.png" className="w-full h-full object-cover opacity-50 grayscale" />
                         </div>
                         <h3 className="text-xl font-black text-slate-400 uppercase tracking-widest mb-2">Central de Suporte</h3>
                         <p className="max-w-xs text-sm font-medium text-slate-400 mb-8">Selecione uma conversa ou inicie um novo chat para falar com a nossa equipa ou IA.</p>

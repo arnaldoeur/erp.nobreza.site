@@ -13,6 +13,7 @@ interface SocialChatProps {
 export const SocialChat: React.FC<SocialChatProps> = ({ currentUser, team }) => {
     const [groups, setGroups] = useState<any[]>([]);
     const [activeGroup, setActiveGroup] = useState<any>(null);
+    const [showGroupsMobile, setShowGroupsMobile] = useState(false);
     const [messages, setMessages] = useState<CollabMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [showMentions, setShowMentions] = useState(false);
@@ -317,19 +318,24 @@ export const SocialChat: React.FC<SocialChatProps> = ({ currentUser, team }) => 
             )}
 
             {/* Sidebar - Group List */}
-            <div className="w-72 bg-white flex flex-col shrink-0 border-r border-slate-100">
-                <div className="p-5 border-b border-slate-50 flex justify-between items-center">
+            <div className={`fixed inset-0 z-40 lg:relative lg:inset-auto lg:z-0 lg:w-72 bg-white flex flex-col shrink-0 border-r border-slate-100 transition-transform duration-300 ${showGroupsMobile ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+                <div className="p-5 border-b border-slate-50 flex justify-between items-center bg-white">
                     <h2 className="text-lg font-black text-slate-950 uppercase tracking-tight">Canais</h2>
-                    <button onClick={() => setIsCreateModalOpen(true)} className="p-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 transition-colors">
-                        <Plus size={18} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setIsCreateModalOpen(true)} className="p-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 transition-colors">
+                            <Plus size={18} />
+                        </button>
+                        <button onClick={() => setShowGroupsMobile(false)} className="lg:hidden p-2 text-slate-400 hover:text-red-500">
+                            <X size={20} />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-3 space-y-1">
                     {groups.map(g => (
                         <div
                             key={g.id}
-                            onClick={() => { setActiveGroup(g); setShowGroupSettings(false); }}
+                            onClick={() => { setActiveGroup(g); setShowGroupSettings(false); setShowGroupsMobile(false); }}
                             className={`p-3 rounded-xl flex items-center gap-3 cursor-pointer transition-all ${activeGroup?.id === g.id ? 'bg-emerald-950 text-white shadow-lg shadow-emerald-900/10' : 'hover:bg-slate-50 text-slate-600'}`}
                         >
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-black text-xs uppercase shrink-0 ${activeGroup?.id === g.id ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-500'}`}
@@ -352,23 +358,28 @@ export const SocialChat: React.FC<SocialChatProps> = ({ currentUser, team }) => 
                 {activeGroup ? (
                     <>
                         {/* Chat Header */}
-                        <div className="h-16 border-b border-slate-100 bg-white flex justify-between items-center px-6">
-                            <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowGroupSettings(!showGroupSettings)}>
-                                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center font-black text-emerald-800"
-                                    style={{ backgroundImage: activeGroup.image_url ? `url(${activeGroup.image_url})` : 'none', backgroundSize: 'cover' }}>
-                                    {!activeGroup.image_url && getInitials(activeGroup.name)}
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-black text-slate-950 uppercase">{activeGroup.name}</h3>
-                                    <p className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                                        <Users size={10} /> {groupMembers.length} membros
-                                    </p>
+                        <div className="h-16 border-b border-slate-100 bg-white flex justify-between items-center px-4 md:px-6">
+                            <div className="flex items-center gap-2 md:gap-3">
+                                <button onClick={() => setShowGroupsMobile(true)} className="lg:hidden p-2 text-slate-400 hover:text-emerald-700">
+                                    <Users size={20} />
+                                </button>
+                                <div className="flex items-center gap-2 md:gap-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowGroupSettings(!showGroupSettings)}>
+                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-emerald-100 flex items-center justify-center font-black text-emerald-800 text-xs md:text-base shrink-0"
+                                        style={{ backgroundImage: activeGroup.image_url ? `url(${activeGroup.image_url})` : 'none', backgroundSize: 'cover' }}>
+                                        {!activeGroup.image_url && getInitials(activeGroup.name)}
+                                    </div>
+                                    <div className="overflow-hidden">
+                                        <h3 className="text-xs md:text-sm font-black text-slate-950 uppercase truncate">{activeGroup.name}</h3>
+                                        <p className="text-[9px] md:text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                                            <Users size={10} /> {groupMembers.length} membros
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 md:gap-2">
                                 <button onClick={() => setShowGroupSettings(!showGroupSettings)} className={`p-2 rounded-lg transition-colors ${showGroupSettings ? 'bg-emerald-50 text-emerald-700' : 'text-slate-400 hover:bg-slate-50'}`}>
-                                    <Info size={20} />
+                                    <Info size={18} md:size={20} />
                                 </button>
                             </div>
                         </div>
@@ -382,7 +393,7 @@ export const SocialChat: React.FC<SocialChatProps> = ({ currentUser, team }) => 
                                         <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase shrink-0">
                                             {getInitials(m.user_name)}
                                         </div>
-                                        <div className={`flex flex-col max-w-[65%] ${isMine ? 'items-end' : 'items-start'}`}>
+                                        <div className={`flex flex-col max-w-[85%] md:max-w-[65%] ${isMine ? 'items-end' : 'items-start'}`}>
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className="text-[10px] font-black text-slate-900 uppercase">{m.user_name}</span>
                                                 <span className="text-[9px] font-bold text-slate-400">{m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Agora'}</span>

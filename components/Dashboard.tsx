@@ -104,12 +104,50 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
     return sum + (qty * price);
   }, 0);
 
-  const chartData = Array.from({ length: 13 }, (_, i) => i + 8).map(hour => {
-    const hourLabel = `${hour.toString().padStart(2, '0')}:00`;
-    const salesInHour = salesToday.filter(s => new Date(s.timestamp).getHours() === hour);
-    const amount = salesInHour.reduce((sum, s) => sum + s.total, 0);
-    return { name: hourLabel, sales: amount };
-  });
+  const [chartPeriod, setChartPeriod] = useState<'daily' | '15days' | '1month' | '3months'>('daily');
+
+  // Chart Data Calculation
+  const chartData = useMemo(() => {
+    const now = new Date();
+    const data: { name: string; sales: number }[] = [];
+
+    if (chartPeriod === 'daily') {
+      // Daily Logic (Hourly)
+      return Array.from({ length: 13 }, (_, i) => i + 8).map(hour => {
+        const hourLabel = `${hour.toString().padStart(2, '0')}:00`;
+        const salesInHour = salesToday.filter(s => new Date(s.timestamp).getHours() === hour);
+        const amount = salesInHour.reduce((sum, s) => sum + s.total, 0);
+        return { name: hourLabel, sales: amount };
+      });
+    } else {
+      // Period Logic (Group by Date)
+      let days = 30;
+      if (chartPeriod === '15days') days = 15;
+      if (chartPeriod === '3months') days = 90;
+
+      const startDate = new Date();
+      startDate.setDate(now.getDate() - days);
+
+      // Initialize map with 0 for all days to show gaps
+      const dateMap = new Map<string, number>();
+      for (let i = 0; i <= days; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
+        const label = d.toLocaleDateString('pt-MZ', { day: '2-digit', month: '2-digit' });
+        dateMap.set(label, 0);
+      }
+
+      // Fill with actual sales
+      sales.filter(s => new Date(s.timestamp) >= startDate).forEach(s => {
+        const dateKey = new Date(s.timestamp).toLocaleDateString('pt-MZ', { day: '2-digit', month: '2-digit' });
+        if (dateMap.has(dateKey)) {
+          dateMap.set(dateKey, (dateMap.get(dateKey) || 0) + s.total);
+        }
+      });
+
+      return Array.from(dateMap.entries()).map(([name, val]) => ({ name, sales: val }));
+    }
+  }, [sales, chartPeriod, salesToday]);
 
   const topLowStock = products
     .filter(p => p.quantity <= p.minStock)
@@ -400,15 +438,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
       </div>
 
       {/* Bottom Section: Chart + Critical Alerts = Takes Remaining Space */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:flex-1 min-h-0">
         {/* Sales Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col h-full">
+        <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col h-[400px] lg:h-auto">
           <div className="flex justify-between items-center mb-4 shrink-0">
             <h3 className="text-base font-black flex items-center gap-3 text-gray-800 uppercase tracking-tight">
               <TrendingUp size={20} className="text-emerald-600" />
               Fluxo Financeiro
             </h3>
-            <span className="text-[9px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full uppercase tracking-widest">Diário</span>
+            <div className="flex bg-gray-50 rounded-xl p-1 gap-1">
+              {(['daily', '15days', '1month', '3months'] as const).map((period) => (
+                <button
+                  key={period}
+                  onClick={() => setChartPeriod(period)}
+                  className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${chartPeriod === period ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                >
+                  {period === 'daily' && 'Diário'}
+                  {period === '15days' && '15 Dias'}
+                  {period === '1month' && '1 Mês'}
+                  {period === '3months' && '3 Meses'}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex-1 w-full min-h-0">
             <ResponsiveContainer width="100%" height="100%">
@@ -420,10 +472,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  interval={chartPeriod === 'daily' ? 0 : 'preserveStartEnd'}
+                />
                 <YAxis hide />
                 <Tooltip
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                  formatter={(value: any) => [`MT ${value.toLocaleString()}`, 'Vendas']}
                 />
                 <Area type="monotone" dataKey="sales" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
               </AreaChart>

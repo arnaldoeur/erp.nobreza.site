@@ -187,67 +187,69 @@ export const Calendar: React.FC<CalendarProps> = ({ currentUser, team }) => {
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
                     {/* View Modes */}
-                    <div className="flex bg-gray-50 rounded-2xl p-1.5 border border-gray-100">
+                    <div className="flex bg-gray-50 rounded-2xl p-1.5 border border-gray-100 flex-1 lg:flex-none justify-between lg:justify-start">
                         {(['MONTH', '7DAYS', '15DAYS'] as const).map((v) => (
                             <button
                                 key={v}
                                 onClick={() => setViewMode(v)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${viewMode === v ? 'bg-white shadow-sm text-emerald-700' : 'text-gray-400 hover:text-gray-600'}`}>
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex-1 lg:flex-none ${viewMode === v ? 'bg-white shadow-sm text-emerald-700' : 'text-gray-400 hover:text-gray-600'}`}>
                                 {v === 'MONTH' ? 'Mês' : v === '7DAYS' ? '7 Dias' : '15 Dias'}
                             </button>
                         ))}
                     </div>
 
                     {/* Filter Context */}
-                    <div className="flex bg-gray-50 rounded-2xl p-1.5 border border-gray-100">
+                    <div className="flex bg-gray-50 rounded-2xl p-1.5 border border-gray-100 flex-1 lg:flex-none justify-between lg:justify-start">
                         <button
                             onClick={() => setFilter('ALL')}
-                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${filter === 'ALL' ? 'bg-white shadow-sm text-emerald-700' : 'text-gray-400 hover:text-gray-600'}`}>
+                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex-1 lg:flex-none ${filter === 'ALL' ? 'bg-white shadow-sm text-emerald-700' : 'text-gray-400 hover:text-gray-600'}`}>
                             Equipa
                         </button>
                         <button
                             onClick={() => setFilter('MINE')}
-                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${filter === 'MINE' ? 'bg-white shadow-sm text-emerald-700' : 'text-gray-400 hover:text-gray-600'}`}>
+                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex-1 lg:flex-none ${filter === 'MINE' ? 'bg-white shadow-sm text-emerald-700' : 'text-gray-400 hover:text-gray-600'}`}>
                             Pessoal
                         </button>
                     </div>
 
                     {/* Actions Group */}
-                    <div className="flex items-center gap-2 pl-2 border-l border-gray-100">
-                        <button
-                            onClick={loadEvents}
-                            className="p-3 bg-white border border-gray-100 rounded-2xl text-emerald-600 hover:bg-emerald-50 transition-all shadow-sm active:scale-90"
-                            title="Atualizar"
-                        >
-                            <RefreshCcw size={18} />
-                        </button>
-                        <button
-                            onClick={() => {
-                                goToToday();
-                                setShowFocusMode(!showFocusMode);
-                            }}
-                            className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all border shadow-sm flex items-center gap-2 ${showFocusMode ? 'bg-emerald-950 text-white border-emerald-950' : 'bg-white text-emerald-700 border-emerald-100 hover:bg-emerald-50'}`}
-                        >
-                            <CalendarIcon size={16} />
-                            {showFocusMode ? 'Grelha' : 'Foco Hoje'}
-                        </button>
+                    <div className="flex items-center gap-2 lg:pl-2 lg:border-l border-gray-100 w-full lg:w-auto justify-between lg:justify-start">
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={loadEvents}
+                                className="p-3 bg-white border border-gray-100 rounded-2xl text-emerald-600 hover:bg-emerald-50 transition-all shadow-sm active:scale-90"
+                                title="Atualizar"
+                            >
+                                <RefreshCcw size={18} />
+                            </button>
+                            <button
+                                onClick={() => {
+                                    goToToday();
+                                    setShowFocusMode(!showFocusMode);
+                                }}
+                                className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all border shadow-sm flex items-center gap-2 ${showFocusMode ? 'bg-emerald-950 text-white border-emerald-950' : 'bg-white text-emerald-700 border-emerald-100 hover:bg-emerald-50'}`}
+                            >
+                                <CalendarIcon size={16} />
+                                <span className="hidden sm:inline">{showFocusMode ? 'Grelha' : 'Foco Hoje'}</span>
+                            </button>
+                        </div>
                         <div className="flex items-center gap-1 bg-gray-50 rounded-2xl p-1 border border-gray-100">
                             <button onClick={prevMonth} className="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all text-gray-400 hover:text-emerald-700"><ChevronLeft size={18} /></button>
                             <button onClick={nextMonth} className="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all text-gray-400 hover:text-emerald-700"><ChevronRight size={18} /></button>
                         </div>
                     </div>
 
-                    <button onClick={() => setIsModalOpen(true)} className="ml-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 active:scale-95">
+                    <button onClick={() => setIsModalOpen(true)} className="w-full lg:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 active:scale-95">
                         <Plus size={18} /> Novo Evento
                     </button>
                 </div>
             </div>
 
-            <div className="flex-1 flex gap-6 overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden">
                 {/* Sidebar Filters */}
-                <div className="w-64 bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6 flex flex-col gap-8 shrink-0">
+                <div className="w-full lg:w-64 bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6 flex flex-col sm:flex-row lg:flex-col gap-8 shrink-0 overflow-x-auto lg:overflow-visible">
                     <div>
                         <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Âmbito da Agenda</h4>
                         <div className="grid grid-cols-2 gap-2">

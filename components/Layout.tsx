@@ -119,18 +119,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
     <div className="flex flex-col md:flex-row h-screen bg-[#f3f7f6] overflow-hidden">
       <header className="md:hidden h-16 bg-emerald-950 text-white flex items-center justify-between px-4 z-50 shrink-0 shadow-lg">
         <div className="flex items-center gap-2 overflow-hidden">
-          {companyInfo.logoHorizontal || companyInfo.logo ? (
-            <img
-              src={companyInfo.logoHorizontal || companyInfo.logo}
-              alt={companyInfo.name}
-              className="h-10 w-auto object-contain"
-            />
-          ) : (
-            <h1 className="text-lg font-black flex items-center gap-1">
-              <span className="text-white">NOBREZA</span>
-              <span className="text-emerald-500">ERP</span>
-            </h1>
-          )}
+          <img
+            src="/nobreza_erp_logo_white_horizontal.png"
+            alt="Nobreza ERP"
+            className="h-8 w-auto object-contain"
+          />
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -154,7 +147,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
         ${collapsed ? 'md:w-20' : 'md:w-60'}
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
-        <div className="p-6 hidden md:block relative">
+        <div className={`hidden md:flex relative ${collapsed ? 'p-4 justify-center items-center' : 'p-6'}`}>
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="absolute -right-3 top-7 bg-white text-emerald-950 p-1.5 rounded-full shadow-lg border border-gray-100 hover:bg-emerald-50 transition-colors z-50">
@@ -164,15 +157,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
           {!collapsed ? (
             <div className="flex items-center gap-3 px-2">
               <img
-                src={companyInfo.logoHorizontal || companyInfo.logo || "/nobreza_erp_logo_white_horizontal.png"}
-                alt={companyInfo.name}
-                className="h-12 w-auto object-contain"
+                src="/nobreza_erp_logo_white_horizontal.png"
+                alt="Nobreza ERP"
+                className="h-10 w-auto object-contain"
               />
             </div>
           ) : (
             <div className="flex flex-col items-center">
               <img
-                src={companyInfo.logo || "/NERP ICONE.png"}
+                src="/NERP ICONE.png"
                 alt="N"
                 className="w-10 h-10 object-contain"
               />
@@ -288,7 +281,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
             )}
           </button>
         </div>
-      </aside>
+      </aside >
 
       <main className="flex-1 flex flex-col overflow-hidden relative">
         <header className="hidden md:flex h-20 bg-white border-b border-gray-100 items-center justify-between px-10 shadow-sm z-10 shrink-0">
@@ -339,7 +332,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
           <BottomNavButton active={activeView === 'administration'} icon={ShieldCheck} onClick={() => setActiveView('administration')} label="Admin" />
         </nav>
       </main>
-    </div>
+    </div >
   );
 };
 
