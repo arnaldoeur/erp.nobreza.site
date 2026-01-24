@@ -338,7 +338,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
   };
 
   return (
-    <div className="h-full flex flex-col gap-6 animate-in fade-in duration-500 overflow-hidden">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-500 pb-20 md:pb-0">
 
       {/* Top Section: Greeting + Clock + Quote = Fluid Height */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 shrink-0">
