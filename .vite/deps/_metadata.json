@@ -1,0 +1,76 @@
+{
+  "hash": "5d284bf0",
+  "configHash": "d27eae5f",
+  "lockfileHash": "e20ea85c",
+  "browserHash": "5d87f3b3",
+  "optimized": {
+    "@supabase/supabase-js": {
+      "src": "../../node_modules/@supabase/supabase-js/dist/index.mjs",
+      "file": "@supabase_supabase-js.js",
+      "fileHash": "14982f58",
+      "needsInterop": false
+    },
+    "html2canvas": {
+      "src": "../../node_modules/html2canvas/dist/html2canvas.esm.js",
+      "file": "html2canvas.js",
+      "fileHash": "aedc06b9",
+      "needsInterop": false
+    },
+    "jspdf": {
+      "src": "../../node_modules/jspdf/dist/jspdf.es.min.js",
+      "file": "jspdf.js",
+      "fileHash": "638325fb",
+      "needsInterop": false
+    },
+    "lucide-react": {
+      "src": "../../node_modules/lucide-react/dist/esm/lucide-react.js",
+      "file": "lucide-react.js",
+      "fileHash": "78dadb6e",
+      "needsInterop": false
+    },
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "0ef77aa2",
+      "needsInterop": true
+    },
+    "react-dom": {
+      "src": "../../node_modules/react-dom/index.js",
+      "file": "react-dom.js",
+      "fileHash": "fa3965b8",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "19b73dd8",
+      "needsInterop": true
+    },
+    "recharts": {
+      "src": "../../node_modules/recharts/es6/index.js",
+      "file": "recharts.js",
+      "fileHash": "d78f5ece",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "purify.es-24U7IUSJ": {
+      "file": "purify__es-24U7IUSJ.js"
+    },
+    "index.es-BYGUFUB5": {
+      "file": "index__es-BYGUFUB5.js"
+    },
+    "chunk-DSVB3YYR": {
+      "file": "chunk-DSVB3YYR.js"
+    },
+    "chunk-YKHBUGD6": {
+      "file": "chunk-YKHBUGD6.js"
+    },
+    "chunk-SITVF2AJ": {
+      "file": "chunk-SITVF2AJ.js"
+    },
+    "chunk-DC5AMYBS": {
+      "file": "chunk-DC5AMYBS.js"
+    }
+  }
+}
