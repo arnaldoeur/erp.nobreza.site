@@ -114,13 +114,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
   const isOpenStatus = useMemo(() => {
     if (!companyInfo) return false;
 
-    // 1. Check strict opening hours if set
-    const hasConfig = !!(companyInfo.openingTime && companyInfo.closingTime);
+    // 1. Resolve Effective Opening/Closing Times (Check both legacy and workingHours)
+    const openingTime = companyInfo.openingTime || companyInfo.workingHours?.start;
+    const closingTime = companyInfo.closingTime || companyInfo.workingHours?.end;
+
+    // 2. Check general business hours if set
+    const hasConfig = !!(openingTime && closingTime);
     let withinRange = true;
 
     if (hasConfig) {
-      const openMins = parseToMinutes(companyInfo.openingTime);
-      const closeMins = parseToMinutes(companyInfo.closingTime);
+      const openMins = parseToMinutes(openingTime);
+      const closeMins = parseToMinutes(closingTime);
 
       if (openMins <= closeMins) {
         withinRange = currentTotalMinutes >= openMins && currentTotalMinutes < closeMins;
@@ -130,7 +134,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
       }
     }
 
-    // 2. Shift check: If shifts are defined, we MUST be in one to be "Aberto"
+    // 3. Shift check: If shifts are defined, we MUST be in one to be "Aberto"
     const hasShifts = !!(companyInfo.shifts && companyInfo.shifts.length > 0);
     if (hasShifts) {
       return withinRange && activeShift !== null;
@@ -162,14 +166,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
       let startHour = 8;
       let endHour = 20;
 
-      if (companyInfo?.openingTime && companyInfo?.closingTime) {
-        startHour = parseInt(companyInfo.openingTime.split(':')[0]);
-        endHour = parseInt(companyInfo.closingTime.split(':')[0]);
-        if (endHour < startHour) endHour += 24; // Handle Next Day closing for chart ??? Complex. 
-        // Simplified: If closes next day, show until 23h or extend. 
-        // For visualization, usually we just show the operating window.
-        // Let's assume standard day operation for chart x-axis simplicity or 0-23 if 24h.
-        if (startHour > endHour) { endHour = 23; startHour = 0; } // Fallback for complex shifts
+      const openingTime = companyInfo?.openingTime || companyInfo?.workingHours?.start;
+      const closingTime = companyInfo?.closingTime || companyInfo?.workingHours?.end;
+
+      if (openingTime && closingTime) {
+        startHour = parseInt(openingTime.split(':')[0]) || 8;
+        endHour = parseInt(closingTime.split(':')[0]) || 20;
+        if (endHour < startHour) endHour = 23; // Simple daily visualization
       }
 
       const length = Math.max(1, endHour - startHour + 1);
