@@ -1,6 +1,6 @@
 import { SYSTEM_KNOWLEDGE } from "../utils/system-knowledge";
 
-const API_KEY = "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";
+const API_KEY = "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";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 import { supabase } from "./supabase";
@@ -84,31 +84,28 @@ export const SupportService = {
     ) => {
         try {
             // 1. Prepare Context
-            const basePrompt = `
+            const systemPrompt = `
                 ${SYSTEM_KNOWLEDGE.CONTEXT_INSTRUCTIONS}
                 
                 ${SYSTEM_KNOWLEDGE.NAVIGATION_MAP}
                 
+                Categorias de Intenção:
+                ${JSON.stringify(SYSTEM_KNOWLEDGE.INTENT_CLASSES, null, 2)}
+                
+                Modelos de Resposta:
+                ${JSON.stringify(SYSTEM_KNOWLEDGE.RESPONSE_TEMPLATES, null, 2)}
+                
                 Info do Utilizador:
-                - Nome: {{USER_NAME}}
-                - Cargo: {{USER_ROLE}}
+                - Nome: ${contextData.userName}
+                - Cargo: ${contextData.role}
                 
                 Dados da Empresa:
-                {{COMPANY_CONTEXT}}
+                - Company ID: ${contextData.companyId}
                 
-                {{DATA_CONTEXT}}
+                Resumo de Dados Atuais:
+                - Vendas Recentes: ${JSON.stringify(contextData.sales.slice(0, 5))}
+                - Produtos Principais: ${JSON.stringify(contextData.products.slice(0, 5))}
             `;
-
-            const systemPrompt = basePrompt
-                .replace('{{USER_NAME}}', contextData.userName)
-                .replace('{{USER_ROLE}}', contextData.role)
-                .replace('{{COMPANY_CONTEXT}}', `Company ID: ${contextData.companyId}`)
-                // Inject real data summary
-                .replace('{{DATA_CONTEXT}}', `
-                    Resumo de Dados Atuais:
-                    - Vendas Recentes: ${JSON.stringify(contextData.sales.slice(0, 5))}
-                    - Produtos Principais: ${JSON.stringify(contextData.products.slice(0, 5))}
-                `);
 
             // 2. Call OpenRouter / LLM
             const response = await fetch(OPENROUTER_URL, {
@@ -118,7 +115,7 @@ export const SupportService = {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    model: "google/gemini-2.0-flash-lite-preview-02-05:free",
+                    model: "liquid/lfm-2.5-1.2b-thinking:free",
                     messages: [
                         { role: "system", content: systemPrompt },
                         ...history.map(m => ({
