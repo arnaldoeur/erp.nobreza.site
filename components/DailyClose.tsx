@@ -63,6 +63,7 @@ export const DailyClose: React.FC<DailyCloseProps> = ({ sales, dailyClosures, on
     if (confirm(`Deseja confirmar o fecho do "${currentShiftName}"?`)) {
       const newClosure: DailyClosure = {
         id: `CLOS-${Date.now()}`,
+        companyId: user.companyId,
         closureDate: new Date(),
         shift: currentShiftName,
         responsibleId: user.id,
@@ -81,12 +82,12 @@ export const DailyClose: React.FC<DailyCloseProps> = ({ sales, dailyClosures, on
       NotificationService.sendDailyClosureEmail(newClosure, {
         name: 'Empresa',
         address: '',
-        contact: '',
+        phone: '',
         nuit: '',
         email: '',
-        phone: '',
         website: '',
-        id: ''
+        id: '',
+        slogan: ''
       }, user).finally(() => console.log("Email Notification Processed"));
       // Note: Passing minimal company info as it's not available in props directly here, strictly strictly should come from props or service
       // To fix this cleanly I should pass companyInfo to DailyClose or fetch it.

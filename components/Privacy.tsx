@@ -40,7 +40,7 @@ export const Privacy: React.FC<Props> = ({ onBack }) => {
                         <h2 className="text-lg font-black text-emerald-950 uppercase mb-4 flex items-center gap-2">
                             <Server size={20} className="text-emerald-600" /> 2. Armazenamento e Segurança
                         </h2>
-                        <p>Todos os dados são armazenados na infraestrutura segura do <strong>Supabase</strong> (PostgreSQL), com criptografia em trânsito e em repouso. A Zyph Tech aplica medidas rigorosas para proteger contra acesso não autorizado, alteração ou destruição de dados.</p>
+                        <p>Todos os dados são armazenados na infraestrutura segura do <strong>Supabase</strong> (PostgreSQL), com criptografia em trânsito e em repouso. A Zyph Tech, Lda aplica medidas rigorosas para proteger contra acesso não autorizado, alteração ou destruição de dados.</p>
                     </section>
 
                     <section>
@@ -51,6 +51,7 @@ export const Privacy: React.FC<Props> = ({ onBack }) => {
                         <p className="mt-2 text-xs font-bold bg-emerald-50 p-3 rounded-lg border border-emerald-100 text-emerald-800">
                             Nota: Os dados enviados são anonimizados onde possível e usados apenas para gerar a resposta solicitada na sessão atual.
                         </p>
+                        <p>Apenas utilizadores autorizados da sua empresa têm acesso aos dados operacionais. A equipa de suporte da Zyph Tech, Lda apenas acederá aos dados mediante solicitação expressa para resolução de problemas técnicos.</p>
                     </section>
 
                     <section>

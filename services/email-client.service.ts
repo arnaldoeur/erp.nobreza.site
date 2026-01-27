@@ -19,17 +19,23 @@ export const EmailClientService = {
     /**
      * Fetch messages for a folder from local DB cache
      */
-    async getMessages(folderId: string, page = 1, pageSize = 20) {
+    async getMessages(folderId: string, page = 1, pageSize = 20, toAddr?: string) {
         const from = (page - 1) * pageSize;
         const to = from + pageSize - 1;
 
         // Check if folder is null (unified inbox? not supported yet)
         if (!folderId) return { data: [], count: 0 };
 
-        const { data, error, count } = await supabase
+        let query = supabase
             .from('erp_emails_metadata')
             .select('*', { count: 'exact' })
-            .eq('folder_id', folderId)
+            .eq('folder_id', folderId);
+
+        if (toAddr) {
+            query = query.contains('to_addr', [toAddr]);
+        }
+
+        const { data, error, count } = await query
             .order('date', { ascending: false })
             .range(from, to);
 

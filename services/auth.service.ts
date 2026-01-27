@@ -84,6 +84,7 @@ export const AuthService = {
             ...targetUser,
             companyId: targetUser.company_id,
             employeeId: targetUser.employee_id,
+            sequentialId: targetUser.sequential_id,
             baseSalary: targetUser.base_salary,
             baseHours: targetUser.base_hours,
             hireDate: new Date(targetUser.created_at || new Date())
@@ -212,6 +213,7 @@ export const AuthService = {
                     ...user,
                     companyId: targetCompanyId,
                     employeeId: user.employee_id,
+                    sequentialId: user.sequential_id,
                     baseSalary: user.base_salary,
                     baseHours: user.base_hours,
                     hireDate: new Date(user.created_at || new Date())
@@ -232,6 +234,7 @@ export const AuthService = {
                     ...secondaryUser,
                     companyId: targetCompanyId || secondaryUser.company_id,
                     employeeId: secondaryUser.employee_id,
+                    sequentialId: secondaryUser.sequential_id,
                     baseSalary: secondaryUser.base_salary,
                     baseHours: secondaryUser.base_hours,
                     hireDate: new Date(secondaryUser.created_at || new Date())
@@ -275,6 +278,7 @@ export const AuthService = {
         return (data || []).map(u => ({
             ...u,
             employeeId: u.employee_id,
+            sequentialId: u.sequential_id,
             baseSalary: u.base_salary,
             baseHours: u.base_hours,
             hireDate: new Date(u.created_at || new Date())

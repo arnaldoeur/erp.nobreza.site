@@ -22,6 +22,7 @@ export interface User {
   socialSecurityNumber?: string;
   baseSalary?: number;
   baseHours?: number;
+  sequentialId?: number | string;
 }
 
 export interface Shift {

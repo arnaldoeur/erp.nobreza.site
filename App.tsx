@@ -653,7 +653,7 @@ const App: React.FC = () => {
           </div>
         </div>
         <div className="mt-8 text-center opacity-70 hover:opacity-100 transition-opacity">
-          <p className="text-emerald-200/50 text-[10px] font-bold tracking-widest uppercase">Desenvolvido por <a href="https://zyph.co.in" className="text-emerald-200">Zyph Tech</a></p>
+          <p className="text-emerald-200/50 text-[10px] font-bold tracking-widest uppercase">Desenvolvido por <a href="https://zyph.co.in" className="text-emerald-200">Zyph Tech, Lda</a></p>
         </div>
       </div>
     );

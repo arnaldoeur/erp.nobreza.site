@@ -16,7 +16,7 @@ interface EmailClientProps {
     onSettingsClick: () => void;
 }
 
-export const EmailClient: React.FC<EmailClientProps> = ({ companyId, onSettingsClick }) => {
+export const EmailClient: React.FC<EmailClientProps> = ({ companyId, currentUser, onSettingsClick }) => {
     const [accounts, setAccounts] = useState<EmailAccount[]>([]);
     const [selectedAccount, setSelectedAccount] = useState<EmailAccount | null>(null);
     const [folders, setFolders] = useState<EmailFolder[]>([]);
@@ -96,7 +96,13 @@ export const EmailClient: React.FC<EmailClientProps> = ({ companyId, onSettingsC
     const loadMsgs = async (folderId: string) => {
         setLoading(true);
         try {
-            const { data } = await EmailClientService.getMessages(folderId);
+            const isSystemFolder = selectedAccount?.account_type === 'SYSTEM';
+            const { data } = await EmailClientService.getMessages(
+                folderId,
+                1,
+                20,
+                isSystemFolder ? currentUser.email : undefined
+            );
             setMessages(data);
             setSelectedMessage(null);
         } finally {
@@ -121,7 +127,12 @@ export const EmailClient: React.FC<EmailClientProps> = ({ companyId, onSettingsC
                 if (f) await EmailClientService.syncFolder(selectedAccount.id, f.path);
             }
             // Refresh
-            const msgs = await EmailClientService.getMessages(selectedFolder || '');
+            const msgs = await EmailClientService.getMessages(
+                selectedFolder || '',
+                1,
+                20,
+                selectedAccount.account_type === 'SYSTEM' ? currentUser.email : undefined
+            );
             setMessages(msgs.data);
             alert('Sincronização concluída!');
         } catch (e: any) {

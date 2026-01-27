@@ -7,11 +7,12 @@ export const EmailAccountService = {
         const currentUser = AuthService.getCurrentUser();
         if (!currentUser) return [];
 
-        // 1. Fetch specific company accounts
+        // 1. Fetch company accounts (Shared/Team) + Personal account of the current user
         const { data: userAccounts, error } = await supabase
             .from('erp_email_accounts')
             .select('*')
             .eq('company_id', companyId)
+            .or(`account_type.neq.PERSONAL,user_id.eq.${currentUser.id}`)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -19,9 +20,10 @@ export const EmailAccountService = {
         let allAccounts = (userAccounts || []) as EmailAccount[];
 
         // 2. Ensure Personal Virtual Account exists in DB
-        // Prefix from email or truncated UUID
-        const virtualPrefix = currentUser.email.split('@')[0].replace(/[^0-9]/g, '') || currentUser.id.split('-')[0].substring(0, 5);
-        const virtualEmail = `${virtualPrefix}@nobreza.site`;
+        // Format: [name][last2Id]@nobreza.site
+        const namePart = currentUser.name.split(' ')[0].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const idPart = String(currentUser.sequentialId || '00').slice(-2).padStart(2, '0');
+        const virtualEmail = `${namePart}${idPart}@nobreza.site`;
 
         // Check if personal virtual already exists for this user
         let personalAccount = allAccounts.find(a => a.user_id === currentUser.id && a.account_type === 'PERSONAL');

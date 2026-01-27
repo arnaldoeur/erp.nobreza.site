@@ -1072,7 +1072,7 @@ export const Settings: React.FC<SettingsProps> = ({
                   alert("ID da Empresa copiado!");
                 }}>
                 <Hash size={14} className="group-hover/id:scale-110 transition-transform" />
-                <span className="font-mono font-bold text-xs tracking-widest">NE-{1000 + parseInt(companyInfo.id)}</span>
+                <span className="font-mono font-bold text-xs tracking-widest">NE-{1000 + (typeof companyInfo.id === 'number' ? companyInfo.id : parseInt(String(companyInfo.id)) || 0)}</span>
                 <Copy size={10} className="opacity-0 group-hover/id:opacity-100 transition-opacity" />
               </div>
 
@@ -1381,9 +1381,10 @@ export const Settings: React.FC<SettingsProps> = ({
                             // Auto-suggest virtual email based on next ID if it's a new user
                             if (emailInp && !editingEmployee && name.length >= 1) {
                               const domain = companyInfo.emailDomain || 'nobreza.site';
-                              const prefix = nextEmployeeId.toLowerCase().replace('nu-', '');
+                              const firstName = name.split(' ')[0].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                              const idPart = String(nextEmployeeId || '').replace('NU-', '').slice(-2).padStart(2, '0');
                               if (!emailInp.value || emailInp.value.includes(domain)) {
-                                emailInp.value = `${prefix}@${domain}`;
+                                emailInp.value = `${firstName}${idPart}@${domain}`;
                               }
                             }
                           }}
@@ -1467,7 +1468,7 @@ export const Settings: React.FC<SettingsProps> = ({
                         <div>
                           <span className="text-[10px] font-black uppercase text-emerald-800 tracking-widest block">ID do Utilizador</span>
                           <span className="text-lg font-black text-emerald-950 font-mono tracking-wider flex items-center gap-2">
-                            {editingEmployee.employeeId || `NU-${1000 + parseInt(editingEmployee.id)}`}
+                            {editingEmployee.employeeId || `NU-${1000 + (editingEmployee.sequentialId ? Number(editingEmployee.sequentialId) : 0)}`}
                             <Copy size={14} className="opacity-40 group-hover/user-id:opacity-100 transition-opacity" />
                           </span>
                         </div>
@@ -1948,10 +1949,11 @@ function UserProfileEditor({ currentUser, onUpdate, sales }: { currentUser: User
               <div className="flex items-center gap-2 mt-2">
                 <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-lg">{user.role}</p>
                 <div onClick={() => {
-                  navigator.clipboard.writeText(`NU-${1000 + parseInt(user.id)}`);
+                  const formattedId = user.employeeId || `NU-${1000 + (user.sequentialId ? Number(user.sequentialId) : 0)}`;
+                  navigator.clipboard.writeText(formattedId);
                   alert("ID de Utilizador copiado!");
                 }} className="text-[10px] font-black text-gray-400 font-mono bg-gray-50 px-2 py-1 rounded-lg border border-gray-100 cursor-pointer hover:bg-emerald-50 hover:text-emerald-600 transition-all flex items-center gap-1">
-                  NU-{1000 + parseInt(user.id)}
+                  {user.employeeId || `NU-${1000 + (user.sequentialId ? Number(user.sequentialId) : 0)}`}
                   <Copy size={10} />
                 </div>
               </div>

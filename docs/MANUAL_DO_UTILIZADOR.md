@@ -68,4 +68,4 @@ Para gestão de inventário e encomendas.
 
 ---
 
-**(c) 2026 Zyph Tech - Soluções para Farmácias**
+**(c) 2026 Zyph Tech, Lda - Soluções para Farmácias**

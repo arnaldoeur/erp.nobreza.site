@@ -37,4 +37,4 @@ A estrutura de dados suporta as especificidades do negócio:
 
 ---
 
-**(c) 2026 Zyph Tech - Engenharia Farmacêutica**
+**(c) 2026 Zyph Tech, Lda - Engenharia Farmacêutica**
