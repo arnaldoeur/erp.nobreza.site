@@ -51,8 +51,8 @@ const getSidebarItems = (lang: Language): SidebarItem[] => [
   { icon: CheckSquare, label: t('nav.tasks', lang), id: 'tasks', roles: Object.values(UserRole) },
   { icon: CalendarIcon, label: t('nav.agenda', lang), id: 'calendar', roles: Object.values(UserRole) },
   { icon: MessageSquare, label: 'Chat Equipe', id: 'social', roles: Object.values(UserRole) },
-  { icon: Truck, label: t('nav.suppliers', lang), id: 'suppliers', roles: [UserRole.ADMIN, UserRole.COMMERCIAL] },
-  { icon: Users, label: t('nav.customers', lang), id: 'customers', roles: [UserRole.ADMIN, UserRole.ADMINISTRATIVE, UserRole.COMMERCIAL] },
+  { icon: Truck, label: t('nav.suppliers', lang), id: 'suppliers', roles: [UserRole.ADMIN, UserRole.ADMINISTRATIVE, UserRole.COMMERCIAL, UserRole.TECHNICIAN] },
+  { icon: Users, label: t('nav.customers', lang), id: 'customers', roles: [UserRole.ADMIN, UserRole.ADMINISTRATIVE, UserRole.COMMERCIAL, UserRole.TECHNICIAN] },
   { icon: Mail, label: 'Correio', id: 'email', roles: Object.values(UserRole) },
   { icon: SettingsIcon, label: t('nav.settings', lang), id: 'administration', roles: Object.values(UserRole) }, // Everyone sees settings (for profile) but tabs are restricted
   { icon: ShieldCheck, label: t('nav.support', lang), id: 'support', roles: Object.values(UserRole) },

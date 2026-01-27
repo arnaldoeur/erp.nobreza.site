@@ -609,13 +609,16 @@ export const Settings: React.FC<SettingsProps> = ({
         <TabButton active={activeTab === 'REPORTS'} onClick={() => setActiveTab('REPORTS')} icon={FileText} label="Relatórios" />
         <TabButton active={activeTab === 'PERFORMANCE'} onClick={() => setActiveTab('PERFORMANCE')} icon={BarChart3} label="Performance" />
 
-        {currentUser.role === 'ADMIN' && (
+        {(currentUser.role === 'ADMIN' || currentUser.role === 'ADMINISTRATIVE') && (
           <>
             <TabButton active={activeTab === 'FINANCE'} onClick={() => setActiveTab('FINANCE')} icon={Wallet} label="Financeiro" />
             <TabButton active={activeTab === 'EXPENSES'} onClick={() => setActiveTab('EXPENSES')} icon={Banknote} label="Despesas" />
             <TabButton active={activeTab === 'CAIXA'} onClick={() => setActiveTab('CAIXA')} icon={CreditCard} label="Caixa" />
-            <TabButton active={activeTab === 'COMPANY'} onClick={() => setActiveTab('COMPANY')} icon={Building2} label="Empresa" />
           </>
+        )}
+
+        {currentUser.role === 'ADMIN' && (
+          <TabButton active={activeTab === 'COMPANY'} onClick={() => setActiveTab('COMPANY')} icon={Building2} label="Empresa" />
         )}
 
         <TabButton active={activeTab === 'EMAIL'} onClick={() => setActiveTab('EMAIL')} icon={Mail} label="E-mail" />
@@ -1284,7 +1287,9 @@ export const Settings: React.FC<SettingsProps> = ({
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-3xl shadow-sm border flex justify-between items-center">
               <h3 className="text-lg font-black text-emerald-950 uppercase tracking-tight">Equipa</h3>
-              <button onClick={() => { setEditingEmployee(null); setIsEmployeeModalOpen(true); }} className="p-3 bg-emerald-700 text-white rounded-xl shadow-lg"><UserPlus size={20} /></button>
+              {(currentUser.role === 'ADMIN' || currentUser.role === 'ADMINISTRATIVE') && (
+                <button onClick={() => { setEditingEmployee(null); setIsEmployeeModalOpen(true); }} className="p-3 bg-emerald-700 text-white rounded-xl shadow-lg"><UserPlus size={20} /></button>
+              )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {team.map(member => (
@@ -1304,7 +1309,9 @@ export const Settings: React.FC<SettingsProps> = ({
                       <p className="text-[9px] text-gray-400 font-medium truncate">{member.email}</p>
                     )}
                   </div>
-                  <button onClick={() => { setEditingEmployee(member); setIsEmployeeModalOpen(true); }} className="p-3 text-gray-300 hover:text-emerald-700"><Edit2 size={18} /></button>
+                  {(currentUser.role === 'ADMIN' || currentUser.role === 'ADMINISTRATIVE') && (
+                    <button onClick={() => { setEditingEmployee(member); setIsEmployeeModalOpen(true); }} className="p-3 text-gray-300 hover:text-emerald-700"><Edit2 size={18} /></button>
+                  )}
                 </div>
               ))}
             </div>
@@ -1425,7 +1432,12 @@ export const Settings: React.FC<SettingsProps> = ({
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Cargo / Função</label>
                     <div className="relative">
                       <select name="role" required defaultValue={editingEmployee?.role} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm appearance-none cursor-pointer transition-all">
-                        {Object.values(UserRole).map(r => <option key={r} value={r}>{r}</option>)}
+                        {Object.values(UserRole).map(r => {
+                          // Only Super Admin can create/edit ADMIN roles
+                          const isSuperAdmin = currentUser.email === 'admin@nobreza.site';
+                          if (r === 'ADMIN' && !isSuperAdmin) return null;
+                          return <option key={r} value={r}>{r}</option>;
+                        })}
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><ChevronRight size={16} className="rotate-90" /></div>
                     </div>

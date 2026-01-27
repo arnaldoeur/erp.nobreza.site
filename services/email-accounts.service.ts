@@ -40,7 +40,22 @@ export const EmailAccountService = {
             personalAccount = dbPersonal as EmailAccount;
         }
 
-        if (!personalAccount) {
+        if (personalAccount) {
+            // Check if email needs update to new naming convention
+            if (personalAccount.email !== virtualEmail && virtualEmail.includes('@nobreza.site')) {
+                const { data: updatedAcc } = await supabase
+                    .from('erp_email_accounts')
+                    .update({ email: virtualEmail })
+                    .eq('id', personalAccount.id)
+                    .select()
+                    .single();
+
+                if (updatedAcc) {
+                    personalAccount = updatedAcc as EmailAccount;
+                    allAccounts = allAccounts.map(a => a.id === personalAccount.id ? personalAccount : a);
+                }
+            }
+        } else {
             // Create it
             const { data: newAcc, error: createError } = await supabase
                 .from('erp_email_accounts')

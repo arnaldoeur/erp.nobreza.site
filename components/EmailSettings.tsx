@@ -158,7 +158,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ companyId, current
                         <p className="text-xs font-bold text-gray-400">Gerir servidores SMTP e IMAP</p>
                     </div>
                 </div>
-                {!isAdding && (
+                {(currentUser.role === 'ADMIN' || currentUser.role === 'ADMINISTRATIVE') && !isAdding && (
                     <button
                         onClick={() => setIsAdding(true)}
                         className="flex items-center gap-2 px-6 py-3 bg-emerald-950 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all shadow-md"
@@ -169,31 +169,32 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ companyId, current
                 )}
             </div>
 
-            {/* Company Domain Config */}
-            <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <Globe size={18} className="text-emerald-700" />
-                        <h3 className="text-sm font-black text-emerald-950 uppercase tracking-tight">Domínio Empresarial</h3>
+            {currentUser.role === 'ADMIN' && (
+                <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <Globe size={18} className="text-emerald-700" />
+                            <h3 className="text-sm font-black text-emerald-950 uppercase tracking-tight">Domínio Empresarial</h3>
+                        </div>
+                        <p className="text-xs text-emerald-800/70 font-medium">Define o domínio oficial (ex: @nobreza.site) para permitir o uso do e-mail.</p>
                     </div>
-                    <p className="text-xs text-emerald-800/70 font-medium">Define o domínio oficial (ex: @nobreza.site) para permitir o uso do e-mail.</p>
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <input
+                            className="flex-1 md:w-64 px-4 py-2 rounded-xl border border-emerald-200 text-xs font-bold text-emerald-950 placeholder:text-emerald-900/30 focus:outline-none focus:border-emerald-500"
+                            placeholder="ex: nobreza.site"
+                            value={domain}
+                            onChange={e => setDomain(e.target.value)}
+                        />
+                        <button
+                            onClick={saveDomain}
+                            disabled={savingDomain}
+                            className="bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                            {savingDomain ? '...' : 'Definir'}
+                        </button>
+                    </div>
                 </div>
-                <div className="flex gap-2 w-full md:w-auto">
-                    <input
-                        className="flex-1 md:w-64 px-4 py-2 rounded-xl border border-emerald-200 text-xs font-bold text-emerald-950 placeholder:text-emerald-900/30 focus:outline-none focus:border-emerald-500"
-                        placeholder="ex: nobreza.site"
-                        value={domain}
-                        onChange={e => setDomain(e.target.value)}
-                    />
-                    <button
-                        onClick={saveDomain}
-                        disabled={savingDomain}
-                        className="bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50"
-                    >
-                        {savingDomain ? '...' : 'Definir'}
-                    </button>
-                </div>
-            </div>
+            )}
 
             {isAdding && (
                 <form onSubmit={handleSave} className="bg-white p-8 rounded-2xl shadow-xl border border-emerald-100 space-y-6">
