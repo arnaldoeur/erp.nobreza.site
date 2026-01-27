@@ -60,7 +60,8 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 import { CompanyInfo, User, UserRole, DailyClosure, SystemLog, Sale, Product, PaymentMethod } from '../types';
-import { LogService, NotificationService, CompanyService, TimeTrackingService, AuthService } from '../services';
+import { AuthService } from '../services/auth.service';
+import { LogService, NotificationService, CompanyService, TimeTrackingService } from '../services';
 import { WorkShift } from '../services/time-tracking.service';
 import { supabase } from '../services/supabase';
 import { Support } from './Support';
@@ -190,13 +191,19 @@ export const Settings: React.FC<SettingsProps> = ({
   dailyClosures, logs, sales, products, expenses = [], initialTab, onTabHandled, onAddSale
 }) => {
   const [activeTab, setActiveTab] = useState<'REPORTS' | 'FINANCE' | 'EXPENSES' | 'CAIXA' | 'COMPANY' | 'TEAM' | 'PROFILE' | 'PERFORMANCE' | 'SYSTEM'>('REPORTS');
+  const [nextEmployeeId, setNextEmployeeId] = useState<string>('');
 
   useEffect(() => {
-    if (initialTab) {
-      setActiveTab(initialTab);
-      onTabHandled?.();
-    }
-  }, [initialTab, onTabHandled]);
+    const fetchNextEmpId = async () => {
+      try {
+        const { data } = await supabase.rpc('get_next_employee_id');
+        if (data) setNextEmployeeId(data);
+      } catch (e) {
+        console.error("Failed to fetch next employee ID:", e);
+      }
+    };
+    if (activeTab === 'TEAM') fetchNextEmpId();
+  }, [activeTab]);
 
   const [tempInfo, setTempInfo] = useState(companyInfo);
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
@@ -553,7 +560,7 @@ export const Settings: React.FC<SettingsProps> = ({
     const hireDateInput = formData.get('hireDate') as string;
 
     const updatedMember: User = {
-      id: editingEmployee?.id || '', // Empty for new
+      id: editingEmployee?.id || undefined as any, // Let DB generate UUID for new members
       companyId: currentUser.companyId,
       name: formData.get('name') as string,
       email: formData.get('email') as string,
@@ -843,452 +850,478 @@ export const Settings: React.FC<SettingsProps> = ({
                 title="Exportar CSV"
               >
                 <Download size={18} />
-              </button>
-            </div>
-          </div>
+              </button >
+            </div >
+          </div >
 
           <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-6 min-h-[400px]">
             <LogsDetailedReport logs={logs} filter={reportFilter} />
           </div>
-        </div>
-      )} {activeTab === 'FINANCE' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-3xl shadow-sm border flex flex-col gap-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-emerald-50 text-emerald-700 rounded-2xl"><Wallet size={24} /></div>
-              <div>
-                <h3 className="text-lg font-black text-emerald-950 uppercase">Módulo Financeiro</h3>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Análise de Receita e Caixa</p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-4 bg-gray-50/50 p-4 rounded-[2rem] border border-gray-100">
-              <div className="flex flex-wrap gap-4 items-center justify-between">
+        </div >
+      )} {
+        activeTab === 'FINANCE' && (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-3xl shadow-sm border flex flex-col gap-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-50 text-emerald-700 rounded-2xl"><Wallet size={24} /></div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-1 block">Período de Análise</label>
-                  <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
-                    <Calendar size={16} className="text-emerald-600 ml-2" />
-                    <input
-                      type="date"
-                      className="bg-transparent text-xs font-bold text-emerald-950 outline-none uppercase"
-                      value={reportFilter.startDate}
-                      onChange={e => setReportFilter({ ...reportFilter, startDate: e.target.value })}
-                    />
-                    <span className="text-gray-300 font-black">-</span>
-                    <input
-                      type="date"
-                      className="bg-transparent text-xs font-bold text-emerald-950 outline-none uppercase"
-                      value={reportFilter.endDate}
-                      onChange={e => setReportFilter({ ...reportFilter, endDate: e.target.value })}
-                    />
+                  <h3 className="text-lg font-black text-emerald-950 uppercase">Módulo Financeiro</h3>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Análise de Receita e Caixa</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4 bg-gray-50/50 p-4 rounded-[2rem] border border-gray-100">
+                <div className="flex flex-wrap gap-4 items-center justify-between">
+                  <div>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-1 block">Período de Análise</label>
+                    <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
+                      <Calendar size={16} className="text-emerald-600 ml-2" />
+                      <input
+                        type="date"
+                        className="bg-transparent text-xs font-bold text-emerald-950 outline-none uppercase"
+                        value={reportFilter.startDate}
+                        onChange={e => setReportFilter({ ...reportFilter, startDate: e.target.value })}
+                      />
+                      <span className="text-gray-300 font-black">-</span>
+                      <input
+                        type="date"
+                        className="bg-transparent text-xs font-bold text-emerald-950 outline-none uppercase"
+                        value={reportFilter.endDate}
+                        onChange={e => setReportFilter({ ...reportFilter, endDate: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsReportPreviewOpen(true)}
+                      className="bg-emerald-950 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-900/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                    >
+                      <FileText size={16} />
+                      Gerar Relatório PDF
+                    </button>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsReportPreviewOpen(true)}
-                    className="bg-emerald-950 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-900/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
-                  >
-                    <FileText size={16} />
-                    Gerar Relatório PDF
-                  </button>
+            <div id="report-content" className="bg-emerald-950 p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col gap-6">
+              <div className="relative z-10 border-b border-emerald-800 pb-4 mb-2 flex items-center justify-between">
+                <div>
+                  <img src={companyInfo.logoHorizontal || companyInfo.logo || "/logo-sidebar.png"} alt="Logo" className="h-10 mb-2 object-contain brightness-0 invert" />
+                  <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">{companyInfo.name}</p>
+                  <p className="text-[9px] text-emerald-600 uppercase">{companyInfo.address}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[8px] text-emerald-600 font-bold uppercase tracking-widest mb-0.5">Relatório Financeiro</p>
+                  <p className="text-xs font-black text-white uppercase">{months[reportFilter.month]} / {reportFilter.year}</p>
+                  <p className="text-[8px] text-emerald-800 font-bold uppercase tracking-widest mt-1">Nobreza ERP &bull; Zyph Tech, Lda</p>
+                </div>
+              </div>
+
+              <div className="relative z-10">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-[9px] font-black uppercase tracking-widest mb-3">
+                  <Sparkles size={12} /> Insight Automático
+                </div>
+                <p className="text-white/80 font-medium text-sm italic leading-relaxed">
+                  "No Período de {months[reportFilter.month]}, a receita totalizou <span className="text-white font-black underline decoration-emerald-500 underline-offset-4">MT {analytics.totalInMonth.toLocaleString()}</span>.
+                  Despesa acumulada de <span className="text-red-400 font-black">MT {analytics.totalExpenses.toLocaleString()}</span>, resultando num lucro líquido de <span className="text-emerald-400 font-black">MT {analytics.netProfit.toLocaleString()}</span>.
+                  {analytics.totalDivergence < 0 ? ` Atenção: Quebra de caixa detectada no valor de MT ${Math.abs(analytics.totalDivergence).toLocaleString()}.` : ' Operação de fluxo de caixa estável.'}"
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 relative z-10">
+                <SummaryBox label="Vendas Brutas" val={`MT ${analytics.totalInMonth.toLocaleString()}`} />
+                <SummaryBox label="Despesas" val={`MT ${analytics.totalExpenses.toLocaleString()}`} isRed={true} />
+                <SummaryBox label="Lucro Líquido" val={`MT ${analytics.netProfit.toLocaleString()}`} />
+                <SummaryBox label="Divergência" val={`MT ${analytics.totalDivergence.toLocaleString()}`} isRed={analytics.totalDivergence < 0} />
+              </div>
+
+              <div className="grid grid-cols-4 gap-2 relative z-10 pt-4 border-t border-white/10">
+                <div className="text-center">
+                  <p className="text-[8px] font-black text-white/40 uppercase mb-1">Cash</p>
+                  <p className="text-xs font-black text-white">MT {(analytics.byMethod['CASH'] || 0).toLocaleString()}</p>
+                </div>
+                <div className="text-center border-l border-white/10">
+                  <p className="text-[8px] font-black text-white/40 uppercase mb-1">M-Pesa</p>
+                  <p className="text-xs font-black text-white">MT {(analytics.byMethod['MPESA'] || 0).toLocaleString()}</p>
+                </div>
+                <div className="text-center border-l border-white/10">
+                  <p className="text-[8px] font-black text-white/40 uppercase mb-1">E-Mola</p>
+                  <p className="text-xs font-black text-white">MT {(analytics.byMethod['EMOLA'] || 0).toLocaleString()}</p>
+                </div>
+                <div className="text-center border-l border-white/10">
+                  <p className="text-[8px] font-black text-white/40 uppercase mb-1">Bancos</p>
+                  <p className="text-xs font-black text-white">MT {((analytics.byMethod['TRANSFER'] || 0) + (analytics.byMethod['OTHER'] || 0)).toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              {/* Footer - Only visible for PDF generation (using a class we can target or just by being at bottom with margin) */}
+              <div className="relative z-10 pt-4 border-t border-white/10 flex justify-between items-end mt-8 report-footer opacity-0 transition-opacity">
+                <p className="text-[7px] text-white/40 font-bold uppercase tracking-widest">Documento Processado Por Computador</p>
+                <div className="text-right">
+                  <p className="text-[7px] text-white/40 font-bold uppercase tracking-widest">Nobreza ERP - Developed BY Zyph Tech, Lda</p>
+                  <p className="text-[7px] text-white/20 font-mono mt-0.5">{new Date().toLocaleString()}</p>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div id="report-content" className="bg-emerald-950 p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col gap-6">
-            <div className="relative z-10 border-b border-emerald-800 pb-4 mb-2 flex items-center justify-between">
-              <div>
-                <img src={companyInfo.logoHorizontal || companyInfo.logo || "/logo-sidebar.png"} alt="Logo" className="h-10 mb-2 object-contain brightness-0 invert" />
-                <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">{companyInfo.name}</p>
-                <p className="text-[9px] text-emerald-600 uppercase">{companyInfo.address}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-[8px] text-emerald-600 font-bold uppercase tracking-widest mb-0.5">Relatório Financeiro</p>
-                <p className="text-xs font-black text-white uppercase">{months[reportFilter.month]} / {reportFilter.year}</p>
-                <p className="text-[8px] text-emerald-800 font-bold uppercase tracking-widest mt-1">Nobreza ERP &bull; Zyph Tech, Lda</p>
-              </div>
+            {/* Report Sub-nav for mobile (icons only + label) */}
+            <div className="flex bg-white rounded-2xl shadow-sm border border-gray-100 p-1 overflow-x-auto gap-1">
+              <SubReportBtn active={reportFilter.type === 'GERAL'} label="Geral" onClick={() => setReportFilter({ ...reportFilter, type: 'GERAL' })} icon={LayoutDashboard} />
+              <SubReportBtn active={reportFilter.type === 'CATALOGO'} label="Catálogo" onClick={() => setReportFilter({ ...reportFilter, type: 'CATALOGO' })} icon={BarChart3} />
+              <SubReportBtn active={reportFilter.type === 'VENDAS'} label="Transações" onClick={() => setReportFilter({ ...reportFilter, type: 'VENDAS' })} icon={TrendingUp} />
+              <SubReportBtn active={reportFilter.type === 'STOCK'} label="Stock" onClick={() => setReportFilter({ ...reportFilter, type: 'STOCK' })} icon={Package} />
+              <SubReportBtn active={reportFilter.type === 'PRESENCAS'} label="Presenças" onClick={() => setReportFilter({ ...reportFilter, type: 'PRESENCAS' })} icon={Clock} />
+              <SubReportBtn active={reportFilter.type === 'LOGS'} label="Auditoria" onClick={() => setReportFilter({ ...reportFilter, type: 'LOGS' })} icon={History} />
             </div>
 
-            <div className="relative z-10">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-[9px] font-black uppercase tracking-widest mb-3">
-                <Sparkles size={12} /> Insight Automático
-              </div>
-              <p className="text-white/80 font-medium text-sm italic leading-relaxed">
-                "No Período de {months[reportFilter.month]}, a receita totalizou <span className="text-white font-black underline decoration-emerald-500 underline-offset-4">MT {analytics.totalInMonth.toLocaleString()}</span>.
-                Despesa acumulada de <span className="text-red-400 font-black">MT {analytics.totalExpenses.toLocaleString()}</span>, resultando num lucro líquido de <span className="text-emerald-400 font-black">MT {analytics.netProfit.toLocaleString()}</span>.
-                {analytics.totalDivergence < 0 ? ` Atenção: Quebra de caixa detectada no valor de MT ${Math.abs(analytics.totalDivergence).toLocaleString()}.` : ' Operação de fluxo de caixa estável.'}"
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-3 relative z-10">
-              <SummaryBox label="Vendas Brutas" val={`MT ${analytics.totalInMonth.toLocaleString()}`} />
-              <SummaryBox label="Despesas" val={`MT ${analytics.totalExpenses.toLocaleString()}`} isRed={true} />
-              <SummaryBox label="Lucro Líquido" val={`MT ${analytics.netProfit.toLocaleString()}`} />
-              <SummaryBox label="Divergência" val={`MT ${analytics.totalDivergence.toLocaleString()}`} isRed={analytics.totalDivergence < 0} />
-            </div>
+            <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-6 min-h-[400px]">
+              {reportFilter.type === 'GERAL' && <DashboardSummary analytics={analytics} />}
+              {reportFilter.type === 'CATALOGO' && <CatalogPerformanceReport sales={sales} filter={reportFilter} products={products} />}
+              {reportFilter.type === 'VENDAS' && <SalesDetailedReport sales={sales} filter={reportFilter} />}
+              {reportFilter.type === 'PRESENCAS' && (
+                <div className="space-y-4">
+                  <h4 className="text-xs font-black text-emerald-950 uppercase tracking-tight flex items-center gap-2 italic"><Clock size={16} className="text-emerald-600" /> Registo de Assiduidade</h4>
+                  <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white">
+                    <table className="w-full text-left">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="p-4 text-[9px] font-black text-gray-400 uppercase tracking-widest">Colaborador</th>
+                          <th className="p-4 text-[9px] font-black text-gray-400 uppercase tracking-widest text-center">Data</th>
+                          <th className="p-4 text-[9px] font-black text-gray-400 uppercase tracking-widest text-center">Horas</th>
+                          <th className="p-4 text-[9px] font-black text-gray-400 uppercase tracking-widest text-right pr-8">Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {loadingShifts ? (
+                          <tr><td colSpan={4} className="p-10 text-center text-xs font-bold text-gray-400 animate-pulse">Carregando registos...</td></tr>
+                        ) : shifts.length === 0 ? (
+                          <tr><td colSpan={4} className="p-10 text-center text-xs font-bold text-gray-400 italic">Nenhum registo de ponto encontrado para este Período.</td></tr>
+                        ) : (
+                          shifts.map(shift => {
+                            const user = team.find(u => u.id === shift.user_id);
+                            const start = new Date(shift.start_time);
+                            const end = shift.end_time ? new Date(shift.end_time) : null;
+                            const duration = end ? (end.getTime() - start.getTime()) / (1000 * 60 * 60) : 0;
 
-            <div className="grid grid-cols-4 gap-2 relative z-10 pt-4 border-t border-white/10">
-              <div className="text-center">
-                <p className="text-[8px] font-black text-white/40 uppercase mb-1">Cash</p>
-                <p className="text-xs font-black text-white">MT {(analytics.byMethod['CASH'] || 0).toLocaleString()}</p>
-              </div>
-              <div className="text-center border-l border-white/10">
-                <p className="text-[8px] font-black text-white/40 uppercase mb-1">M-Pesa</p>
-                <p className="text-xs font-black text-white">MT {(analytics.byMethod['MPESA'] || 0).toLocaleString()}</p>
-              </div>
-              <div className="text-center border-l border-white/10">
-                <p className="text-[8px] font-black text-white/40 uppercase mb-1">E-Mola</p>
-                <p className="text-xs font-black text-white">MT {(analytics.byMethod['EMOLA'] || 0).toLocaleString()}</p>
-              </div>
-              <div className="text-center border-l border-white/10">
-                <p className="text-[8px] font-black text-white/40 uppercase mb-1">Bancos</p>
-                <p className="text-xs font-black text-white">MT {((analytics.byMethod['TRANSFER'] || 0) + (analytics.byMethod['OTHER'] || 0)).toLocaleString()}</p>
-              </div>
-            </div>
-
-            {/* Footer */}
-            {/* Footer - Only visible for PDF generation (using a class we can target or just by being at bottom with margin) */}
-            <div className="relative z-10 pt-4 border-t border-white/10 flex justify-between items-end mt-8 report-footer opacity-0 transition-opacity">
-              <p className="text-[7px] text-white/40 font-bold uppercase tracking-widest">Documento Processado Por Computador</p>
-              <div className="text-right">
-                <p className="text-[7px] text-white/40 font-bold uppercase tracking-widest">Nobreza ERP - Developed BY Zyph Tech, Lda</p>
-                <p className="text-[7px] text-white/20 font-mono mt-0.5">{new Date().toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Report Sub-nav for mobile (icons only + label) */}
-          <div className="flex bg-white rounded-2xl shadow-sm border border-gray-100 p-1 overflow-x-auto gap-1">
-            <SubReportBtn active={reportFilter.type === 'GERAL'} label="Geral" onClick={() => setReportFilter({ ...reportFilter, type: 'GERAL' })} icon={LayoutDashboard} />
-            <SubReportBtn active={reportFilter.type === 'CATALOGO'} label="Catálogo" onClick={() => setReportFilter({ ...reportFilter, type: 'CATALOGO' })} icon={BarChart3} />
-            <SubReportBtn active={reportFilter.type === 'VENDAS'} label="Transações" onClick={() => setReportFilter({ ...reportFilter, type: 'VENDAS' })} icon={TrendingUp} />
-            <SubReportBtn active={reportFilter.type === 'STOCK'} label="Stock" onClick={() => setReportFilter({ ...reportFilter, type: 'STOCK' })} icon={Package} />
-            <SubReportBtn active={reportFilter.type === 'PRESENCAS'} label="Presenças" onClick={() => setReportFilter({ ...reportFilter, type: 'PRESENCAS' })} icon={Clock} />
-            <SubReportBtn active={reportFilter.type === 'LOGS'} label="Auditoria" onClick={() => setReportFilter({ ...reportFilter, type: 'LOGS' })} icon={History} />
-          </div>
-
-          <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-6 min-h-[400px]">
-            {reportFilter.type === 'GERAL' && <DashboardSummary analytics={analytics} />}
-            {reportFilter.type === 'CATALOGO' && <CatalogPerformanceReport sales={sales} filter={reportFilter} products={products} />}
-            {reportFilter.type === 'VENDAS' && <SalesDetailedReport sales={sales} filter={reportFilter} />}
-            {reportFilter.type === 'PRESENCAS' && (
-              <div className="space-y-4">
-                <h4 className="text-xs font-black text-emerald-950 uppercase tracking-tight flex items-center gap-2 italic"><Clock size={16} className="text-emerald-600" /> Registo de Assiduidade</h4>
-                <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white">
-                  <table className="w-full text-left">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="p-4 text-[9px] font-black text-gray-400 uppercase tracking-widest">Colaborador</th>
-                        <th className="p-4 text-[9px] font-black text-gray-400 uppercase tracking-widest text-center">Data</th>
-                        <th className="p-4 text-[9px] font-black text-gray-400 uppercase tracking-widest text-center">Horas</th>
-                        <th className="p-4 text-[9px] font-black text-gray-400 uppercase tracking-widest text-right pr-8">Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {loadingShifts ? (
-                        <tr><td colSpan={4} className="p-10 text-center text-xs font-bold text-gray-400 animate-pulse">Carregando registos...</td></tr>
-                      ) : shifts.length === 0 ? (
-                        <tr><td colSpan={4} className="p-10 text-center text-xs font-bold text-gray-400 italic">Nenhum registo de ponto encontrado para este Período.</td></tr>
-                      ) : (
-                        shifts.map(shift => {
-                          const user = team.find(u => u.id === shift.user_id);
-                          const start = new Date(shift.start_time);
-                          const end = shift.end_time ? new Date(shift.end_time) : null;
-                          const duration = end ? (end.getTime() - start.getTime()) / (1000 * 60 * 60) : 0;
-
-                          return (
-                            <tr key={shift.id} className="hover:bg-gray-50/50 transition-colors">
-                              <td className="p-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-[10px] uppercase">
-                                    {user?.photo ? <img src={user.photo} className="w-full h-full rounded-full object-cover" /> : (user?.name || 'U').charAt(0)}
+                            return (
+                              <tr key={shift.id} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="p-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-[10px] uppercase">
+                                      {user?.photo ? <img src={user.photo} className="w-full h-full rounded-full object-cover" /> : (user?.name || 'U').charAt(0)}
+                                    </div>
+                                    <span className="font-bold text-emerald-950 text-[11px] uppercase truncate">{user?.name || 'Utilizador Desconhecido'}</span>
                                   </div>
-                                  <span className="font-bold text-emerald-950 text-[11px] uppercase truncate">{user?.name || 'Utilizador Desconhecido'}</span>
-                                </div>
-                              </td>
-                              <td className="p-4 text-center">
-                                <span className="text-[10px] font-bold text-gray-500">{start.toLocaleDateString()}</span>
-                                <p className="text-[9px] text-gray-400 font-mono mt-0.5">{start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {end && `→ ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</p>
-                              </td>
-                              <td className="p-4 text-center">
-                                {end ? (
-                                  <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">{duration.toFixed(1)}h</span>
-                                ) : (
-                                  <span className="text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 animate-pulse">EM CURSO</span>
-                                )}
-                              </td>
-                              <td className="p-4 text-right pr-8">
-                                <span className={`text-[9px] font-black uppercase tracking-tight px-2 py-1 rounded-lg ${end ? 'bg-gray-100 text-gray-500' : 'bg-emerald-500 text-white'}`}>
-                                  {end ? 'Concluído' : 'Ativo'}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-            {reportFilter.type === 'LOGS' && <LogsDetailedReport logs={logs} filter={reportFilter} />}
-            {reportFilter.type === 'STOCK' && (
-              <StockDetailedReport
-                products={products}
-                priceAdjustmentAmount={priceAdjustmentAmount}
-                setPriceAdjustmentAmount={setPriceAdjustmentAmount}
-                handleGlobalPriceAdjustment={handleGlobalPriceAdjustment}
-                adjustingPrices={adjustingPrices}
-              />
-            )}
-          </div>
-        </div>
-      )} {activeTab === 'EMAIL' && (
-        <div className="space-y-6">
-          <DomainManager companyId={String(currentUser?.companyId || '')} />
-          <EmailSettings companyId={String(currentUser?.companyId || '')} currentUser={currentUser} />
-        </div>
-      )} {activeTab === 'COMPANY' && (
-        <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden">
-          <div className="bg-emerald-950 p-8 flex flex-col items-center gap-6 relative">
-            {/* Company ID Badge */}
-            <div className="absolute top-6 left-6 flex items-center gap-2 text-emerald-400/50 hover:text-emerald-400 transition-colors cursor-pointer group/id"
-              title="Clique para copiar ID"
-              onClick={() => {
-                navigator.clipboard.writeText(`NE-${1000 + parseInt(companyInfo.id)}`);
-                alert("ID da Empresa copiado!");
-              }}>
-              <Hash size={14} className="group-hover/id:scale-110 transition-transform" />
-              <span className="font-mono font-bold text-xs tracking-widest">NE-{1000 + parseInt(companyInfo.id)}</span>
-              <Copy size={10} className="opacity-0 group-hover/id:opacity-100 transition-opacity" />
-            </div>
-
-            <h3 className="text-xl font-black text-white uppercase tracking-tight mb-4">Identidade Visual</h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
-              {/* Main/Icon Logo */}
-              <div className="flex flex-col items-center gap-2">
-                <div onClick={() => document.getElementById('logo-input')?.click()} className="w-24 h-24 bg-white rounded-[2rem] flex items-center justify-center cursor-pointer border-4 border-emerald-900 shadow-xl overflow-hidden relative group">
-                  {tempInfo.logo ? <img src={tempInfo.logo} className="w-full h-full object-contain p-2" /> : <img src="/icon-512.png" className="w-full h-full object-contain p-2 opacity-20" />}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center"><Camera size={20} className="text-white" /></div>
-                </div>
-                <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Principal / Ícone</p>
-                <input id="logo-input" type="file" className="hidden" accept="image/*" onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) { const r = new FileReader(); r.onloadend = () => setTempInfo({ ...tempInfo, logo: r.result as string }); r.readAsDataURL(f); }
-                }} />
-              </div>
-
-              {/* Horizontal Logo */}
-              <div className="flex flex-col items-center gap-2">
-                <div onClick={() => document.getElementById('logo-h-input')?.click()} className="w-48 h-24 bg-white rounded-[1rem] flex items-center justify-center cursor-pointer border-4 border-emerald-900 shadow-xl overflow-hidden relative group">
-                  {tempInfo.logoHorizontal ? <img src={tempInfo.logoHorizontal} className="w-full h-full object-contain p-2" /> : <img src="/logo-sidebar.png" className="w-full h-full object-contain p-2 opacity-20 grayscale" />}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center"><Camera size={20} className="text-white" /></div>
-                </div>
-                <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Horizontal (Faturas)</p>
-                <input id="logo-h-input" type="file" className="hidden" accept="image/*" onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) { const r = new FileReader(); r.onloadend = () => setTempInfo({ ...tempInfo, logoHorizontal: r.result as string }); r.readAsDataURL(f); }
-                }} />
-              </div>
-
-              {/* Vertical Logo */}
-              <div className="flex flex-col items-center gap-2">
-                <div onClick={() => document.getElementById('logo-v-input')?.click()} className="w-24 h-32 bg-white rounded-[1rem] flex items-center justify-center cursor-pointer border-4 border-emerald-900 shadow-xl overflow-hidden relative group">
-                  {tempInfo.logoVertical ? <img src={tempInfo.logoVertical} className="w-full h-full object-contain p-2" /> : <img src="/logo-login.png" className="w-full h-full object-contain p-2 opacity-20 grayscale" />}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center"><Camera size={20} className="text-white" /></div>
-                </div>
-                <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Vertical (Docs)</p>
-                <input id="logo-v-input" type="file" className="hidden" accept="image/*" onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) { const r = new FileReader(); r.onloadend = () => setTempInfo({ ...tempInfo, logoVertical: r.result as string }); r.readAsDataURL(f); }
-                }} />
-              </div>
-            </div>
-          </div>
-          <div className="p-8 space-y-6">
-            <SettingInput label="Razão Social" val={tempInfo.name} setVal={v => setTempInfo({ ...tempInfo, name: v })} icon={Building2} />
-            <div className="grid grid-cols-2 gap-4">
-              <SettingInput label="NUIT" val={tempInfo.nuit} setVal={v => setTempInfo({ ...tempInfo, nuit: v })} icon={FileText} />
-              <SettingInput label="Slogan Fatura" val={tempInfo.slogan} setVal={v => setTempInfo({ ...tempInfo, slogan: v })} icon={Sparkles} />
-            </div>
-            <SettingInput label="Email Oficial" val={tempInfo.email} setVal={v => setTempInfo({ ...tempInfo, email: v })} icon={Mail} />
-            <div className="grid grid-cols-2 gap-4">
-              <SettingInput label="Telefone Principal" val={tempInfo.phone} setVal={v => setTempInfo({ ...tempInfo, phone: v })} icon={Phone} />
-              <SettingInput label="Contacto Alternativo" val={tempInfo.phone2 || ''} setVal={v => setTempInfo({ ...tempInfo, phone2: v })} icon={Phone} />
-            </div>
-            <SettingInput label="Endereço" val={tempInfo.address} setVal={v => setTempInfo({ ...tempInfo, address: v })} icon={MapPin} />
-            <div className="grid grid-cols-2 gap-4">
-              <SettingInput label="Horário de Fecho (Fim de Turno)" val={tempInfo.closingTime || ''} setVal={v => setTempInfo({ ...tempInfo, closingTime: v })} icon={Clock} type="time" />
-              <SettingInput label="Início de Turno (Check-in)" val={tempInfo.workingHours?.start || '08:00'} setVal={v => setTempInfo({ ...tempInfo, workingHours: { ...(tempInfo.workingHours || { end: '18:00', days: [1, 2, 3, 4, 5] }), start: v } })} icon={Zap} type="time" />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-emerald-950 uppercase tracking-widest pl-1">Cores do Tema</label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Primary Color */}
-                <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                  <input
-                    type="color"
-                    value={tempInfo.themeColor || '#10b981'}
-                    onChange={(e) => {
-                      const newColor = e.target.value;
-                      setTempInfo({ ...tempInfo, themeColor: newColor });
-                      // Real-time preview
-                      import('../utils/theme').then(m => m.applyTheme(newColor, tempInfo.themeColorSecondary));
-                    }}
-                    className="w-12 h-12 rounded-lg cursor-pointer border-none p-0 bg-transparent"
-                  />
-                  <div className="flex-1">
-                    <p className="text-xs font-bold text-gray-500 uppercase">Cor Primária</p>
-                    <p className="text-[10px] text-gray-400">Botões, Destaques, Links.</p>
+                                </td>
+                                <td className="p-4 text-center">
+                                  <span className="text-[10px] font-bold text-gray-500">{start.toLocaleDateString()}</span>
+                                  <p className="text-[9px] text-gray-400 font-mono mt-0.5">{start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {end && `→ ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</p>
+                                </td>
+                                <td className="p-4 text-center">
+                                  {end ? (
+                                    <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">{duration.toFixed(1)}h</span>
+                                  ) : (
+                                    <span className="text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 animate-pulse">EM CURSO</span>
+                                  )}
+                                </td>
+                                <td className="p-4 text-right pr-8">
+                                  <span className={`text-[9px] font-black uppercase tracking-tight px-2 py-1 rounded-lg ${end ? 'bg-gray-100 text-gray-500' : 'bg-emerald-500 text-white'}`}>
+                                    {end ? 'Concluído' : 'Ativo'}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
+              )}
+              {reportFilter.type === 'LOGS' && <LogsDetailedReport logs={logs} filter={reportFilter} />}
+              {reportFilter.type === 'STOCK' && (
+                <StockDetailedReport
+                  products={products}
+                  priceAdjustmentAmount={priceAdjustmentAmount}
+                  setPriceAdjustmentAmount={setPriceAdjustmentAmount}
+                  handleGlobalPriceAdjustment={handleGlobalPriceAdjustment}
+                  adjustingPrices={adjustingPrices}
+                />
+              )}
+            </div>
+          </div>
+        )
+      } {
+        activeTab === 'EMAIL' && (
+          <div className="space-y-6">
+            <DomainManager companyId={String(currentUser?.companyId || '')} />
+            <EmailSettings companyId={String(currentUser?.companyId || '')} currentUser={currentUser} />
+          </div>
+        )
+      } {
+        activeTab === 'COMPANY' && (
+          <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-emerald-950 p-8 flex flex-col items-center gap-6 relative">
+              {/* Company ID Badge */}
+              <div className="absolute top-6 left-6 flex items-center gap-2 text-emerald-400/50 hover:text-emerald-400 transition-colors cursor-pointer group/id"
+                title="Clique para copiar ID"
+                onClick={() => {
+                  navigator.clipboard.writeText(`NE-${1000 + parseInt(companyInfo.id)}`);
+                  alert("ID da Empresa copiado!");
+                }}>
+                <Hash size={14} className="group-hover/id:scale-110 transition-transform" />
+                <span className="font-mono font-bold text-xs tracking-widest">NE-{1000 + parseInt(companyInfo.id)}</span>
+                <Copy size={10} className="opacity-0 group-hover/id:opacity-100 transition-opacity" />
+              </div>
 
-                {/* Secondary Color */}
-                <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                  <input
-                    type="color"
-                    value={tempInfo.themeColorSecondary || '#6366f1'}
-                    onChange={(e) => {
-                      const newColor = e.target.value;
-                      setTempInfo({ ...tempInfo, themeColorSecondary: newColor });
-                      // Real-time preview
-                      import('../utils/theme').then(m => m.applyTheme(tempInfo.themeColor || '#10b981', newColor));
-                    }}
-                    className="w-12 h-12 rounded-lg cursor-pointer border-none p-0 bg-transparent"
-                  />
-                  <div className="flex-1">
-                    <p className="text-xs font-bold text-gray-500 uppercase">Cor Secundária</p>
-                    <p className="text-[10px] text-gray-400">Acentos, Detalhes, Ícones.</p>
+              <h3 className="text-xl font-black text-white uppercase tracking-tight mb-4">Identidade Visual</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+                {/* Main/Icon Logo */}
+                <div className="flex flex-col items-center gap-2">
+                  <div onClick={() => document.getElementById('logo-input')?.click()} className="w-24 h-24 bg-white rounded-[2rem] flex items-center justify-center cursor-pointer border-4 border-emerald-900 shadow-xl overflow-hidden relative group">
+                    {tempInfo.logo ? <img src={tempInfo.logo} className="w-full h-full object-contain p-2" /> : <img src="/icon-512.png" className="w-full h-full object-contain p-2 opacity-20" />}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center"><Camera size={20} className="text-white" /></div>
                   </div>
+                  <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Principal / Ícone</p>
+                  <input id="logo-input" type="file" className="hidden" accept="image/*" onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) { const r = new FileReader(); r.onloadend = () => setTempInfo({ ...tempInfo, logo: r.result as string }); r.readAsDataURL(f); }
+                  }} />
+                </div>
+
+                {/* Horizontal Logo */}
+                <div className="flex flex-col items-center gap-2">
+                  <div onClick={() => document.getElementById('logo-h-input')?.click()} className="w-48 h-24 bg-white rounded-[1rem] flex items-center justify-center cursor-pointer border-4 border-emerald-900 shadow-xl overflow-hidden relative group">
+                    {tempInfo.logoHorizontal ? <img src={tempInfo.logoHorizontal} className="w-full h-full object-contain p-2" /> : <img src="/logo-sidebar.png" className="w-full h-full object-contain p-2 opacity-20 grayscale" />}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center"><Camera size={20} className="text-white" /></div>
+                  </div>
+                  <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Horizontal (Faturas)</p>
+                  <input id="logo-h-input" type="file" className="hidden" accept="image/*" onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) { const r = new FileReader(); r.onloadend = () => setTempInfo({ ...tempInfo, logoHorizontal: r.result as string }); r.readAsDataURL(f); }
+                  }} />
+                </div>
+
+                {/* Vertical Logo */}
+                <div className="flex flex-col items-center gap-2">
+                  <div onClick={() => document.getElementById('logo-v-input')?.click()} className="w-24 h-32 bg-white rounded-[1rem] flex items-center justify-center cursor-pointer border-4 border-emerald-900 shadow-xl overflow-hidden relative group">
+                    {tempInfo.logoVertical ? <img src={tempInfo.logoVertical} className="w-full h-full object-contain p-2" /> : <img src="/logo-login.png" className="w-full h-full object-contain p-2 opacity-20 grayscale" />}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center"><Camera size={20} className="text-white" /></div>
+                  </div>
+                  <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Vertical (Docs)</p>
+                  <input id="logo-v-input" type="file" className="hidden" accept="image/*" onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) { const r = new FileReader(); r.onloadend = () => setTempInfo({ ...tempInfo, logoVertical: r.result as string }); r.readAsDataURL(f); }
+                  }} />
                 </div>
               </div>
             </div>
+            <div className="p-8 space-y-6">
+              <SettingInput label="Razão Social" val={tempInfo.name} setVal={v => setTempInfo({ ...tempInfo, name: v })} icon={Building2} />
+              <div className="grid grid-cols-2 gap-4">
+                <SettingInput label="NUIT" val={tempInfo.nuit} setVal={v => setTempInfo({ ...tempInfo, nuit: v })} icon={FileText} />
+                <SettingInput label="Slogan Fatura" val={tempInfo.slogan} setVal={v => setTempInfo({ ...tempInfo, slogan: v })} icon={Sparkles} />
+              </div>
+              <SettingInput label="Email Oficial" val={tempInfo.email} setVal={v => setTempInfo({ ...tempInfo, email: v })} icon={Mail} />
+              <div className="grid grid-cols-2 gap-4">
+                <SettingInput label="Telefone Principal" val={tempInfo.phone} setVal={v => setTempInfo({ ...tempInfo, phone: v })} icon={Phone} />
+                <SettingInput label="Contacto Alternativo" val={tempInfo.phone2 || ''} setVal={v => setTempInfo({ ...tempInfo, phone2: v })} icon={Phone} />
+              </div>
+              <SettingInput label="Endereço" val={tempInfo.address} setVal={v => setTempInfo({ ...tempInfo, address: v })} icon={MapPin} />
+              <div className="grid grid-cols-2 gap-4">
+                <SettingInput label="Horário de Fecho (Fim de Turno)" val={tempInfo.closingTime || ''} setVal={v => setTempInfo({ ...tempInfo, closingTime: v })} icon={Clock} type="time" />
+                <SettingInput label="Início de Turno (Check-in)" val={tempInfo.workingHours?.start || '08:00'} setVal={v => setTempInfo({ ...tempInfo, workingHours: { ...(tempInfo.workingHours || { end: '18:00', days: [1, 2, 3, 4, 5] }), start: v } })} icon={Zap} type="time" />
+              </div>
 
-            {/* Payment Methods Management */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-emerald-950 uppercase tracking-widest pl-1">Métodos de Pagamento Customizados</label>
-              <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
-                <div className="flex gap-2">
-                  <input id="new-method-input" className="flex-1 px-4 py-2 rounded-lg text-xs font-bold border border-gray-200 outline-none focus:border-emerald-500" placeholder="Novo Método (Ex: M-Kesh)" />
-                  <button onClick={() => {
-                    const inp = document.getElementById('new-method-input') as HTMLInputElement;
-                    const val = inp.value.trim();
-                    if (val) {
-                      const current = tempInfo.paymentMethods || [];
-                      if (!current.includes(val)) {
-                        setTempInfo({ ...tempInfo, paymentMethods: [...current, val] });
-                        inp.value = '';
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-emerald-950 uppercase tracking-widest pl-1">Cores do Tema</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Primary Color */}
+                  <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <input
+                      type="color"
+                      value={tempInfo.themeColor || '#10b981'}
+                      onChange={(e) => {
+                        const newColor = e.target.value;
+                        setTempInfo({ ...tempInfo, themeColor: newColor });
+                        // Real-time preview
+                        import('../utils/theme').then(m => m.applyTheme(newColor, tempInfo.themeColorSecondary));
+                      }}
+                      className="w-12 h-12 rounded-lg cursor-pointer border-none p-0 bg-transparent"
+                    />
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-gray-500 uppercase">Cor Primária</p>
+                      <p className="text-[10px] text-gray-400">Botões, Destaques, Links.</p>
+                    </div>
+                  </div>
+
+                  {/* Secondary Color */}
+                  <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <input
+                      type="color"
+                      value={tempInfo.themeColorSecondary || '#6366f1'}
+                      onChange={(e) => {
+                        const newColor = e.target.value;
+                        setTempInfo({ ...tempInfo, themeColorSecondary: newColor });
+                        // Real-time preview
+                        import('../utils/theme').then(m => m.applyTheme(tempInfo.themeColor || '#10b981', newColor));
+                      }}
+                      className="w-12 h-12 rounded-lg cursor-pointer border-none p-0 bg-transparent"
+                    />
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-gray-500 uppercase">Cor Secundária</p>
+                      <p className="text-[10px] text-gray-400">Acentos, Detalhes, Ícones.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Methods Management */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-emerald-950 uppercase tracking-widest pl-1">Métodos de Pagamento Customizados</label>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
+                  <div className="flex gap-2">
+                    <input id="new-method-input" className="flex-1 px-4 py-2 rounded-lg text-xs font-bold border border-gray-200 outline-none focus:border-emerald-500" placeholder="Novo Método (Ex: M-Kesh)" />
+                    <button onClick={() => {
+                      const inp = document.getElementById('new-method-input') as HTMLInputElement;
+                      const val = inp.value.trim();
+                      if (val) {
+                        const current = tempInfo.paymentMethods || [];
+                        if (!current.includes(val)) {
+                          setTempInfo({ ...tempInfo, paymentMethods: [...current, val] });
+                          inp.value = '';
+                        }
                       }
-                    }
-                  }} className="bg-emerald-600 text-white px-4 rounded-lg font-bold text-xs uppercase hover:bg-emerald-700">Adicionar</button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {tempInfo.paymentMethods?.map(m => (
-                    <span key={m} className="bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase text-gray-600 flex items-center gap-2">
-                      {m}
-                      <button onClick={() => setTempInfo({ ...tempInfo, paymentMethods: tempInfo.paymentMethods?.filter(pm => pm !== m) })} className="text-red-400 hover:text-red-600"><X size={12} /></button>
-                    </span>
-                  ))}
-                  {(!tempInfo.paymentMethods || tempInfo.paymentMethods.length === 0) && <p className="text-[10px] text-gray-400 italic">Nenhum método customizado.</p>}
+                    }} className="bg-emerald-600 text-white px-4 rounded-lg font-bold text-xs uppercase hover:bg-emerald-700">Adicionar</button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {tempInfo.paymentMethods?.map(m => (
+                      <span key={m} className="bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase text-gray-600 flex items-center gap-2">
+                        {m}
+                        <button onClick={() => setTempInfo({ ...tempInfo, paymentMethods: tempInfo.paymentMethods?.filter(pm => pm !== m) })} className="text-red-400 hover:text-red-600"><X size={12} /></button>
+                      </span>
+                    ))}
+                    {(!tempInfo.paymentMethods || tempInfo.paymentMethods.length === 0) && <p className="text-[10px] text-gray-400 italic">Nenhum método customizado.</p>}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Shift Management */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Clock className="text-emerald-600" size={18} />
-                <h4 className="text-[10px] font-black text-emerald-950 uppercase tracking-widest">Configuração de Turnos</h4>
+              {/* Shift Management */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="text-emerald-600" size={18} />
+                  <h4 className="text-[10px] font-black text-emerald-950 uppercase tracking-widest">Configuração de Turnos</h4>
+                </div>
+                <ShiftsManager
+                  shifts={tempInfo.shifts || []}
+                  onUpdate={(newShifts) => setTempInfo({ ...tempInfo, shifts: newShifts })}
+                />
               </div>
-              <ShiftsManager
-                shifts={tempInfo.shifts || []}
-                onUpdate={(newShifts) => setTempInfo({ ...tempInfo, shifts: newShifts })}
-              />
+
+              <button onClick={async () => {
+                try {
+                  await import('../services').then(mod => mod.CompanyService.update(tempInfo));
+                  setCompanyInfo(tempInfo);
+
+                  // Update theme immediately if changed
+                  if (tempInfo.themeColor) {
+                    import('../utils/theme').then(m => m.applyTheme(tempInfo.themeColor!, tempInfo.themeColorSecondary));
+                  }
+
+                  NotificationService.sendSystemAlert('UPDATE_COMPANY_INFO', tempInfo, currentUser, 'Informações da empresa/logos atualizadas.');
+                  alert("Dados da empresa atualizados com sucesso!");
+                } catch (e: any) {
+                  console.error(e);
+                  if (e.message && e.message.includes("DADOS SALVOS!")) {
+                    alert("✅ " + e.message);
+                  } else if (e.message && (e.message.includes("schema cache") || e.message.includes("payment_methods"))) {
+                    // If schema cache is stale, reload might fix it
+                    alert("A base de dados foi atualizada. A página será recarregada para aplicar as mudanças.");
+                    window.location.reload();
+                  } else {
+                    alert("Erro ao salvar: " + (e.message || "Verifique a base de dados. Provavelmente faltam as colunas 'logo_vertical' e 'logo_horizontal'. Execute o script SQL fornecido."));
+                  }
+                }
+              }} className="w-full bg-emerald-700 text-white py-5 rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all outline-none focus:ring-4 focus:ring-emerald-500/20 hover:bg-emerald-800">Actualizar Cadastro & Logos</button>
             </div>
-
-            <button onClick={async () => {
-              try {
-                await import('../services').then(mod => mod.CompanyService.update(tempInfo));
-                setCompanyInfo(tempInfo);
-
-                // Update theme immediately if changed
-                if (tempInfo.themeColor) {
-                  import('../utils/theme').then(m => m.applyTheme(tempInfo.themeColor!, tempInfo.themeColorSecondary));
-                }
-
-                NotificationService.sendSystemAlert('UPDATE_COMPANY_INFO', tempInfo, currentUser, 'Informações da empresa/logos atualizadas.');
-                alert("Dados da empresa atualizados com sucesso!");
-              } catch (e: any) {
-                console.error(e);
-                if (e.message && e.message.includes("DADOS SALVOS!")) {
-                  alert("✅ " + e.message);
-                } else if (e.message && (e.message.includes("schema cache") || e.message.includes("payment_methods"))) {
-                  // If schema cache is stale, reload might fix it
-                  alert("A base de dados foi atualizada. A página será recarregada para aplicar as mudanças.");
-                  window.location.reload();
-                } else {
-                  alert("Erro ao salvar: " + (e.message || "Verifique a base de dados. Provavelmente faltam as colunas 'logo_vertical' e 'logo_horizontal'. Execute o script SQL fornecido."));
-                }
-              }
-            }} className="w-full bg-emerald-700 text-white py-5 rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all outline-none focus:ring-4 focus:ring-emerald-500/20 hover:bg-emerald-800">Actualizar Cadastro & Logos</button>
           </div>
-        </div>
-      )} {activeTab === 'PROFILE' && (
-        <div className="bg-[#f3f7f6] min-h-[600px] space-y-6">
-          <UserProfileEditor currentUser={currentUser} sales={sales || []} onUpdate={(updatedUser) => {
-            onUpdateTeam(team.map(u => u.id === updatedUser.id ? updatedUser : u));
-            NotificationService.sendSystemAlert('UPDATE_PROFILE', companyInfo, updatedUser, `Perfil de utilizador ${updatedUser.name} atualizado.`);
-          }} />
-        </div>
-      )} {activeTab === 'PERFORMANCE' && (
-        <div className="space-y-6">
-          <PerformanceReport
-            sales={sales}
-            team={team}
+        )
+      } {
+        activeTab === 'PROFILE' && (
+          <div className="bg-[#f3f7f6] min-h-[600px] space-y-6">
+            <UserProfileEditor currentUser={currentUser} sales={sales || []} onUpdate={(updatedUser) => {
+              onUpdateTeam(team.map(u => u.id === updatedUser.id ? updatedUser : u));
+              NotificationService.sendSystemAlert('UPDATE_PROFILE', companyInfo, updatedUser, `Perfil de utilizador ${updatedUser.name} atualizado.`);
+            }} />
+          </div>
+        )
+      } {
+        activeTab === 'PERFORMANCE' && (
+          <div className="space-y-6">
+            <PerformanceReport
+              sales={sales}
+              team={team}
+            />
+          </div>
+        )
+      } {
+        activeTab === 'EXPENSES' && (
+          <div className="space-y-6">
+            <ExpensesView expenses={expenses} team={team} currentUser={currentUser} />
+          </div>
+        )
+      } {
+        activeTab === 'SUPPORT' && (
+          <div className="space-y-6">
+            <Support currentUser={currentUser} />
+          </div>
+        )
+      } {
+        activeTab === 'TEAM' && (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-3xl shadow-sm border flex justify-between items-center">
+              <h3 className="text-lg font-black text-emerald-950 uppercase tracking-tight">Equipa</h3>
+              <button onClick={() => { setEditingEmployee(null); setIsEmployeeModalOpen(true); }} className="p-3 bg-emerald-700 text-white rounded-xl shadow-lg"><UserPlus size={20} /></button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {team.map(member => (
+                <div key={member.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 flex items-center gap-5 shadow-sm active:bg-gray-50 transition-colors">
+                  <div className="w-14 h-14 bg-emerald-950 text-emerald-400 rounded-xl flex items-center justify-center font-black text-xl overflow-hidden shrink-0">
+                    {member.photo ? <img src={member.photo} className="w-full h-full object-cover" /> : member.name.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-black text-emerald-950 uppercase text-xs truncate flex items-center gap-2">
+                      {member.name}
+                      {member.employeeId && (
+                        <span className="text-[9px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-mono">{member.employeeId}</span>
+                      )}
+                    </p>
+                    <p className="text-[10px] text-emerald-600 font-bold uppercase truncate">{member.role} • {member.responsibility}</p>
+                    {member.email && (
+                      <p className="text-[9px] text-gray-400 font-medium truncate">{member.email}</p>
+                    )}
+                  </div>
+                  <button onClick={() => { setEditingEmployee(member); setIsEmployeeModalOpen(true); }} className="p-3 text-gray-300 hover:text-emerald-700"><Edit2 size={18} /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      } {
+        activeTab === 'SYSTEM' && (
+          <SystemSettings
+            companyInfo={companyInfo}
+            currentUser={currentUser}
+            onUpdateCompany={(updated) => {
+              setCompanyInfo(updated);
+              setTempInfo(updated);
+            }}
           />
-        </div>
-      )} {activeTab === 'EXPENSES' && (
-        <div className="space-y-6">
-          <ExpensesView expenses={expenses} team={team} currentUser={currentUser} />
-        </div>
-      )} {activeTab === 'SUPPORT' && (
-        <div className="space-y-6">
-          <Support currentUser={currentUser} />
-        </div>
-      )} {activeTab === 'TEAM' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-3xl shadow-sm border flex justify-between items-center">
-            <h3 className="text-lg font-black text-emerald-950 uppercase tracking-tight">Equipa</h3>
-            <button onClick={() => { setEditingEmployee(null); setIsEmployeeModalOpen(true); }} className="p-3 bg-emerald-700 text-white rounded-xl shadow-lg"><UserPlus size={20} /></button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {team.map(member => (
-              <div key={member.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 flex items-center gap-5 shadow-sm active:bg-gray-50 transition-colors">
-                <div className="w-14 h-14 bg-emerald-950 text-emerald-400 rounded-xl flex items-center justify-center font-black text-xl overflow-hidden shrink-0">
-                  {member.photo ? <img src={member.photo} className="w-full h-full object-cover" /> : member.name.charAt(0)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-black text-emerald-950 uppercase text-xs truncate">{member.name}</p>
-                  <p className="text-[10px] text-emerald-600 font-bold uppercase truncate">{member.role} • {member.responsibility}</p>
-                </div>
-                <button onClick={() => { setEditingEmployee(member); setIsEmployeeModalOpen(true); }} className="p-3 text-gray-300 hover:text-emerald-700"><Edit2 size={18} /></button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )} {activeTab === 'SYSTEM' && (
-        <SystemSettings
-          companyInfo={companyInfo}
-          currentUser={currentUser}
-          onUpdateCompany={(updated) => {
-            setCompanyInfo(updated);
-            setTempInfo(updated);
-          }}
-        />
-      )}
+        )
+      }
 
       {/* Employee Modal - Standard Safe Layout - Rendered via Portal */}
       {
@@ -1337,7 +1370,25 @@ export const Settings: React.FC<SettingsProps> = ({
                       <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Nome Completo</label>
                       <div className="relative">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><UserIcon size={16} /></div>
-                        <input name="name" placeholder="Ex: Arnaldo Eurico" required defaultValue={editingEmployee?.name} className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all placeholder:font-medium placeholder:text-gray-300" />
+                        <input
+                          name="name"
+                          placeholder="Ex: Arnaldo Eurico"
+                          required
+                          defaultValue={editingEmployee?.name}
+                          onChange={(e) => {
+                            const name = e.target.value;
+                            const emailInp = document.getElementById('employee-email-input') as HTMLInputElement;
+                            // Auto-suggest virtual email based on next ID if it's a new user
+                            if (emailInp && !editingEmployee && name.length >= 1) {
+                              const domain = companyInfo.emailDomain || 'nobreza.site';
+                              const prefix = nextEmployeeId.toLowerCase().replace('nu-', '');
+                              if (!emailInp.value || emailInp.value.includes(domain)) {
+                                emailInp.value = `${prefix}@${domain}`;
+                              }
+                            }
+                          }}
+                          className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all placeholder:font-medium placeholder:text-gray-300"
+                        />
                       </div>
                     </div>
 
@@ -1345,7 +1396,15 @@ export const Settings: React.FC<SettingsProps> = ({
                       <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Corporativo</label>
                       <div className="relative">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Mail size={16} /></div>
-                        <input name="email" type="email" placeholder="admin@nobreza.site" required defaultValue={editingEmployee?.email} className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all placeholder:font-medium placeholder:text-gray-300" />
+                        <input
+                          id="employee-email-input"
+                          name="email"
+                          type="email"
+                          placeholder="admin@nobreza.site"
+                          required
+                          defaultValue={editingEmployee?.email || (nextEmployeeId ? `${nextEmployeeId.toLowerCase().replace('nu-', '')}@${companyInfo.emailDomain || 'nobreza.site'}` : '')}
+                          className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all placeholder:font-medium placeholder:text-gray-300"
+                        />
                       </div>
                     </div>
 
@@ -1408,7 +1467,7 @@ export const Settings: React.FC<SettingsProps> = ({
                         <div>
                           <span className="text-[10px] font-black uppercase text-emerald-800 tracking-widest block">ID do Utilizador</span>
                           <span className="text-lg font-black text-emerald-950 font-mono tracking-wider flex items-center gap-2">
-                            NU-{1000 + parseInt(editingEmployee.id)}
+                            {editingEmployee.employeeId || `NU-${1000 + parseInt(editingEmployee.id)}`}
                             <Copy size={14} className="opacity-40 group-hover/user-id:opacity-100 transition-opacity" />
                           </span>
                         </div>
@@ -1416,6 +1475,25 @@ export const Settings: React.FC<SettingsProps> = ({
                           <Fingerprint className="text-emerald-600" size={20} />
                         </div>
                       </div>
+                    )}
+
+                    {editingEmployee?.email && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            if (window.confirm(`Deseja enviar um link de acesso rápido (Magic Link) para ${editingEmployee.email}?`)) {
+                              await AuthService.sendMagicLink(editingEmployee.email);
+                              alert("✅ Magic Link enviado com sucesso!");
+                            }
+                          } catch (e: any) {
+                            alert("❌ Erro ao enviar Magic Link: " + e.message);
+                          }
+                        }}
+                        className="w-full bg-emerald-50 text-emerald-700 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest border border-emerald-100 hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Zap size={14} /> Enviar Magic Link (Acesso Rápido)
+                      </button>
                     )}
 
                     <button type="submit" className="w-full bg-emerald-700 text-white py-5 rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all outline-none focus:ring-4 focus:ring-emerald-500/20 hover:bg-emerald-800">

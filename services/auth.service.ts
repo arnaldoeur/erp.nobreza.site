@@ -6,7 +6,7 @@ export const AuthService = {
     login: async (email: string, password: string): Promise<User> => {
         // 1. Strict Authentication via Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-            email,
+            email: email.toLowerCase(),
             password
         });
 
@@ -29,7 +29,7 @@ export const AuthService = {
             const { data: legacyUser, error: legacyError } = await supabase
                 .from('users')
                 .select('*')
-                .eq('email', email)
+                .ilike('email', email)
                 .single();
 
             // REPAIR LOGIC: If still no user, we create one automatically from Auth Data
@@ -83,6 +83,7 @@ export const AuthService = {
         const mappedUser = {
             ...targetUser,
             companyId: targetUser.company_id,
+            employeeId: targetUser.employee_id,
             baseSalary: targetUser.base_salary,
             baseHours: targetUser.base_hours,
             hireDate: new Date(targetUser.created_at || new Date())
@@ -120,7 +121,7 @@ export const AuthService = {
 
         // 2. Register in Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: user.email,
+            email: user.email.toLowerCase(),
             password: password,
             options: {
                 data: {
@@ -210,6 +211,7 @@ export const AuthService = {
                 const mappedUser = {
                     ...user,
                     companyId: targetCompanyId,
+                    employeeId: user.employee_id,
                     baseSalary: user.base_salary,
                     baseHours: user.base_hours,
                     hireDate: new Date(user.created_at || new Date())
@@ -222,13 +224,14 @@ export const AuthService = {
             const { data: secondaryUser, error: secondaryError } = await supabase
                 .from('users')
                 .select('*')
-                .eq('email', session.user.email)
+                .ilike('email', session.user.email)
                 .single();
 
             if (secondaryUser && !secondaryError) {
                 const mappedUser = {
                     ...secondaryUser,
                     companyId: targetCompanyId || secondaryUser.company_id,
+                    employeeId: secondaryUser.employee_id,
                     baseSalary: secondaryUser.base_salary,
                     baseHours: secondaryUser.base_hours,
                     hireDate: new Date(secondaryUser.created_at || new Date())
@@ -271,6 +274,7 @@ export const AuthService = {
 
         return (data || []).map(u => ({
             ...u,
+            employeeId: u.employee_id,
             baseSalary: u.base_salary,
             baseHours: u.base_hours,
             hireDate: new Date(u.created_at || new Date())
@@ -283,6 +287,7 @@ export const AuthService = {
 
         const payload = {
             id: user.id || undefined,
+            employee_id: user.employeeId,
             name: user.name,
             email: user.email,
             contact: user.contact,
@@ -347,34 +352,73 @@ export const AuthService = {
     },
 
     activateAccount: async (email: string, password: string, name: string): Promise<void> => {
-        // 1. Register in Supabase Auth
+        const normalizedEmail = email.toLowerCase().trim();
+
+        // 1. Check if the user exists in public.users (Profile Check)
+        const { data: exists, error: profileError } = await supabase
+            .rpc('check_user_active_profile', { target_email: normalizedEmail });
+
+        if (profileError || !exists) {
+            throw new Error("Utilizador não encontrado na nossa base de dados. Por favor, contacte o administrador para ser adicionado à equipa.");
+        }
+
+        // 2. Register in Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
-            email,
+            email: normalizedEmail,
             password,
             options: {
                 data: { name }
             }
         });
 
-        if (authError) throw new Error(authError.message);
-        if (!authData.user) throw new Error("Falha ao criar conta.");
+        if (authError) {
+            if (authError.message.includes("already registered")) {
+                throw new Error("Esta conta já está registada. Por favor, tente iniciar sessão ou utilize a opção 'Esqueceu a Senha'.");
+            }
+            throw new Error(authError.message);
+        }
 
-        // 2. Claim the placeholder profile
+        if (!authData.user) throw new Error("Falha ao criar conta de autenticação.");
+
+        // 3. Claim the placeholder profile
         const { data: claimed, error: claimError } = await supabase.rpc('claim_public_profile', {
-            target_email: email
+            target_email: normalizedEmail
         });
 
         if (claimError) {
             console.error("Claim error:", claimError);
-            throw new Error("Conta criada, mas erro ao vincular perfil: " + claimError.message);
+            throw new Error("Conta ativada, mas erro ao vincular perfil: " + claimError.message);
         }
+    },
 
-        if (!claimed) {
-            // Edge case: No placeholder existed?
-            // Depending on strictness, we might throw or just proceed as a fresh user
-            console.warn("No placeholder profile found for email:", email);
-        }
+    resetPassword: async (email: string): Promise<void> => {
+        const { data, error } = await supabase.functions.invoke('resend-domains', {
+            body: {
+                action: 'REQUEST_PASSWORD_RESET',
+                email: email.toLowerCase().trim(),
+                redirectTo: `${window.location.origin}/#reset-password`
+            }
+        });
 
-        // 3. Login immediately handled by signUp usually, but good to ensure session
+        if (error) throw new Error("Erro na Edge Function: " + error.message);
+        if (data?.error) throw new Error(data.error);
+    },
+
+    updateUserPassword: async (password: string): Promise<void> => {
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw new Error(error.message);
+    },
+
+    sendMagicLink: async (email: string): Promise<void> => {
+        const { data, error } = await supabase.functions.invoke('resend-domains', {
+            body: {
+                action: 'SEND_MAGIC_LINK',
+                email: email.toLowerCase().trim(),
+                redirectTo: `${window.location.origin}`
+            }
+        });
+
+        if (error) throw new Error("Erro na Edge Function: " + error.message);
+        if (data?.error) throw new Error(data.error);
     }
 };

@@ -42,7 +42,7 @@ import { Calendar } from './components/Calendar';
 import { EmailCenter } from './components/EmailCenter';
 import { useSystem } from './contexts/SystemContext';
 
-type AuthView = 'LOGIN' | 'REGISTER' | 'FORGOT_PASSWORD' | 'SUPER_ADMIN_LOGIN' | 'TERMS' | 'PRIVACY' | 'ACTIVATE';
+type AuthView = 'LOGIN' | 'REGISTER' | 'FORGOT_PASSWORD' | 'SUPER_ADMIN_LOGIN' | 'TERMS' | 'PRIVACY' | 'ACTIVATE' | 'RESET_PASSWORD' | 'SENT_CONFIRMATION';
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState('dashboard');
@@ -56,6 +56,7 @@ const App: React.FC = () => {
   // Auth State
   const [authView, setAuthView] = useState<AuthView>(() => {
     const hash = window.location.hash;
+    if (hash.includes('type=recovery') || hash.includes('reset-password')) return 'RESET_PASSWORD';
     return (hash.includes('superadmin') || hash.includes('super_admin')) ? 'SUPER_ADMIN_LOGIN' : 'LOGIN';
   });
   const [authError, setAuthError] = useState<string | null>(null);
@@ -215,6 +216,10 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace(/^#\/?/, '');
+      if (hash.includes('type=recovery') || hash.includes('reset-password')) {
+        setAuthView('RESET_PASSWORD');
+        return;
+      }
       if (hash.includes('superadmin') || hash.includes('super_admin')) {
         if (!isAuthenticated) {
           setAuthView('SUPER_ADMIN_LOGIN');
@@ -375,6 +380,44 @@ const App: React.FC = () => {
       setAuthView('LOGIN');
     } catch (error: any) {
       setAuthError(error.message || "Erro ao ativar conta.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRequestReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setAuthError(null);
+    const email = (e.target as any).email.value;
+    try {
+      await AuthService.resetPassword(email);
+      setAuthView('SENT_CONFIRMATION');
+    } catch (error: any) {
+      setAuthError("Erro ao enviar email de recuperação: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setAuthError(null);
+    const password = (e.target as any).password.value;
+    const confirm = (e.target as any).confirmPassword.value;
+    if (password !== confirm) {
+      setAuthError("As senhas não coincidem.");
+      setLoading(false);
+      return;
+    }
+    try {
+      await AuthService.updateUserPassword(password);
+      alert("Senha atualizada com sucesso! Faça login agora.");
+      window.location.hash = '';
+      setAuthView('LOGIN');
+    } catch (error: any) {
+      setAuthError("Erro ao atualizar senha: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -551,15 +594,61 @@ const App: React.FC = () => {
               </form>
             )}
             {authView === 'FORGOT_PASSWORD' && (
-              <div className="space-y-8 text-center py-8">
-                <div className="w-20 h-20 bg-emerald-100 rounded-[2rem] flex items-center justify-center mx-auto text-emerald-600"><Lock size={32} /></div>
-                <div><h3 className="text-2xl font-black text-slate-900 mb-2">Recuperar Acesso</h3><p className="text-slate-400 font-medium text-sm">Contacte o suporte técnico.</p></div>
-                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-left flex gap-4 items-center">
-                  <div className="bg-white p-3 rounded-xl shadow-sm text-emerald-500"><Mail size={24} /></div>
-                  <div><p className="text-[10px] uppercase font-bold text-slate-400">Email de Suporte</p><p className="text-emerald-950 font-bold text-lg">support@nobreza.site</p></div>
+              <form onSubmit={handleRequestReset} className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-emerald-100 rounded-[2rem] flex items-center justify-center mx-auto text-emerald-600 mb-6"><Lock size={32} /></div>
+                  <h3 className="text-2xl font-black text-slate-900 mb-2">Recuperar Acesso</h3>
+                  <p className="text-slate-400 font-medium text-sm">Insira o seu email para receber um link de recuperação.</p>
+                </div>
+                <div className="space-y-2 group">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-1 group-focus-within:text-emerald-600 transition-colors">Email Registado</label>
+                  <div className="relative">
+                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors" size={20} />
+                    <input name="email" type="email" className="w-full pl-14 pr-6 py-4 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-700 shadow-sm transition-all placeholder-slate-300" required placeholder="exemplo@nobreza.site" />
+                  </div>
+                </div>
+                <button type="submit" disabled={loading} className="w-full bg-emerald-950 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl active:scale-[0.98] transition-all">
+                  {loading ? "Enviando..." : "Enviar Link de Recuperação"}
+                </button>
+                <button type="button" onClick={() => setAuthView('LOGIN')} className="w-full text-center text-xs font-bold text-slate-400 uppercase tracking-widest hover:text-emerald-600">Voltar para o Login</button>
+              </form>
+            )}
+            {authView === 'SENT_CONFIRMATION' && (
+              <div className="space-y-8 text-center py-8 animate-in zoom-in-95 duration-300">
+                <div className="w-20 h-20 bg-blue-100 rounded-[2rem] flex items-center justify-center mx-auto text-blue-600"><Sparkles size={32} /></div>
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 mb-2">Email Enviado!</h3>
+                  <p className="text-slate-400 font-medium text-sm leading-relaxed px-4">Enviámos um link de recuperação para o seu email. Por favor, verifique a sua caixa de entrada (e a pasta de SPAM).</p>
                 </div>
                 <button type="button" onClick={() => setAuthView('LOGIN')} className="w-full bg-emerald-950 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs">Voltar ao Login</button>
               </div>
+            )}
+            {authView === 'RESET_PASSWORD' && (
+              <form onSubmit={handleUpdatePassword} className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
+                <div>
+                  <h2 className="text-3xl font-black text-slate-900 mb-2">Nova Senha</h2>
+                  <p className="text-slate-400 font-medium">Defina agora a sua nova credencial de acesso.</p>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-2 group">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-1 group-focus-within:text-emerald-600 transition-colors">Nova Senha</label>
+                    <div className="relative">
+                      <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors" size={20} />
+                      <input name="password" type="password" className="w-full pl-14 pr-6 py-4 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-700 shadow-sm transition-all" required minLength={6} placeholder="Mínimo 6 caracteres" />
+                    </div>
+                  </div>
+                  <div className="space-y-2 group">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-1 group-focus-within:text-emerald-600 transition-colors">Confirmar Senha</label>
+                    <div className="relative">
+                      <ShieldCheck className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors" size={20} />
+                      <input name="confirmPassword" type="password" className="w-full pl-14 pr-6 py-4 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-700 shadow-sm transition-all" required placeholder="Repita a senha" />
+                    </div>
+                  </div>
+                </div>
+                <button type="submit" disabled={loading} className="w-full bg-emerald-950 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl active:scale-[0.98] transition-all">
+                  {loading ? "Gravando..." : "Atualizar Senha"}
+                </button>
+              </form>
             )}
           </div>
         </div>

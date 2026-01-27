@@ -26,10 +26,11 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({
 
     const ensureAbsoluteUrl = (url: string) => {
         if (!url) return '';
-        if (url.startsWith('http')) return url;
+        const trimmed = url.trim();
+        if (trimmed.startsWith('http') || trimmed.startsWith('data:')) return trimmed;
         // If it's a local path, we attempt to use current origin. 
         // Note: For production, this will work. For localhost, it won't be visible to others.
-        return `${window.location.protocol}//${window.location.host}${url.startsWith('/') ? '' : '/'}${url}`;
+        return `${window.location.protocol}//${window.location.host}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
     };
 
     const logoUrl = ensureAbsoluteUrl(companyInfo.logoHorizontal || companyInfo.logo || '');
@@ -39,7 +40,7 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({
     <table border="0" cellpadding="0" cellspacing="0" style="width: 100%;">
         <tr>
             ${logoUrl ? `<td style="vertical-align: top; padding-bottom: 20px;" colspan="2">
-                <img src="${logoUrl}" alt="Company Logo" style="height: 48px; width: auto; display: block; filter: saturate(1.1) brightness(1.05);" />
+                <img src="${logoUrl}" alt="Logotipo" style="max-height: 80px; max-width: 250px; width: auto; height: auto; display: block; filter: saturate(1.1) brightness(1.05);" />
             </td>` : ''}
         </tr>
         <tr>
@@ -190,21 +191,21 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({
                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block group-focus-within:text-emerald-600">Mensagem</label>
                     </div>
 
-                    <div className="flex flex-col border border-gray-100 rounded-2xl bg-gray-50/50 shadow-sm overflow-hidden focus-within:border-emerald-500 focus-within:bg-white transition-all">
+                    <div className="flex flex-col border border-gray-100 rounded-2xl bg-gray-50/50 shadow-inner overflow-hidden focus-within:border-emerald-500 focus-within:bg-white transition-all ring-emerald-50 focus-within:ring-4">
                         {/* Toolbar */}
-                        <div className="flex items-center gap-1 p-2 bg-gray-100/50 border-b border-gray-100">
-                            <button onClick={() => execCmd('bold')} className="p-1.5 hover:bg-white rounded transition-all text-gray-600 hover:text-emerald-600" title="Negrito"><Bold size={14} /></button>
-                            <button onClick={() => execCmd('italic')} className="p-1.5 hover:bg-white rounded transition-all text-gray-600 hover:text-emerald-600" title="Itálico"><Italic size={14} /></button>
-                            <div className="w-px h-4 bg-gray-200 mx-1" />
-                            <button onClick={() => execCmd('insertUnorderedList')} className="p-1.5 hover:bg-white rounded transition-all text-gray-600 hover:text-emerald-600"><List size={14} /></button>
-                            <button onClick={() => execCmd('justifyLeft')} className="p-1.5 hover:bg-white rounded transition-all text-gray-600 hover:text-emerald-600"><AlignLeft size={14} /></button>
+                        <div className="flex items-center gap-1 p-3 bg-gray-100/80 border-b border-gray-100 backdrop-blur-sm sticky top-0 z-10">
+                            <button onClick={() => execCmd('bold')} className="p-2 hover:bg-white rounded-lg transition-all text-gray-600 hover:text-emerald-600 hover:shadow-sm active:scale-95" title="Negrito"><Bold size={16} /></button>
+                            <button onClick={() => execCmd('italic')} className="p-2 hover:bg-white rounded-lg transition-all text-gray-600 hover:text-emerald-600 hover:shadow-sm active:scale-95" title="Itálico"><Italic size={16} /></button>
+                            <div className="w-px h-6 bg-gray-200 mx-2" />
+                            <button onClick={() => execCmd('insertUnorderedList')} className="p-2 hover:bg-white rounded-lg transition-all text-gray-600 hover:text-emerald-600 hover:shadow-sm active:scale-95" title="Lista"><List size={16} /></button>
+                            <button onClick={() => execCmd('justifyLeft')} className="p-2 hover:bg-white rounded-lg transition-all text-gray-600 hover:text-emerald-600 hover:shadow-sm active:scale-95" title="Alinhar Esquerda"><AlignLeft size={16} /></button>
                         </div>
 
                         {/* Rich Editor */}
                         <div
                             id="email-editor"
                             contentEditable
-                            className="w-full p-6 text-sm font-medium outline-none h-[250px] overflow-y-auto"
+                            className="w-full p-8 text-sm font-medium outline-none min-h-[300px] max-h-[500px] overflow-y-auto leading-relaxed text-gray-700"
                             dangerouslySetInnerHTML={{ __html: initialBody.replace(/\n/g, '<br/>') }}
                         />
                     </div>
