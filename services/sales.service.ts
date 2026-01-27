@@ -40,68 +40,41 @@ export const SalesService = {
     },
 
     addSale: async (sale: Sale): Promise<void> => {
-        console.log('📦 SalesService.addSale chamado com:', sale);
-
         const user = AuthService.getCurrentUser();
-        console.log('👤 Usuário autenticado:', user);
-
-        if (!user) {
-            console.error('❌ No authenticated user found');
-            throw new Error("Não autenticado. Por favor, faça login novamente.");
-        }
-
-        if (!user.companyId) {
-            console.error('❌ User has no company ID:', user);
-            throw new Error("Utilizador sem empresa associada.");
+        if (!user || !user.companyId) {
+            throw new Error("Não autenticado ou empresa não associada.");
         }
 
         const saleData = {
             company_id: user.companyId,
+            user_id: user.id,
+            customer_id: null, // If you have customer ID, use it here
             customer_name: sale.customerName,
             total: sale.total,
+            discount: 0, // Add discount field to Sale type if needed
             payment_method: sale.paymentMethod,
             type: sale.type,
             performed_by: sale.performedBy || user.name
         };
 
-        console.log('💾 Dados da venda a inserir:', saleData);
-
-        // Insert Sale
-        const { data: newSale, error: saleError } = await supabase
-            .from('sales')
-            .insert(saleData)
-            .select()
-            .single();
-
-        if (saleError || !newSale) {
-            console.error('❌ Error adding sale:', saleError);
-            throw saleError || new Error('Falha ao criar venda');
-        }
-
-        console.log('✅ Venda criada no Supabase:', newSale);
-
-        // Insert Items
-        const itemsWithSaleId = sale.items.map(item => ({
-            company_id: user.companyId,
-            sale_id: newSale.id,
+        const itemsData = sale.items.map(item => ({
             product_id: item.productId,
-            product_name: item.productName,
             quantity: item.quantity,
             unit_price: item.unitPrice,
             total: item.total
         }));
 
-        console.log('📝 Itens a inserir:', itemsWithSaleId);
+        const { data, error } = await supabase.rpc('process_sale', {
+            p_sale_data: saleData,
+            p_items_data: itemsData
+        });
 
-        const { error: itemsError } = await supabase.from('sale_items').insert(itemsWithSaleId);
-
-        if (itemsError) {
-            console.error('❌ Error adding sale items:', itemsError);
-            // Rollback sale
-            await supabase.from('sales').delete().eq('id', newSale.id);
-            throw itemsError;
+        if (error) {
+            console.error('❌ Error processing atomic sale:', error);
+            throw new Error(`Falha ao processar venda: ${error.message}`);
         }
 
-        console.log('✅ Itens da venda inseridos com sucesso');
+        console.log('✅ Venda atómica processada com sucesso:', data);
     }
+
 };

@@ -125,7 +125,7 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({
             `;
 
             await EmailClientService.sendEmailViaResend(
-                `${account.display_name} <${account.email}>`,
+                `${account.display_name} <${account.email.toLowerCase()}>`,
                 [to],
                 subject,
                 finalHtml,

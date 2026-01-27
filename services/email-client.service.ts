@@ -46,22 +46,37 @@ export const EmailClientService = {
     /**
      * Send email using Resend API (for verified domains)
      */
-    async sendEmailViaResend(from: string, to: string[], subject: string, html: string, attachments?: any[]) {
-        console.log('[EmailService] Sending via Resend API...');
-        const { data, error } = await supabase.functions.invoke('resend-domains', {
-            body: {
-                action: 'SEND_EMAIL',
-                from,
-                to,
-                subject,
-                html,
-                attachments
-            }
-        });
-        if (error) throw error;
+    async sendEmailViaResend(from: string, to: string[], subject: string, html: string, attachments?: any[], replyTo?: string) {
+        console.log(`[EmailService] Sending via Resend API from: ${from} to: ${to.join(', ')}`);
 
-        // Return whole data which includes 'id' from Resend
-        return data;
+        try {
+            const { data, error } = await supabase.functions.invoke('resend-domains', {
+                body: {
+                    action: 'SEND_EMAIL',
+                    from,
+                    to,
+                    subject,
+                    html,
+                    attachments,
+                    reply_to: replyTo
+                }
+            });
+
+            if (error) {
+                console.error('[EmailService] Edge Function Error:', error);
+                throw error;
+            }
+            if (data?.error) {
+                console.error('[EmailService] Resend API Error:', data.error);
+                throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
+            }
+
+            // Return whole data which includes 'id' from Resend
+            return data;
+        } catch (error: any) {
+            console.error('[EmailService] Send Failed:', error);
+            throw error; // Propagate error directly to user to see valid rejection reason
+        }
     },
 
     /**

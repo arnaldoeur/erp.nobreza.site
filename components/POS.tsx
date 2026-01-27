@@ -19,6 +19,8 @@ interface ReceiptProps {
 
 const Receipt: React.FC<ReceiptProps> = ({ sale, companyInfo, onClose, currentUser }) => {
   const [printMode, setPrintMode] = React.useState<'THERMAL' | 'A4'>('THERMAL');
+  const [isGeneratingPDF, setIsGeneratingPDF] = React.useState(false);
+
 
   const getMethodLabel = (method: string) => {
     const labels: Record<string, string> = {
@@ -93,6 +95,7 @@ const Receipt: React.FC<ReceiptProps> = ({ sale, companyInfo, onClose, currentUs
     const element = document.getElementById('pos-receipt');
     if (!element) return;
 
+    setIsGeneratingPDF(true);
     // Temporarily fix styles for capture
     const originalOverflow = element.style.overflow;
     const originalHeight = element.style.height;
@@ -101,16 +104,17 @@ const Receipt: React.FC<ReceiptProps> = ({ sale, companyInfo, onClose, currentUs
 
     try {
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: window.devicePixelRatio > 1 ? 2 : 3,
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        windowWidth: 400
       });
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = 80; // 80mm thermal width
-      const xOffset = (210 - 80) / 2; // Center on A4
+      const pdfWidth = 100;
+      const xOffset = (210 - 100) / 2;
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
       pdf.addImage(imgData, 'PNG', xOffset, 10, pdfWidth, pdfHeight);
@@ -121,8 +125,10 @@ const Receipt: React.FC<ReceiptProps> = ({ sale, companyInfo, onClose, currentUs
     } finally {
       element.style.overflow = originalOverflow;
       element.style.height = originalHeight;
+      setIsGeneratingPDF(false);
     }
   };
+
 
   React.useEffect(() => {
     // Force re-render/style update when printMode passes

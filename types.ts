@@ -81,6 +81,8 @@ export interface Product {
   minStock: number;
   supplierId: string;
   unit?: string;
+  batch?: string;
+  expiryDate?: Date;
 }
 
 export interface SaleItem {

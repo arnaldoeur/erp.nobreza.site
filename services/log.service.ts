@@ -104,6 +104,39 @@ export const LogService = {
 
         if (error) {
             console.error('Error adding log:', error);
+        } else {
+            // Auto-Alert for Critical Actions
+            if (log.action.includes('DELETE') || log.action.includes('CRITICAL_ERROR') || log.action.includes('SECURITY')) {
+                // We need to fetch CompanyInfo or construct a minimal one if not available, 
+                // but preferably we assume logged in user context or passed info. 
+                // For now, simpler implementation:
+                if (user && user.email !== 'admin@nobreza.site') { // Avoid spamming super admin actions
+                    // We use a safe-import or dependency injection pattern to avoid circular deps if possible
+                    // But here we might just direct insert to notifications to keep it light in LogService
+                    // OR import NotificationService.
+                    // To avoid circular dependency (Notification -> Log -> Notification), we'll do a direct DB insert for the alert.
+                    // Actually, LogService imports AuthService which is fine. NotificationService imports supabase.
+                    // The safest is direct notifications insert or dynamic import.
+
+                    // Direct Critical Notification
+                    const { data: admins } = await supabase
+                        .from('users')
+                        .select('id')
+                        .eq('company_id', companyId)
+                        .eq('role', 'ADMIN');
+
+                    if (admins && admins.length > 0) {
+                        const alerts = admins.map(a => ({
+                            user_id: a.id,
+                            type: 'SYSTEM',
+                            title: `🚨 Ação Crítica: ${log.action}`,
+                            content: `Registo de: ${log.details} por ${dbLog.user_name}`,
+                            metadata: { logId: 'new', action: log.action }
+                        }));
+                        await supabase.from('notifications').insert(alerts);
+                    }
+                }
+            }
         }
     }
 };

@@ -27,7 +27,9 @@ export const ProductService = {
             salePrice: p.sale_price,
             quantity: p.quantity,
             minStock: p.min_stock,
-            supplierId: p.supplier_id
+            supplierId: p.supplier_id,
+            batch: p.batch,
+            expiryDate: p.expiry_date ? new Date(p.expiry_date) : undefined
         }));
     },
 
@@ -44,7 +46,9 @@ export const ProductService = {
             sale_price: p.salePrice || 0,
             quantity: p.quantity || 0,
             min_stock: p.minStock || 5,
-            supplier_id: p.supplierId
+            supplier_id: p.supplierId,
+            batch: p.batch,
+            expiry_date: p.expiryDate
         }));
 
         const { error } = await supabase.from('products').insert(dbProducts);
@@ -68,7 +72,9 @@ export const ProductService = {
             sale_price: product.salePrice,
             quantity: product.quantity,
             min_stock: product.minStock,
-            supplier_id: product.supplierId || null
+            supplier_id: product.supplierId || null,
+            batch: product.batch,
+            expiry_date: product.expiryDate
         };
 
         const { data, error } = await supabase.from('products').insert(newProduct).select().single();
@@ -86,7 +92,9 @@ export const ProductService = {
             salePrice: data.sale_price,
             quantity: data.quantity,
             minStock: data.min_stock,
-            supplierId: data.supplier_id
+            supplierId: data.supplier_id,
+            batch: data.batch,
+            expiryDate: data.expiry_date ? new Date(data.expiry_date) : undefined
         };
     },
 
@@ -102,7 +110,9 @@ export const ProductService = {
             sale_price: product.salePrice,
             quantity: product.quantity,
             min_stock: product.minStock,
-            supplier_id: product.supplierId || null // Ensure null if empty
+            supplier_id: product.supplierId || null, // Ensure null if empty
+            batch: product.batch,
+            expiry_date: product.expiryDate
         };
 
         const { error } = await supabase
@@ -155,5 +165,40 @@ export const ProductService = {
             console.error('Error deleting product:', error);
             throw error;
         }
+    },
+
+    bulkUpdate: async (ids: string[], field: string, value: any): Promise<void> => {
+        const user = AuthService.getCurrentUser();
+        if (!user) return;
+
+        const dbField = field.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+
+        const { error } = await supabase
+            .from('products')
+            .update({ [dbField]: value })
+            .in('id', ids)
+            .eq('company_id', user.companyId);
+
+        if (error) {
+            console.error('Error in bulk update:', error);
+            throw error;
+        }
+    },
+
+    bulkDelete: async (ids: string[]): Promise<void> => {
+        const user = AuthService.getCurrentUser();
+        if (!user) return;
+
+        const { error } = await supabase
+            .from('products')
+            .delete()
+            .in('id', ids)
+            .eq('company_id', user.companyId);
+
+        if (error) {
+            console.error('Error in bulk delete:', error);
+            throw error;
+        }
     }
 };
+

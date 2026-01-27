@@ -52,6 +52,9 @@ export const Billing: React.FC<BillingProps> = ({ products, companyInfo, documen
    const [items, setItems] = useState<SaleItem[]>([]);
    const [searchTerm, setSearchTerm] = useState('');
 
+   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+
    useEffect(() => {
       if (initialCreateMode) {
          setView('CREATE');
@@ -64,8 +67,15 @@ export const Billing: React.FC<BillingProps> = ({ products, companyInfo, documen
       const element = document.getElementById('invoice-preview');
       if (!element) return;
 
+      setIsGeneratingPDF(true);
       try {
-         const canvas = await html2canvas(element, { scale: 2 });
+         const canvas = await html2canvas(element, {
+            scale: window.devicePixelRatio > 1 ? 2 : 3,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            windowWidth: 800 // Wider for A4 documents
+         });
          const imgData = canvas.toDataURL('image/png');
          const pdf = new jsPDF('p', 'mm', 'a4');
          const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -76,8 +86,11 @@ export const Billing: React.FC<BillingProps> = ({ products, companyInfo, documen
       } catch (error) {
          console.error("Error generating PDF:", error);
          alert("Erro ao gerar PDF.");
+      } finally {
+         setIsGeneratingPDF(false);
       }
    };
+
 
    const handleCreate = () => {
       const newDoc: BillingDocument = {

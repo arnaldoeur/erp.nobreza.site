@@ -122,7 +122,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, suppliers, onClose, 
             </div>
 
             {/* Stock Management */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">{product ? t('stock.current', 'pt-MZ') : t('stock.initial', 'pt-MZ')}</label>
                 <input
@@ -141,9 +141,22 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, suppliers, onClose, 
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Minimo</label>
-                <input type="number" required min="0" className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold outline-none text-[rgb(var(--text-main))] dark:text-white" value={formData.minStock} onChange={e => setFormData({ ...formData, minStock: parseInt(e.target.value) || 0 })} />
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Lote</label>
+                <input className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold outline-none text-[rgb(var(--text-main))] dark:text-white" value={formData.batch || ''} onChange={e => setFormData({ ...formData, batch: e.target.value })} placeholder="Ex: LOT-2024" />
               </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Validade</label>
+                <input
+                  type="date"
+                  className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold outline-none text-[rgb(var(--text-main))] dark:text-white"
+                  value={formData.expiryDate ? new Date(formData.expiryDate).toISOString().split('T')[0] : ''}
+                  onChange={e => setFormData({ ...formData, expiryDate: e.target.value ? new Date(e.target.value) : undefined })}
+                />
+              </div>
+            </div>
+            <div className="space-y-1 max-w-[200px]">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Minimo de Stock</label>
+              <input type="number" required min="0" className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold outline-none text-[rgb(var(--text-main))] dark:text-white" value={formData.minStock} onChange={e => setFormData({ ...formData, minStock: parseInt(e.target.value) || 0 })} />
             </div>
           </div>
           {/* ... (Keep Footer Buttons) */}
@@ -323,14 +336,7 @@ export const Stock: React.FC<StockProps> = ({ products, setProducts, suppliers, 
 
   const handleBulkEdit = async (field: string, value: any) => {
     try {
-      // In a real app, backend should handle batch update. Here we iterate.
-      const promises = Array.from(selectedProducts).map(id => {
-        const p = products.find(prod => prod.id === id);
-        if (p) return ProductService.update({ ...p, [field]: value });
-        return Promise.resolve(null);
-      });
-
-      await Promise.all(promises);
+      await ProductService.bulkUpdate(Array.from(selectedProducts), field, value);
 
       // Update State Local
       setProducts(prev => prev.map(p => selectedProducts.has(p.id) ? { ...p, [field]: value } : p));
@@ -377,8 +383,7 @@ export const Stock: React.FC<StockProps> = ({ products, setProducts, suppliers, 
     if (!confirm(`Tem certeza que deseja apagar ${selectedProducts.size} produtos?`)) return;
 
     try {
-      const promises = Array.from(selectedProducts).map(id => ProductService.delete(String(id)));
-      await Promise.all(promises);
+      await ProductService.bulkDelete(Array.from(selectedProducts));
 
       setProducts(prev => prev.filter(p => !selectedProducts.has(p.id)));
       setSelectedProducts(new Set());
@@ -572,13 +577,19 @@ export const Stock: React.FC<StockProps> = ({ products, setProducts, suppliers, 
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[10px] text-gray-400 font-bold uppercase truncate">{p.category} • Ref: {p.code}</span>
-                        {p.unit && <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[9px] font-black uppercase">{p.unit}</span>}
+                        {p.unit && <span className="bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded text-[9px] font-black uppercase">{p.unit}</span>}
+                        {p.batch && <span className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded text-[9px] font-black uppercase">Lote: {p.batch}</span>}
+                        {p.expiryDate && (
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${new Date(p.expiryDate) < new Date() ? 'bg-red-100 text-red-700' : 'bg-orange-50 text-orange-700'}`}>
+                            Val: {new Date(p.expiryDate).toLocaleDateString()}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 mt-2">
                         <div className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${p.quantity <= p.minStock ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
                           Stock: {p.quantity} Un.
                         </div>
-                        <div className="flex-1 w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden ml-2">
+                        <div className="flex-1 w-24 h-1.5 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden ml-2">
                           <div className={`h-full rounded-full ${p.quantity <= p.minStock ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(100, (p.quantity / (p.minStock * 4 || 20)) * 100)}%` }} />
                         </div>
                       </div>

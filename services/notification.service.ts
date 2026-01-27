@@ -18,6 +18,7 @@ export const NotificationService = {
             to: Array.from(new Set([user.email, companyInfo.email])).filter(Boolean),
             data: {
                 user_name: user.name,
+                user_id: user.id,
                 company_name: companyInfo.name,
                 month: new Date(closure.closureDate).toLocaleDateString('pt-PT', { month: 'long' }),
                 // Custom data for the template if needed
@@ -36,6 +37,7 @@ export const NotificationService = {
             to: Array.from(new Set([newUser.email, companyInfo.email])).filter(Boolean),
             data: {
                 user_name: newUser.name,
+                user_id: newUser.id,
                 company_name: companyInfo.name,
                 role: newUser.role
             }
@@ -58,8 +60,15 @@ export const NotificationService = {
      * Sends a Stock Alert Report.
      */
     sendStockAlert: async (lowStockItems: any[], companyInfo: CompanyInfo) => {
-        // Since templates are per-product, we'll send a summary or loop
-        // Mapping to "STOCK_LOW" for the first item for now, or we could add a summary template
+        // 1. Send In-App to Warehouse/Admins
+        await NotificationService.notifyRole(String(companyInfo.id), ['ADMIN', 'TECHNICIAN'], {
+            type: 'STOCK',
+            title: '⚠️ Alerta de Stock Baixo',
+            content: `${lowStockItems.length} produtos atingiram o nível mínimo. Verifique o inventário.`,
+            metadata: { count: lowStockItems.length }
+        });
+
+        // 2. Send Email
         const item = lowStockItems[0];
         return NotificationService.invokeNativeEmail({
             type: 'STOCK_ALERT',
@@ -77,12 +86,23 @@ export const NotificationService = {
     /**
      * Generic method for Task/Agenda/Chat alerts.
      */
-    sendManagementAlert: async (type: 'TASK' | 'AGENDA' | 'CHAT' | 'CUSTOMER' | 'SUPPLIER', title: string, details: string, companyInfo: CompanyInfo, recipientEmail?: string) => {
+    sendManagementAlert: async (type: 'TASK' | 'AGENDA' | 'CHAT' | 'CUSTOMER' | 'SUPPLIER', title: string, details: string, companyInfo: CompanyInfo, recipientEmail?: string, recipientId?: string) => {
         const templateMap: Record<string, string> = {
             'TASK': 'TASK_PENDING',
             'CUSTOMER': 'BRAND_MSG_2', // Fallback or specific
             'SUPPLIER': 'PURCHASE_RECOMMENDATION'
         };
+
+        // 1. In-App Notification (if recipientId provided)
+        if (recipientId) {
+            await NotificationService.sendInApp({
+                userId: recipientId,
+                type: type === 'TASK' ? 'SYSTEM' : 'SYSTEM',
+                title: `Nova Atualização: ${type}`,
+                content: `${title}: ${details}`,
+                metadata: { type, title }
+            });
+        }
 
         return NotificationService.invokeNativeEmail({
             type: `MANAGEMENT_${type}`,
@@ -95,6 +115,33 @@ export const NotificationService = {
                 details
             }
         });
+    },
+
+    /**
+     * Broadcasts an notification to all users with specific roles in a company.
+     */
+    notifyRole: async (companyId: string, roles: string[], notification: Partial<AppNotification>) => {
+        try {
+            const { data: users } = await supabase
+                .from('users')
+                .select('id')
+                .eq('company_id', companyId)
+                .in('role', roles);
+
+            if (users && users.length > 0) {
+                const notifications = users.map(u => ({
+                    user_id: u.id,
+                    type: notification.type || 'SYSTEM',
+                    title: notification.title,
+                    content: notification.content,
+                    metadata: notification.metadata || {}
+                }));
+
+                await supabase.from('notifications').insert(notifications);
+            }
+        } catch (error) {
+            console.error('Failed to broadcast notification:', error);
+        }
     },
 
     /**
@@ -168,6 +215,15 @@ export const NotificationService = {
      * Sends a System Alert.
      */
     sendSystemAlert: async (type: string, companyInfo: CompanyInfo, user: User, details: string) => {
+        // 1. Notify Admins In-App
+        await NotificationService.notifyRole(String(companyInfo.id), ['ADMIN'], {
+            type: 'SYSTEM',
+            title: `🚨 Alerta de Sistema: ${type}`,
+            content: `Ação por ${user.name}: ${details}`,
+            metadata: { type, user: user.name }
+        });
+
+        // 2. Send Email
         return NotificationService.invokeNativeEmail({
             type: `SYSTEM_${type}`,
             to: [companyInfo.email],
@@ -218,10 +274,25 @@ export const NotificationService = {
 
         try {
             console.log('[NotificationService] Routing email via edge function...');
+
+            // Determine Sender
+            let fromAddr = 'Nobreza ERP <sistema@nobreza.site>';
+
+            // Priority: Explicit Sender > Dynamic User Email > System Default
+            if (payload.from) {
+                fromAddr = payload.from;
+            } else if (payload.data && payload.data.user_name && payload.data.user_id) {
+                // Generate dynamic email: name + last 4 chars of ID
+                const cleanName = payload.data.user_name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const idSuffix = String(payload.data.user_id).slice(-4);
+                const dynamicEmail = `${cleanName}${idSuffix}@nobreza.site`;
+                fromAddr = `Nobreza ERP <${dynamicEmail}>`;
+            }
+
             const { data: result, error } = await supabase.functions.invoke('resend-domains', {
                 body: {
                     action: 'SEND_EMAIL',
-                    from: 'Nobreza ERP <sistema@nobreza.site>',
+                    from: fromAddr,
                     to: (Array.isArray(payload.to) ? payload.to : [payload.to]).filter(Boolean),
                     subject: subject || 'Nobreza ERP Notification',
                     html: html || '<p>Mensagem sem conteúdo</p>'
@@ -243,7 +314,7 @@ export const NotificationService = {
 
             // Log to System Mailbox
             await NotificationService.logEmailToSystemMailbox({
-                from_addr: 'sistema@nobreza.site',
+                from_addr: fromAddr,
                 from_name: 'Nobreza ERP',
                 to_addr: Array.isArray(payload.to) ? payload.to : [payload.to],
                 subject: payload.subject,

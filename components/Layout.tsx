@@ -146,7 +146,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
       </header>
 
       <aside className={`
-        fixed inset-0 z-40 bg-emerald-950 text-white flex flex-col shadow-xl transition-all duration-300
+        fixed inset-0 z-40 bg-emerald-950 dark:bg-[rgb(var(--bg-app))] text-white flex flex-col shadow-xl transition-all duration-300
         pt-20 md:pt-0
         md:relative md:translate-x-0
         ${collapsed ? 'md:w-20' : 'md:w-60'}
@@ -229,7 +229,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
           )}
         </div>
 
-        <div className="p-4 border-t border-emerald-900/50 bg-emerald-900/20 relative" ref={dropdownRef}>
+        <div className="p-4 border-t border-white/5 bg-white/5 relative" ref={dropdownRef}>
           {isDropdownOpen && (
             <div className="absolute bottom-full left-4 right-4 mb-4 bg-[rgb(var(--bg-surface))] dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-[rgb(var(--border-subtle))] dark:border-white/10 animate-in slide-in-from-bottom-2 duration-200 z-50">
               <div className="p-4 border-b dark:border-white/10 bg-gray-50/50 dark:bg-white/5 flex items-center gap-3">

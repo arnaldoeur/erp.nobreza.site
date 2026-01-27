@@ -65,7 +65,8 @@
 }
 
 body {
-  background-color: rgb(var(--color-bg));
+  background-color: rgb(var(--bg-app));
+  color: rgb(var(--text-main));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
