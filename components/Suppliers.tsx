@@ -229,13 +229,13 @@ export const Suppliers: React.FC<SuppliersProps> = ({ suppliers, setSuppliers, p
   return (
     <>
       <div className="space-y-8 animate-in fade-in duration-500">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-8 rounded-[2.5rem] shadow-sm">
           <div className="flex-1 w-full max-w-xl relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
               placeholder="Pesquisar fornecedores por nome, email ou contacto..."
-              className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white transition-all outline-none font-bold"
+              className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border-2 border-transparent focus:border-emerald-500 focus:bg-white dark:focus:bg-white/10 transition-all outline-none font-bold text-[rgb(var(--text-main))] dark:text-white"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -250,7 +250,7 @@ export const Suppliers: React.FC<SuppliersProps> = ({ suppliers, setSuppliers, p
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredSuppliers.map(supplier => (
-            <div key={supplier.id} className="bg-white rounded-[2rem] border-2 border-transparent hover:border-emerald-500 shadow-sm hover:shadow-xl transition-all p-8 flex flex-col group relative">
+            <div key={supplier.id} className="bg-[rgb(var(--bg-surface))] dark:bg-white/5 rounded-[2rem] border-2 border-transparent hover:border-emerald-500 shadow-sm hover:shadow-xl transition-all p-8 flex flex-col group relative">
               <button
                 onClick={() => togglePreferred(supplier.id)}
                 className={`absolute top-6 right-6 p-3 rounded-xl transition-all ${supplier.isPreferred ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-300 hover:text-amber-400'}`}
@@ -259,11 +259,11 @@ export const Suppliers: React.FC<SuppliersProps> = ({ suppliers, setSuppliers, p
               </button>
 
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center overflow-hidden border border-emerald-200/50">
+                <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-2xl flex items-center justify-center overflow-hidden border border-emerald-200/50">
                   {supplier.logo ? <img src={supplier.logo} className="w-full h-full object-contain p-2 hover:scale-110 transition-transform" /> : <Truck size={32} />}
                 </div>
                 <div>
-                  <h4 className="text-xl font-black text-gray-900 leading-tight">{supplier.name}</h4>
+                  <h4 className="text-xl font-black text-[rgb(var(--text-main))] dark:text-white leading-tight">{supplier.name}</h4>
                   <div className="flex items-center gap-1 text-[10px] font-black uppercase text-emerald-600 tracking-wider">
                     <Fingerprint size={12} />
                     NUIT: {supplier.nuit || '---'}
@@ -298,11 +298,11 @@ export const Suppliers: React.FC<SuppliersProps> = ({ suppliers, setSuppliers, p
                 </button>
                 <button
                   onClick={() => { setEditingSupplier(supplier); setIsModalOpen(true); }}
-                  className="p-4 bg-gray-50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-200"
+                  className="p-4 bg-gray-50 dark:bg-white/5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all border border-transparent hover:border-blue-200"
                 >
                   <Edit2 size={20} />
                 </button>
-                <button onClick={() => handleDelete(supplier.id)} className="p-4 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-200">
+                <button onClick={() => handleDelete(supplier.id)} className="p-4 bg-gray-50 dark:bg-white/5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all border border-transparent hover:border-red-200">
                   <Trash2 size={20} />
                 </button>
               </div>

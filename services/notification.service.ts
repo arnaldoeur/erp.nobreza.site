@@ -1,12 +1,10 @@
-
-import { supabase } from './supabase'; // Adjusted path based on typical structure, checks auth.service
-import { DailyClosure, CompanyInfo, User } from '../types';
+import { supabase } from './supabase';
+import { DailyClosure, CompanyInfo, User, AppNotification } from '../types';
+import { NotificationTemplates } from './notification-templates';
 
 /**
  * Service to handle system notifications via Email.
- * currently configured to invoke a Supabase Edge Function 'send-email'.
- * 
- * NOTE: Ensure you have deployed the 'send-email' function in Supabase.
+ * Refactored to send emails NATIVELY via Resend API to ensure maximum reliability.
  */
 export const NotificationService = {
 
@@ -14,71 +12,327 @@ export const NotificationService = {
      * Sends a summary email upon Daily Closure.
      */
     sendDailyClosureEmail: async (closure: DailyClosure, companyInfo: CompanyInfo, user: User) => {
-        console.log('Attempting to send Daily Closure Email...');
+        return NotificationService.invokeNativeEmail({
+            type: 'DAILY_REPORT', // Or a custom mapping
+            template: 'MONTHLY_REPORT',
+            to: Array.from(new Set([user.email, companyInfo.email])).filter(Boolean),
+            data: {
+                user_name: user.name,
+                company_name: companyInfo.name,
+                month: new Date(closure.closureDate).toLocaleDateString('pt-PT', { month: 'long' }),
+                // Custom data for the template if needed
+            }
+        });
+    },
 
+    /**
+     * Sends a Welcome email to a new user and a notification to the administrator.
+     */
+    sendUserOnboarding: async (newUser: User, companyInfo: CompanyInfo) => {
+        // 1. Welcome to the User
+        await NotificationService.invokeNativeEmail({
+            type: 'USER_WELCOME',
+            template: 'USER_WELCOME',
+            to: Array.from(new Set([newUser.email, companyInfo.email])).filter(Boolean),
+            data: {
+                user_name: newUser.name,
+                company_name: companyInfo.name,
+                role: newUser.role
+            }
+        });
+
+        // 2. Alert the Admin (Standard Email for now since no template provided for "Admin Alert")
+        return NotificationService.invokeNativeEmail({
+            type: 'ADMIN_ALERT_NEW_USER',
+            to: [companyInfo.email],
+            subject: `[${companyInfo.name}] Novo Utilizador Registado`,
+            data: {
+                userName: newUser.name,
+                role: newUser.role,
+                timestamp: new Date().toISOString()
+            }
+        });
+    },
+
+    /**
+     * Sends a Stock Alert Report.
+     */
+    sendStockAlert: async (lowStockItems: any[], companyInfo: CompanyInfo) => {
+        // Since templates are per-product, we'll send a summary or loop
+        // Mapping to "STOCK_LOW" for the first item for now, or we could add a summary template
+        const item = lowStockItems[0];
+        return NotificationService.invokeNativeEmail({
+            type: 'STOCK_ALERT',
+            template: 'STOCK_LOW',
+            to: Array.from(new Set([companyInfo.email])).filter(Boolean),
+            data: {
+                user_name: 'Gestor',
+                company_name: companyInfo.name,
+                product_name: item.name,
+                quantity: item.quantity
+            }
+        });
+    },
+
+    /**
+     * Generic method for Task/Agenda/Chat alerts.
+     */
+    sendManagementAlert: async (type: 'TASK' | 'AGENDA' | 'CHAT' | 'CUSTOMER' | 'SUPPLIER', title: string, details: string, companyInfo: CompanyInfo, recipientEmail?: string) => {
+        const templateMap: Record<string, string> = {
+            'TASK': 'TASK_PENDING',
+            'CUSTOMER': 'BRAND_MSG_2', // Fallback or specific
+            'SUPPLIER': 'PURCHASE_RECOMMENDATION'
+        };
+
+        return NotificationService.invokeNativeEmail({
+            type: `MANAGEMENT_${type}`,
+            template: templateMap[type] || 'BRAND_MSG_2',
+            to: Array.from(new Set([recipientEmail || companyInfo.email, companyInfo.email])).filter(Boolean),
+            data: {
+                company_name: companyInfo.name,
+                task_name: title,
+                product_name: title, // For recommendations
+                details
+            }
+        });
+    },
+
+    /**
+     * Creates an In-App notification in the database.
+     */
+    sendInApp: async (notification: Partial<AppNotification>) => {
         try {
-            // 1. Prepare email payload
-            const payload = {
-                type: 'DAILY_CLOSURE',
-                to: [user.email, companyInfo.email].filter(Boolean), // Send to user and company
-                subject: `[${companyInfo.name}] Fecho de Dia - ${new Date(closure.closureDate).toLocaleDateString()}`,
-                data: {
-                    companyName: companyInfo.name,
-                    date: new Date(closure.closureDate).toLocaleDateString(),
-                    responsible: closure.responsibleName,
-                    systemTotal: closure.systemTotal,
-                    manualCash: closure.manualCash,
-                    difference: closure.difference,
-                    observations: closure.observations,
-                }
-            };
-
-            // 2. Invoke Supabase Function (or placeholder logic)
-            const { data, error } = await supabase.functions.invoke('send-email', {
-                body: payload
-            });
+            const { data, error } = await supabase.from('notifications').insert([{
+                user_id: notification.userId,
+                type: notification.type,
+                title: notification.title,
+                content: notification.content,
+                metadata: notification.metadata || {}
+            }]).select();
 
             if (error) throw error;
+            return data[0];
+        } catch (error) {
+            console.error('Failed to create In-App notification:', error);
+            return null;
+        }
+    },
 
-            console.log('Daily Closure Email Sent!', data);
+    /**
+     * Gets notifications for a user.
+     */
+    getNotifications: async (userId: string): Promise<AppNotification[]> => {
+        try {
+            const { data, error } = await supabase
+                .from('notifications')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            return data.map((n: any) => ({
+                id: n.id,
+                userId: n.user_id,
+                type: n.type,
+                title: n.title,
+                content: n.content,
+                read: n.read,
+                metadata: n.metadata,
+                createdAt: new Date(n.created_at)
+            }));
+        } catch (error) {
+            console.error('Failed to fetch notifications:', error);
+            return [];
+        }
+    },
+
+    /**
+     * Mark a notification as read.
+     */
+    markAsRead: async (id: string) => {
+        try {
+            const { error } = await supabase
+                .from('notifications')
+                .update({ read: true })
+                .eq('id', id);
+
+            if (error) throw error;
             return true;
         } catch (error) {
-            console.error('Failed to send Daily Closure Email:', error);
-            // Fallback: Log to console so we don't block the UI flow
+            console.error('Failed to mark notification as read:', error);
             return false;
         }
     },
 
     /**
-     * Sends a security alert email upon critical system changes.
+     * Sends a System Alert.
      */
-    sendSystemAlert: async (action: string, companyInfo: CompanyInfo, user: User, details: string) => {
-        console.log(`Sending System Alert: ${action}`);
+    sendSystemAlert: async (type: string, companyInfo: CompanyInfo, user: User, details: string) => {
+        return NotificationService.invokeNativeEmail({
+            type: `SYSTEM_${type}`,
+            to: [companyInfo.email],
+            subject: `[${companyInfo.name}] Alerta de Sistema: ${type}`,
+            data: {
+                type,
+                userName: user.name,
+                details,
+                timestamp: new Date().toISOString()
+            }
+        });
+    },
+
+    /**
+     * Native implementation of email sending via Resend API.
+     */
+    invokeNativeEmail: async (payload: any) => {
+        console.log(`Sending Email (Native): ${payload.type} to ${payload.to}`);
+
+        const d = payload.data || {};
+        let html = '';
+        let subject = payload.subject;
+
+        // Apply Template if provided
+        if (payload.template && (NotificationTemplates as any)[payload.template]) {
+            const tmpl = (NotificationTemplates as any)[payload.template];
+            subject = tmpl.subject;
+            html = tmpl.html;
+
+            // Replace Placeholders
+            Object.keys(d).forEach(key => {
+                const regex = new RegExp(`{{${key}}}`, 'g');
+                subject = subject.replace(regex, d[key]);
+                html = html.replace(regex, d[key]);
+            });
+        } else {
+            // Fallback for non-templated emails
+            html = payload.html || `
+                <div style="font-family: sans-serif; padding: 20px;">
+                    <h2 style="color: #064e3b;">${payload.subject}</h2>
+                    <hr/>
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px;">
+                        ${JSON.stringify(d)}
+                    </div>
+                </div>
+            `;
+        }
 
         try {
-            const payload = {
-                type: 'SYSTEM_ALERT',
-                to: [companyInfo.email], // Ensure company owner gets this
-                subject: `[${companyInfo.name}] Alerta de Segurança: ${action}`,
-                data: {
-                    companyName: companyInfo.name,
-                    action: action,
-                    performedBy: user.name,
-                    timestamp: new Date().toISOString(),
-                    details: details
+            console.log('[NotificationService] Routing email via edge function...');
+            const { data: result, error } = await supabase.functions.invoke('resend-domains', {
+                body: {
+                    action: 'SEND_EMAIL',
+                    from: 'Nobreza ERP <sistema@nobreza.site>',
+                    to: (Array.isArray(payload.to) ? payload.to : [payload.to]).filter(Boolean),
+                    subject: subject || 'Nobreza ERP Notification',
+                    html: html || '<p>Mensagem sem conteúdo</p>'
                 }
-            };
-
-            const { data, error } = await supabase.functions.invoke('send-email', {
-                body: payload
             });
 
-            if (error) throw error;
-            return true;
+            console.log('[NotificationService] Edge function raw result:', result);
+            if (error) console.error('[NotificationService] Supabase Invoke Error:', error);
 
-        } catch (error) {
-            console.error('Failed to send System Alert:', error);
-            return false;
+            if (error) {
+                console.error('Edge function error:', error);
+                throw new Error(error.message || 'Erro na Edge Function');
+            }
+
+            if (result?.error) {
+                console.error('Resend API error:', result.error);
+                throw new Error(result.error);
+            }
+
+            // Log to System Mailbox
+            await NotificationService.logEmailToSystemMailbox({
+                from_addr: 'sistema@nobreza.site',
+                from_name: 'Nobreza ERP',
+                to_addr: Array.isArray(payload.to) ? payload.to : [payload.to],
+                subject: payload.subject,
+                snippet: html.replace(/<[^>]*>?/gm, '').substring(0, 100),
+                body_structure: { html },
+                resend_id: result?.id
+            });
+
+            return true;
+        } catch (error: any) {
+            console.error('Native email sending failed:', error);
+            throw new Error(error.message || 'Falha no envio de e-mail');
+        }
+    },
+
+    /**
+     * Logs an email to the virtual system mailbox table.
+     */
+    logEmailToSystemMailbox: async (data: any) => {
+        try {
+            const SYSTEM_ACCOUNT_ID = '00000000-0000-0000-0000-000000000000';
+
+            // Try to find the correct folder ID for 'SENT' instead of hardcoding
+            const { data: folder } = await supabase
+                .from('erp_email_folders')
+                .select('id')
+                .eq('account_id', SYSTEM_ACCOUNT_ID)
+                .eq('type', 'SENT')
+                .single();
+
+            const targetFolderId = folder?.id || '00000000-0000-0000-0000-000000000001';
+
+            const { error: logError } = await supabase
+                .from('erp_emails_metadata')
+                .insert([{
+                    account_id: SYSTEM_ACCOUNT_ID,
+                    folder_id: targetFolderId,
+                    from_addr: data.from_addr,
+                    from_name: data.from_name,
+                    to_addr: Array.isArray(data.to_addr) ? data.to_addr : [data.to_addr],
+                    subject: data.subject,
+                    snippet: data.snippet,
+                    body_structure: data.body_structure,
+                    resend_id: data.resend_id,
+                    date: new Date().toISOString(),
+                    flags: ['SEEN']
+                }]);
+
+            if (logError) {
+                console.error('Failed to log email to system mailbox:', logError);
+            } else {
+                console.log('[NotificationService] System email logged successfully to folder:', targetFolderId);
+            }
+        } catch (e) {
+            console.error('Exception logging to system mailbox:', e);
+        }
+    },
+
+    /**
+     * Comprehensive test for notifications (In-App + Email).
+     */
+    sendTestNotifications: async (user: User, companyInfo: CompanyInfo) => {
+        console.log('[NotificationService] Starting system test...');
+
+        try {
+            // 1. In-App Notification
+            await NotificationService.sendInApp({
+                userId: user.id,
+                type: 'SYSTEM',
+                title: '🛠️ Teste de Sistema',
+                content: `Este é um alerta de teste iniciado em ${new Date().toLocaleTimeString()}. Se você vê isto, as notificações In-App estão OK!`,
+                metadata: { test: true, timestamp: new Date().toISOString() }
+            });
+
+            // 2. Native Email Notification
+            await NotificationService.invokeNativeEmail({
+                type: 'TEST_CONNECTION',
+                to: [user.email, companyInfo.email].filter(Boolean),
+                subject: '🚀 Teste de Conexão Nobreza ERP',
+                data: {
+                    tester: user.name,
+                    company: companyInfo.name,
+                    timestamp: new Date().toISOString()
+                }
+            });
+
+            return { success: true };
+        } catch (error: any) {
+            return { success: false, error: error.message };
         }
     }
 };

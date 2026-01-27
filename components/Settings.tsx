@@ -50,17 +50,25 @@ import {
   CreditCard,
   ShieldCheck,
   Plus,
-  Copy
+  Copy,
+  Key,
+  CheckCircle2,
+  XCircle,
+  LayoutTemplate,
+  Database,
+  RefreshCw,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 import { CompanyInfo, User, UserRole, DailyClosure, SystemLog, Sale, Product, PaymentMethod } from '../types';
-import { LogService, NotificationService, CompanyService, TimeTrackingService } from '../services';
+import { LogService, NotificationService, CompanyService, TimeTrackingService, AuthService } from '../services';
 import { WorkShift } from '../services/time-tracking.service';
 import { supabase } from '../services/supabase';
 import { Support } from './Support';
 import { PerformanceReport } from './PerformanceReport';
+import { EmailAccountService } from '../services/email-accounts.service';
 import { SystemSettings } from './SystemSettings';
-import { LayoutTemplate } from 'lucide-react';
+import { EmailSettings } from './EmailSettings';
+import { DomainManager } from './DomainManager';
 
 type ReportType = 'GERAL' | 'CATALOGO' | 'VENDAS' | 'STOCK' | 'PRESENCAS' | 'LOGS';
 
@@ -84,13 +92,18 @@ interface SettingsProps {
 
 
 
-const TabButton = ({ active, onClick, icon: Icon, label }: any) => (
+const TabButton = ({ active, onClick, icon: Icon, label, badge }: any) => (
   <button
     onClick={onClick}
-    className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all ${active ? 'bg-emerald-950 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-700 hover:bg-emerald-50'}`}
+    className={`flex items-center gap-2 px-4 py-3 rounded-xl transition-all relative ${active ? 'bg-emerald-950 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-700 hover:bg-emerald-50'}`}
   >
     <Icon size={16} />
     <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
+    {badge && (
+      <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full shadow-sm animate-pulse whitespace-nowrap">
+        {badge}
+      </span>
+    )}
   </button>
 );
 
@@ -534,13 +547,13 @@ export const Settings: React.FC<SettingsProps> = ({
     }
   };
 
-  const handleSaveEmployee = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveEmployee = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const hireDateInput = formData.get('hireDate') as string;
 
     const updatedMember: User = {
-      id: editingEmployee?.id || `u-${Date.now()}`,
+      id: editingEmployee?.id || '', // Empty for new
       companyId: currentUser.companyId,
       name: formData.get('name') as string,
       email: formData.get('email') as string,
@@ -556,39 +569,55 @@ export const Settings: React.FC<SettingsProps> = ({
       photo: editingEmployee?.photo
     };
 
-    if (editingEmployee) {
-      onUpdateTeam(team.map(m => m.id === updatedMember.id ? updatedMember : m));
-      import('../services').then(m => m.LogService.add({
-        action: 'Edição de Colaborador',
-        details: `Editou o colaborador: ${updatedMember.name} (Função: ${updatedMember.role})`,
-        companyId: currentUser.companyId
-      }));
-    } else {
-      onUpdateTeam([...team, updatedMember]);
-      import('../services').then(m => m.LogService.add({
-        action: 'Novo Colaborador',
-        details: `Adicionou o colaborador: ${updatedMember.name} (Função: ${updatedMember.role})`,
-        companyId: currentUser.companyId
-      }));
+    try {
+      const savedUser = await AuthService.saveTeamMember(updatedMember);
+
+      if (editingEmployee) {
+        onUpdateTeam(team.map(m => m.id === savedUser.id ? savedUser : m));
+        LogService.add({
+          action: 'Edição de Colaborador',
+          details: `Editou o colaborador: ${savedUser.name} (Função: ${savedUser.role})`,
+          companyId: currentUser.companyId
+        });
+      } else {
+        onUpdateTeam([...team, savedUser]);
+        LogService.add({
+          action: 'Novo Colaborador',
+          details: `Adicionou o colaborador: ${savedUser.name} (Função: ${savedUser.role})`,
+          companyId: currentUser.companyId
+        });
+      }
+      setIsEmployeeModalOpen(false);
+      setEditingEmployee(null);
+    } catch (err: any) {
+      alert("Erro ao gravar colaborador: " + err.message);
     }
-    setIsEmployeeModalOpen(false);
-    setEditingEmployee(null);
   };
 
   const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 md:space-y-10 animate-in fade-in pb-20">
-      <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto custom-scrollbar whitespace-nowrap gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 gap-1 md:gap-2">
         <TabButton active={activeTab === 'REPORTS'} onClick={() => setActiveTab('REPORTS')} icon={FileText} label="Relatórios" />
         <TabButton active={activeTab === 'PERFORMANCE'} onClick={() => setActiveTab('PERFORMANCE')} icon={BarChart3} label="Performance" />
-        <TabButton active={activeTab === 'FINANCE'} onClick={() => setActiveTab('FINANCE')} icon={Wallet} label="Financeiro" />
-        <TabButton active={activeTab === 'EXPENSES'} onClick={() => setActiveTab('EXPENSES')} icon={Banknote} label="Despesas" />
-        <TabButton active={activeTab === 'CAIXA'} onClick={() => setActiveTab('CAIXA')} icon={CreditCard} label="Caixa" />
-        <TabButton active={activeTab === 'COMPANY'} onClick={() => setActiveTab('COMPANY')} icon={Building2} label="Empresa" />
+
+        {currentUser.role === 'ADMIN' && (
+          <>
+            <TabButton active={activeTab === 'FINANCE'} onClick={() => setActiveTab('FINANCE')} icon={Wallet} label="Financeiro" />
+            <TabButton active={activeTab === 'EXPENSES'} onClick={() => setActiveTab('EXPENSES')} icon={Banknote} label="Despesas" />
+            <TabButton active={activeTab === 'CAIXA'} onClick={() => setActiveTab('CAIXA')} icon={CreditCard} label="Caixa" />
+            <TabButton active={activeTab === 'COMPANY'} onClick={() => setActiveTab('COMPANY')} icon={Building2} label="Empresa" />
+          </>
+        )}
+
+        <TabButton active={activeTab === 'EMAIL'} onClick={() => setActiveTab('EMAIL')} icon={Mail} label="E-mail" />
         <TabButton active={activeTab === 'TEAM'} onClick={() => setActiveTab('TEAM')} icon={Users} label="Equipa" />
         <TabButton active={activeTab === 'PROFILE'} onClick={() => setActiveTab('PROFILE')} icon={UserIcon} label="Perfil" />
-        <TabButton active={activeTab === 'SYSTEM'} onClick={() => setActiveTab('SYSTEM')} icon={LayoutTemplate} label="Sistema" />
+
+        {currentUser.role === 'ADMIN' && (
+          <TabButton active={activeTab === 'SYSTEM'} onClick={() => setActiveTab('SYSTEM')} icon={LayoutTemplate} label="Sistema" badge="BETA" />
+        )}
       </div>
 
 
@@ -1014,6 +1043,11 @@ export const Settings: React.FC<SettingsProps> = ({
               />
             )}
           </div>
+        </div>
+      )} {activeTab === 'EMAIL' && (
+        <div className="space-y-6">
+          <DomainManager companyId={String(currentUser?.companyId || '')} />
+          <EmailSettings companyId={String(currentUser?.companyId || '')} currentUser={currentUser} />
         </div>
       )} {activeTab === 'COMPANY' && (
         <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden">

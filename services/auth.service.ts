@@ -261,7 +261,8 @@ export const AuthService = {
         const { data, error } = await supabase
             .from('users')
             .select('*')
-            .eq('company_id', currentUser.companyId); // Data Isolation
+            .eq('company_id', currentUser.companyId)
+            .order('name');
 
         if (error) {
             console.error("Error fetching team:", error);
@@ -274,6 +275,35 @@ export const AuthService = {
             baseHours: u.base_hours,
             hireDate: new Date(u.created_at || new Date())
         }));
+    },
+
+    saveTeamMember: async (user: User): Promise<User> => {
+        const currentUser = AuthService.getCurrentUser();
+        if (!currentUser) throw new Error("Apenas administradores podem gerir a equipa.");
+
+        const payload = {
+            id: user.id || undefined,
+            name: user.name,
+            email: user.email,
+            contact: user.contact,
+            location: user.location,
+            responsibility: user.responsibility,
+            social_security_number: user.socialSecurityNumber,
+            base_salary: user.baseSalary,
+            base_hours: user.baseHours,
+            role: user.role,
+            company_id: currentUser.companyId,
+            active: user.active ?? true
+        };
+
+        const { data, error } = await supabase
+            .from('users')
+            .upsert(payload)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data as User;
     },
 
     updateTeam: async (newTeam: User[]): Promise<void> => {

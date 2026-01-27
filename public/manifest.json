@@ -1,14 +1,10 @@
 {
-    "name": "Nobreza ERP",
-    "short_name": "Nobreza",
-    "description": "Sistema de Gestão Empresarial Nobreza",
-    "start_url": "/",
-    "display": "standalone",
-    "background_color": "#064e3b",
-    "theme_color": "#10b981",
+    "short_name": "Nobreza ERP",
+    "name": "Nobreza ERP - Gestão Inteligente",
+    "description": "Sistema de gestão inteligente para farmácias e comércio.",
     "icons": [
         {
-            "src": "/icon-512.png",
+            "src": "/favicon.png",
             "sizes": "192x192",
             "type": "image/png"
         },
@@ -17,5 +13,9 @@
             "sizes": "512x512",
             "type": "image/png"
         }
-    ]
+    ],
+    "start_url": "/",
+    "display": "standalone",
+    "theme_color": "#064e3b",
+    "background_color": "#064e3b"
 }

@@ -114,36 +114,36 @@ export const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, s
       <div className="space-y-8 animate-in fade-in duration-500">
         {/* Stats row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-3xl shadow-sm border flex items-center gap-4">
-            <div className="p-3 bg-emerald-100 text-emerald-600 rounded-2xl"><Users size={24} /></div>
+          <div className="bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-6 rounded-3xl shadow-sm border border-[rgb(var(--border-subtle))] dark:border-white/5 flex items-center gap-4">
+            <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl"><Users size={24} /></div>
             <div>
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total de Clientes</p>
-              <p className="text-2xl font-black text-gray-900">{customerStats.total}</p>
+              <p className="text-2xl font-black text-[rgb(var(--text-main))] dark:text-white">{customerStats.total}</p>
             </div>
           </div>
-          <div className="bg-white p-6 rounded-3xl shadow-sm border flex items-center gap-4">
-            <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl"><Award size={24} /></div>
+          <div className="bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-6 rounded-3xl shadow-sm border border-[rgb(var(--border-subtle))] dark:border-white/5 flex items-center gap-4">
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl"><Award size={24} /></div>
             <div>
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Melhor Cliente</p>
-              <p className="text-lg font-black text-gray-900 truncate max-w-[150px]">{customerStats.topCustomer?.name || '---'}</p>
+              <p className="text-lg font-black text-[rgb(var(--text-main))] dark:text-white truncate max-w-[150px]">{customerStats.topCustomer?.name || '---'}</p>
             </div>
           </div>
-          <div className="bg-white p-6 rounded-3xl shadow-sm border flex items-center gap-4">
-            <div className="p-3 bg-purple-100 text-purple-600 rounded-2xl"><TrendingUp size={24} /></div>
+          <div className="bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-6 rounded-3xl shadow-sm border border-[rgb(var(--border-subtle))] dark:border-white/5 flex items-center gap-4">
+            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl"><TrendingUp size={24} /></div>
             <div>
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Entidades/Inst.</p>
-              <p className="text-2xl font-black text-gray-900">{customerStats.institutional}</p>
+              <p className="text-2xl font-black text-[rgb(var(--text-main))] dark:text-white">{customerStats.institutional}</p>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-8 rounded-[2.5rem] shadow-sm border">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-8 rounded-[2.5rem] shadow-sm">
           <div className="flex-1 w-full max-w-xl relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
               placeholder="Pesquisar por nome, NUIT ou telefone..."
-              className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white transition-all outline-none font-bold"
+              className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border-2 border-transparent focus:border-emerald-500 focus:bg-white dark:focus:bg-white/10 transition-all outline-none font-bold text-[rgb(var(--text-main))] dark:text-white"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -158,16 +158,16 @@ export const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, s
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCustomers.map(customer => (
-            <div key={customer.id} className="bg-white rounded-[2rem] border-2 border-transparent hover:border-emerald-500 shadow-sm hover:shadow-xl transition-all p-8 flex flex-col group relative overflow-hidden">
-              <div className={`absolute top-0 right-0 w-16 h-16 flex items-center justify-center rounded-bl-3xl ${customer.type === 'INSTITUTIONAL' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'}`}>
+            <div key={customer.id} className="bg-[rgb(var(--bg-surface))] dark:bg-white/5 rounded-[2rem] border-2 border-transparent hover:border-emerald-500 shadow-sm hover:shadow-xl transition-all p-8 flex flex-col group relative overflow-hidden">
+              <div className={`absolute top-0 right-0 w-16 h-16 flex items-center justify-center rounded-bl-3xl ${customer.type === 'INSTITUTIONAL' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
                 {customer.type === 'INSTITUTIONAL' ? <Award size={20} /> : <Users size={20} />}
               </div>
 
               <div className="mb-6">
-                <div className="w-16 h-16 bg-gray-50 text-emerald-900 rounded-2xl flex items-center justify-center font-black text-2xl mb-4 border border-gray-100">
+                <div className="w-16 h-16 bg-gray-50 dark:bg-white/10 text-emerald-900 dark:text-emerald-400 rounded-2xl flex items-center justify-center font-black text-2xl mb-4 border border-gray-100 dark:border-white/5">
                   {customer.name.charAt(0)}
                 </div>
-                <h4 className="text-xl font-black text-gray-900 leading-tight mb-1">{customer.name}</h4>
+                <h4 className="text-xl font-black text-[rgb(var(--text-main))] dark:text-white leading-tight mb-1">{customer.name}</h4>
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">
                   <Fingerprint size={12} /> NUIT: {customer.nuit}
                 </p>
@@ -185,10 +185,10 @@ export const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, s
                 </div>
               </div>
 
-              <div className="mt-8 pt-6 border-t flex items-center justify-between">
+              <div className="mt-8 pt-6 border-t dark:border-white/10 flex items-center justify-between">
                 <div>
                   <p className="text-[10px] font-black text-gray-400 uppercase">Total Compras</p>
-                  <p className="font-black text-emerald-900">MT {customer.totalSpent.toLocaleString()}</p>
+                  <p className="font-black text-emerald-900 dark:text-emerald-400">MT {customer.totalSpent.toLocaleString()}</p>
                 </div>
                 <div className="flex gap-2">
                   <button

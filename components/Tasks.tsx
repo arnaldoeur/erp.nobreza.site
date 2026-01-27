@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CheckSquare, Plus, Clock, AlertCircle, CheckCircle2, User as UserIcon, MapPin, X, Trash2, Calendar } from 'lucide-react';
 import { CollabService, CollabTask } from '../services/collab.service';
 import { User } from '../types';
+import { NotificationService } from '../services/notification.service';
 
 interface TasksProps {
     currentUser: User;
@@ -50,6 +51,18 @@ export const Tasks: React.FC<TasksProps> = ({ currentUser, team }) => {
 
         try {
             await CollabService.saveTask(task);
+
+            // Notify Assignee if it's a new assignment or update
+            if (task.assigned_to && task.assigned_to !== currentUser.id) {
+                NotificationService.sendInApp({
+                    userId: task.assigned_to,
+                    type: 'TASK',
+                    title: 'Nova Tarefa Atribuída',
+                    content: `Foi-lhe atribuída a tarefa: ${task.title}.`,
+                    metadata: { taskId: task.id }
+                });
+            }
+
             setIsModalOpen(false);
             setEditingTask(null);
             loadTasks();

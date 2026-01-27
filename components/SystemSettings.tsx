@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Download, Globe, Moon, Sun, Shield, Save, RefreshCw, LayoutTemplate, Palette, Eye, Clock } from 'lucide-react';
 import { CompanyInfo, User } from '../types';
 import { t, Language } from '../utils/i18n';
+import { NotificationService } from '../services';
 
 interface SystemSettingsProps {
     companyInfo: CompanyInfo;
@@ -82,7 +83,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
             <div className="bg-slate-900 p-8 rounded-[2.5rem] relative overflow-hidden text-white shadow-2xl">
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div>
-                        <h2 className="text-3xl font-black tracking-tight mb-2">{t('system.settings.title', language)}</h2>
+                        <div className="flex items-center gap-3 mb-2">
+                            <h2 className="text-3xl font-black tracking-tight">{t('system.settings.title', language)}</h2>
+                            <span className="px-2 py-0.5 bg-emerald-500 text-[10px] font-black rounded-md animate-pulse">BETA</span>
+                        </div>
                         <p className="text-slate-400 font-medium">{t('system.settings.subtitle', language)}</p>
                     </div>
                     <div className="p-4 bg-white/10 rounded-2xl border border-white/10 backdrop-blur-sm">
@@ -99,7 +103,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 {/* 1. General Preferences */}
-                <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col gap-6 transition-colors">
+                <div className="bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-8 rounded-[2.5rem] shadow-sm flex flex-col gap-6 transition-colors">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-3 bg-purple-50 dark:bg-purple-900/30 text-purple-600 rounded-xl"><LayoutTemplate size={24} /></div>
                         <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tight">{t('system.preferences', language)}</h3>
@@ -107,7 +111,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
 
                     <div className="space-y-4">
                         {/* Language */}
-                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700">
+                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-black/20 rounded-2xl border border-gray-100 dark:border-white/5">
                             <div className="flex items-center gap-3">
                                 <Globe size={20} className="text-gray-400" />
                                 <div>
@@ -122,7 +126,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
                                     setLanguage(newLang);
                                     onUpdateCompany({ ...companyInfo, language: newLang });
                                 }}
-                                className="bg-white dark:bg-slate-800 border text-xs font-bold border-gray-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg px-3 py-2 outline-none focus:border-purple-500"
+                                className="bg-white dark:bg-slate-900/40 border text-xs font-bold border-gray-200 dark:border-white/10 text-slate-700 dark:text-white rounded-lg px-3 py-2 outline-none focus:border-purple-500"
                             >
                                 <option value="pt-MZ">Português (MZ)</option>
                                 <option value="en-US">English (US)</option>
@@ -130,41 +134,41 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
                         </div>
 
                         {/* Night Mode */}
-                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700">
+                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-black/20 rounded-2xl border border-gray-100 dark:border-white/5">
                             <div className="flex items-center gap-3">
                                 {nightMode ? <Moon size={20} className="text-blue-400" /> : <Sun size={20} className="text-amber-500" />}
                                 <div>
-                                    <p className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">{t('system.nightmode', language)}</p>
+                                    <p className="text-xs font-black text-slate-700 dark:text-white uppercase">{t('system.nightmode', language)}</p>
                                     <p className="text-[10px] text-gray-400 font-bold">{t('system.nightmode.desc', language)}</p>
                                 </div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" className="sr-only peer" checked={nightMode} onChange={toggleNightMode} />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-white/10 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                             </label>
                         </div>
 
                         {/* Contrast Mode */}
-                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700">
+                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-black/20 rounded-2xl border border-gray-100 dark:border-white/5">
                             <div className="flex items-center gap-3">
                                 <Eye size={20} className="text-emerald-500" />
                                 <div>
-                                    <p className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">{t('system.contrast', language)}</p>
+                                    <p className="text-xs font-black text-slate-700 dark:text-white uppercase">{t('system.contrast', language)}</p>
                                     <p className="text-[10px] text-gray-400 font-bold">{t('system.contrast.desc', language)}</p>
                                 </div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" className="sr-only peer" checked={contrastMode} onChange={toggleContrast} />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-white/10 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                             </label>
                         </div>
 
                         {/* Timezone */}
-                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700">
+                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-black/20 rounded-2xl border border-gray-100 dark:border-white/5">
                             <div className="flex items-center gap-3">
                                 <Clock size={20} className="text-blue-500" />
                                 <div>
-                                    <p className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">{t('system.timezone', language)}</p>
+                                    <p className="text-xs font-black text-slate-700 dark:text-white uppercase">{t('system.timezone', language)}</p>
                                     <p className="text-[10px] text-gray-400 font-bold">{t('system.timezone.desc', language)}</p>
                                 </div>
                             </div>
@@ -173,7 +177,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
                                 onChange={(e) => {
                                     onUpdateCompany({ ...companyInfo, timezone: e.target.value });
                                 }}
-                                className="bg-white dark:bg-slate-800 border text-[10px] font-bold border-gray-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg px-2 py-2 outline-none focus:border-blue-500 max-w-[150px]"
+                                className="bg-white dark:bg-slate-900/40 border text-[10px] font-bold border-gray-200 dark:border-white/10 text-slate-700 dark:text-white rounded-lg px-2 py-2 outline-none focus:border-blue-500 max-w-[150px]"
                             >
                                 <option value="Africa/Maputo">Maputo (GMT+2)</option>
                                 <option value="Africa/Johannesburg">Johannesburg (GMT+2)</option>
@@ -189,7 +193,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
                 </div>
 
                 {/* 2. Color Palette */}
-                <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col gap-6 transition-colors">
+                <div className="bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-8 rounded-[2.5rem] shadow-sm flex flex-col gap-6 transition-colors">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-3 bg-pink-50 dark:bg-pink-900/30 text-pink-600 rounded-xl"><Palette size={24} /></div>
                         <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tight">{t('system.colors', language)}</h3>
@@ -222,7 +226,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
                 </div>
 
                 {/* 3. Data & Security */}
-                <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col gap-6 lg:col-span-2 transition-colors">
+                <div className="bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-8 rounded-[2.5rem] shadow-sm flex flex-col gap-6 lg:col-span-2 transition-colors">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-xl"><Shield size={24} /></div>
                         <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tight">{t('system.security', language)}</h3>
@@ -259,44 +263,78 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
                                     Atualize os dados e salve as preferências globais do sistema.
                                 </p>
                             </div>
-                            <div className="flex gap-2 justify-center">
+                            <div className="flex flex-col gap-2">
+                                <div className="flex gap-2 justify-center">
+                                    <button
+                                        onClick={async () => {
+                                            setLoading(true);
+                                            try {
+                                                const updated = {
+                                                    ...companyInfo,
+                                                    themeColor: tempColors.primary,
+                                                    themeColorSecondary: tempColors.secondary,
+                                                    language: language,
+                                                    isDarkMode: nightMode
+                                                };
+                                                const { CompanyService } = await import('../services');
+                                                await CompanyService.update(updated);
+                                                onUpdateCompany(updated);
+                                                alert(t('common.success', language) + ": Configurações salvas.");
+                                            } catch (e: any) {
+                                                console.error(e);
+                                                if (e.message && e.message.includes("DADOS SALVOS")) {
+                                                    alert("✅ " + e.message);
+                                                } else {
+                                                    alert(t('common.error', language) + ": " + e.message);
+                                                }
+                                            } finally {
+                                                setLoading(false);
+                                            }
+                                        }}
+                                        disabled={loading}
+                                        className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black uppercase text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        <Save size={16} /> {loading ? t('system.loading', language) : 'Salvar'}
+                                    </button>
+                                    <button
+                                        onClick={() => window.location.reload()}
+                                        className="flex-1 py-3 bg-white dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-xl font-black uppercase text-xs transition-all hover:bg-emerald-50 dark:hover:bg-emerald-900 active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        <RefreshCw size={16} /> Sync
+                                    </button>
+                                </div>
                                 <button
                                     onClick={async () => {
                                         setLoading(true);
-                                        try {
-                                            const updated = {
-                                                ...companyInfo,
-                                                themeColor: tempColors.primary,
-                                                themeColorSecondary: tempColors.secondary,
-                                                language: language,
-                                                isDarkMode: nightMode
-                                            };
-                                            const { CompanyService } = await import('../services');
-                                            await CompanyService.update(updated);
-                                            onUpdateCompany(updated);
-                                            alert(t('common.success', language) + ": Configurações salvas.");
-                                        } catch (e: any) {
-                                            console.error(e);
-                                            // Handle the specific "DADOS SALVOS" warning from CompanyService
-                                            if (e.message && e.message.includes("DADOS SALVOS")) {
-                                                alert("✅ " + e.message);
-                                            } else {
-                                                alert(t('common.error', language) + ": " + e.message);
-                                            }
-                                        } finally {
-                                            setLoading(false);
-                                        }
+                                        const res = await NotificationService.sendInApp({
+                                            userId: currentUser.id,
+                                            type: 'SYSTEM',
+                                            title: '🤖 Nobreza ERP Premium',
+                                            content: 'As notificações premium foram ativadas com sucesso para a sua conta.'
+                                        });
+
+                                        // Trigger a few email templates for the user to see in Email Center
+                                        await NotificationService.invokeNativeEmail({
+                                            type: 'TEST_PREMIUM_WELCOME',
+                                            template: 'USER_WELCOME',
+                                            to: [currentUser.email],
+                                            data: { user_name: currentUser.name, company_name: companyInfo.name }
+                                        });
+
+                                        await NotificationService.invokeNativeEmail({
+                                            type: 'TEST_PREMIUM_STOCK',
+                                            template: 'STOCK_LOW',
+                                            to: [currentUser.email],
+                                            data: { user_name: currentUser.name, product_name: 'Paracetamol 500mg', quantity: 5 }
+                                        });
+
+                                        setLoading(false);
+                                        alert("🚀 Testes Premium Enviados! Verifique o sino e seu Email Center (Conta Sistema).");
                                     }}
                                     disabled={loading}
-                                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black uppercase text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                                    className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400 hover:underline mt-1"
                                 >
-                                    <Save size={16} /> {loading ? t('system.loading', language) : 'Salvar'}
-                                </button>
-                                <button
-                                    onClick={() => window.location.reload()}
-                                    className="flex-1 py-3 bg-white dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-xl font-black uppercase text-xs transition-all hover:bg-emerald-50 dark:hover:bg-emerald-900 active:scale-95 flex items-center justify-center gap-2"
-                                >
-                                    <RefreshCw size={16} /> Sync
+                                    {loading ? 'A Enviar...' : 'Testar Notificações'}
                                 </button>
                             </div>
                         </div>

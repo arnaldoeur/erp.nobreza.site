@@ -23,19 +23,26 @@
   --bg-surface: 255 255 255;
   --text-main: 2 44 34;
   --text-muted: 107 114 128;
-  --border-subtle: 243 244 246;
+  --border-subtle: 249 250 251;
 }
 
 .dark {
-  --bg-app: 11 15 14;
-  --bg-surface: 20 28 26;
-  --text-main: 243 255 252;
-  --text-muted: 148 163 184;
-  --border-subtle: 30 41 39;
+  --bg-app: 6 10 9;
+  /* Very dark green-black */
+  --bg-surface: 12 20 18;
+  /* Deep emerald surface */
+  --text-main: 255 255 255;
+  /* Pure white for contrast */
+  --text-muted: 167 243 208;
+  /* Emerald 200 for secondary text */
+  --border-subtle: 20 40 36;
 
-  /* Adjust Primary for Dark mode contrast */
+  /* Adjust Primary for Dark mode contrast - Light Green highlights */
   --color-primary-50: 2 44 34;
-  --color-primary-950: 236 253 245;
+  --color-primary-500: 52 211 153;
+  /* Emerald 400 */
+  --color-primary-950: 209 250 229;
+  /* Emerald 100 */
 }
 
 @layer utilities {

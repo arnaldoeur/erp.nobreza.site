@@ -6,6 +6,7 @@ import { MOCK_USER } from '../constants';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { Product, SaleItem, PaymentMethod, Sale, Customer, CompanyInfo } from '../types';
+import { NotificationService } from '../services/notification.service';
 
 // --- Components ---
 
@@ -137,8 +138,8 @@ const Receipt: React.FC<ReceiptProps> = ({ sale, companyInfo, onClose, currentUs
         }
       `}</style>
 
-      <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col h-auto max-h-[90vh] print:shadow-none print:max-w-none print:h-auto print:rounded-none">
-        <div className="p-4 border-b flex justify-between items-center bg-gray-50 print:hidden shrink-0">
+      <div className="bg-[rgb(var(--bg-surface))] dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col h-auto max-h-[90vh] print:shadow-none print:max-w-none print:h-auto print:rounded-none border dark:border-white/10">
+        <div className="p-4 border-b dark:border-white/10 flex justify-between items-center bg-gray-50 dark:bg-white/5 print:hidden shrink-0">
           <div className="flex gap-2">
             <button onClick={() => handlePrint('THERMAL')} className="flex items-center gap-2 px-3 py-2 bg-emerald-100 text-emerald-800 rounded-xl hover:bg-emerald-200 transition-colors">
               <Printer size={16} />
@@ -155,7 +156,7 @@ const Receipt: React.FC<ReceiptProps> = ({ sale, companyInfo, onClose, currentUs
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600"><X size={20} /></button>
         </div>
 
-        <div id="pos-receipt" className="flex-1 overflow-y-auto p-6 md:p-8 text-center font-mono text-[11px] print:overflow-visible print:px-2 print:py-0 bg-white">
+        <div id="pos-receipt" className="flex-1 overflow-y-auto p-6 md:p-8 text-center font-mono text-[11px] print:overflow-visible print:px-2 print:py-0 bg-white dark:bg-white/5 dark:text-white">
           <div className="mb-6 flex flex-col items-center">
             {/* Logo Logic: A4 uses Horizontal, Thermal uses Vertical or Principal */}
             {((printMode === 'A4' && (companyInfo.logoHorizontal || true)) || companyInfo.logoVertical || companyInfo.logo || true) && (
@@ -349,6 +350,18 @@ export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSa
     };
     onSaleComplete(newSale);
     setCurrentSale(newSale);
+
+    // Trigger In-App Notification
+    if (currentUser?.id) {
+      NotificationService.sendInApp({
+        userId: currentUser.id,
+        type: 'SALE',
+        title: 'Nova Venda Realizada',
+        content: `Venda de MT ${total.toLocaleString()} finalizada por ${newSale.performedBy}.`,
+        metadata: { saleId: newSale.id }
+      });
+    }
+
     setShowPaymentSelection(false);
     setIsCartOpen(false);
     setCart([]);
@@ -369,15 +382,15 @@ export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSa
     <div className="flex h-full gap-6 overflow-hidden">
 
       {/* LEFT PANEL: PRODUCT GRID */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 bg-[rgb(var(--bg-surface))] dark:bg-black/20 rounded-[2rem] shadow-sm overflow-hidden">
         {/* Header: Search & Info */}
-        <div className="p-5 border-b border-gray-100 flex gap-4 items-center shrink-0 bg-white z-10">
+        <div className="p-5 border-b dark:border-white/5 flex gap-4 items-center shrink-0 bg-[rgb(var(--bg-surface))] dark:bg-transparent z-10">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
               placeholder="Pesquisar por nome ou código..."
-              className="w-full pl-11 pr-4 py-3 rounded-xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 outline-none font-medium text-sm transition-all text-emerald-950 placeholder-gray-400"
+              className="w-full pl-11 pr-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border-2 border-transparent focus:bg-white dark:focus:bg-white/10 focus:border-emerald-500 outline-none font-medium text-sm transition-all text-[rgb(var(--text-main))] dark:text-white placeholder-gray-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               autoFocus
@@ -416,29 +429,29 @@ export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSa
         ${isCartOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto'}
       `}>
         <div className={`
-          absolute right-0 top-0 bottom-0 w-[90%] max-w-[400px] bg-white md:bg-gray-50 md:border md:border-gray-200 shadow-2xl md:shadow-none flex flex-col
+          absolute right-0 top-0 bottom-0 w-[90%] max-w-[400px] bg-[rgb(var(--bg-surface))] dark:bg-black/20 md:bg-gray-50 dark:md:bg-transparent md:border-l dark:md:border-white/5 shadow-2xl md:shadow-none flex flex-col
           md:relative md:w-full md:h-full md:rounded-[2rem] md:overflow-hidden transition-transform duration-300
           ${isCartOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
         `}>
 
           {/* Cart Header */}
-          <div className="p-5 border-b border-gray-200 md:border-gray-100 bg-white md:bg-gray-50 flex justify-between items-center shrink-0">
+          <div className="p-5 border-b border-gray-200 dark:border-white/5 md:border-gray-100 bg-white dark:bg-black/20 md:bg-gray-50 dark:md:bg-transparent flex justify-between items-center shrink-0">
             <div>
-              <h2 className="text-sm font-black text-emerald-950 uppercase tracking-widest flex items-center gap-2">
+              <h2 className="text-sm font-black text-[rgb(var(--text-main))] dark:text-white uppercase tracking-widest flex items-center gap-2">
                 <ShoppingCart size={18} className="text-emerald-600" /> Venda Atual
               </h2>
               <p className="text-[10px] text-gray-400 font-bold mt-0.5">{cart.length} itens adicionados</p>
             </div>
-            <button onClick={() => setIsCartOpen(false)} className="md:hidden p-2 bg-gray-100 rounded-full">
+            <button onClick={() => setIsCartOpen(false)} className="md:hidden p-2 bg-gray-100 dark:bg-white/5 rounded-full text-[rgb(var(--text-main))] dark:text-white">
               <X size={20} />
             </button>
           </div>
 
           {/* Cart Items */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar bg-white md:bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar bg-white dark:bg-black/40 md:bg-gray-50 dark:md:bg-transparent">
             {cart.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
-                <ShoppingCart size={48} className="mb-4 text-gray-300" />
+              <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-600 opacity-60">
+                <ShoppingCart size={48} className="mb-4 text-gray-300 dark:text-gray-800" />
                 <p className="text-xs font-bold uppercase tracking-widest text-center">Carrinho Vazio</p>
                 <p className="text-[10px] mt-2">Adicione produtos para iniciar</p>
               </div>
@@ -456,11 +469,11 @@ export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSa
           </div>
 
           {/* Cart Footer / Checkout */}
-          <div className="p-5 bg-white border-t border-gray-100 shrink-0 space-y-4 shadow-[0_-10px_40px_rgba(0,0,0,0.03)] z-10">
+          <div className="p-5 bg-white dark:bg-black/40 border-t dark:border-white/5 shrink-0 space-y-4 shadow-[0_-10px_40px_rgba(0,0,0,0.03)] z-10">
 
             {/* Client Selector (Compact) */}
             <div className="relative">
-              <div className="flex items-center gap-2 bg-gray-50 p-2 pr-4 rounded-xl border border-gray-100 focus-within:border-emerald-500 focus-within:bg-white transition-all">
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-white/5 p-2 pr-4 rounded-xl border border-gray-100 dark:border-white/5 focus-within:border-emerald-500 focus-within:bg-white transition-all">
                 <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-700">
                   <User size={16} />
                 </div>
@@ -531,7 +544,7 @@ export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSa
             <div className="space-y-1">
               <div className="flex justify-between items-end">
                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total a Pagar</span>
-                <span className="text-2xl font-black text-emerald-950 tracking-tighter">MT {total.toFixed(2)}</span>
+                <span className="text-2xl font-black text-[rgb(var(--text-main))] dark:text-white tracking-tighter">MT {total.toFixed(2)}</span>
               </div>
             </div>
 
@@ -589,7 +602,7 @@ export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSa
 const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ product, onAdd }) => (
   <button
     onClick={onAdd}
-    className="group relative flex flex-col bg-white border border-gray-100 hover:border-emerald-500/30 rounded-2xl p-4 text-left transition-all hover:shadow-[0_4px_20px_rgba(16,185,129,0.06)] active:scale-[0.98]"
+    className="group relative flex flex-col bg-[rgb(var(--bg-surface))] dark:bg-white/5 hover:border-emerald-500/30 rounded-2xl p-4 text-left transition-all hover:shadow-[0_4px_20px_rgba(16,185,129,0.06)] active:scale-[0.98]"
   >
     <div className="flex items-start justify-between mb-3">
       <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors">
@@ -600,16 +613,16 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
       </div>
     </div>
 
-    <h3 className="font-bold text-gray-800 text-xs uppercase leading-tight line-clamp-2 mb-auto min-h-[2.5em]">
+    <h3 className="font-bold text-[rgb(var(--text-main))] dark:text-white text-xs uppercase leading-tight line-clamp-2 mb-auto min-h-[2.5em]">
       {product.name}
     </h3>
 
-    <div className="mt-3 pt-3 border-t border-gray-50 flex items-end justify-between">
+    <div className="mt-3 pt-3 border-t dark:border-white/5 flex items-end justify-between">
       <div>
         <span className="text-[10px] font-bold text-gray-400 block -mb-0.5">Preço</span>
-        <span className="text-sm font-black text-emerald-700">MT {product.salePrice}</span>
+        <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">MT {product.salePrice}</span>
       </div>
-      <div className="w-8 h-8 rounded-lg bg-gray-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+      <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-white/5 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:bg-emerald-600 dark:group-hover:bg-emerald-500 group-hover:text-white transition-colors">
         <Plus size={16} strokeWidth={3} />
       </div>
     </div>
@@ -617,18 +630,18 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
 );
 
 const CartItem: React.FC<{ item: SaleItem; onInc: () => void; onDec: () => void; onRemove: () => void }> = ({ item, onInc, onDec, onRemove }) => (
-  <div className="group flex items-center gap-3 bg-white p-3 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
+  <div className="group flex items-center gap-3 bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-3 rounded-2xl shadow-sm relative overflow-hidden">
     <div className="flex-1 min-w-0">
-      <p className="font-bold text-gray-900 text-xs uppercase truncate">{item.productName}</p>
-      <p className="text-[10px] font-bold text-emerald-600 mt-0.5">MT {item.total.toFixed(2)}</p>
+      <p className="font-bold text-[rgb(var(--text-main))] dark:text-white text-xs uppercase truncate">{item.productName}</p>
+      <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">MT {item.total.toFixed(2)}</p>
     </div>
 
-    <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
-      <button onClick={onDec} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-white text-gray-500 hover:text-red-500 hover:shadow-sm transition-all">
+    <div className="flex items-center gap-1 bg-gray-50 dark:bg-black/20 rounded-lg p-1">
+      <button onClick={onDec} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-white dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-red-500 hover:shadow-sm transition-all">
         <Minus size={12} strokeWidth={3} />
       </button>
-      <span className="w-6 text-center text-xs font-black text-gray-700">{item.quantity}</span>
-      <button onClick={onInc} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-white text-gray-500 hover:text-emerald-500 hover:shadow-sm transition-all">
+      <span className="w-6 text-center text-xs font-black text-[rgb(var(--text-main))] dark:text-white">{item.quantity}</span>
+      <button onClick={onInc} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-white dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-emerald-500 hover:shadow-sm transition-all">
         <Plus size={12} strokeWidth={3} />
       </button>
     </div>

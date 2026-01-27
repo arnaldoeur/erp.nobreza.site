@@ -64,7 +64,11 @@ export const translations = {
         'common.daily_close': 'FECHO DO DIA',
         'profile.title': 'Perfil do Utilizador',
         'profile.view_profile': 'Ver Perfil',
-        'profile.logout': 'Sair do Sistema'
+        'profile.logout': 'Sair do Sistema',
+        'dashboard.period.today': 'Hoje',
+        'dashboard.period.15days': '15 Dias',
+        'dashboard.period.1month': '1 Mês',
+        'dashboard.period.3months': '3 Meses'
     },
     'en-US': {
         'system.settings.title': 'System & Maintenance',
@@ -130,7 +134,11 @@ export const translations = {
         'common.daily_close': 'DAILY CLOSE',
         'profile.title': 'User Profile',
         'profile.view_profile': 'View Profile',
-        'profile.logout': 'Logout'
+        'profile.logout': 'Logout',
+        'dashboard.period.today': 'Today',
+        'dashboard.period.15days': '15 Days',
+        'dashboard.period.1month': '1 Month',
+        'dashboard.period.3months': '3 Months'
     }
 };
 

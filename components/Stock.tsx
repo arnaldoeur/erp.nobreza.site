@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Product, Supplier, HealthPlan } from '../types';
 import { ProductService, HealthPlanService, AuthService } from '../services';
+import { t, Language } from '../utils/i18n';
 
 interface ProductFormProps {
   product?: Product | null;
@@ -31,9 +32,10 @@ interface ProductFormProps {
   onClose: () => void;
   onSave: (product: Product) => void;
   onDelete: (id: string) => void;
+  lang?: Language;
 }
 
-const ProductForm: React.FC<ProductFormProps> = ({ product, suppliers, onClose, onSave, onDelete }) => {
+const ProductForm: React.FC<ProductFormProps> = ({ product, suppliers, onClose, onSave, onDelete, lang = 'pt-MZ' }) => {
   const [formData, setFormData] = useState<Partial<Product>>(
     product || {
       name: '',
@@ -63,10 +65,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, suppliers, onClose, 
 
   return (
     <div className="fixed inset-0 bg-black/60 z-[200] p-4 flex items-center justify-center backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-2xl rounded-[2.5rem] p-8 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh] custom-scrollbar" onClick={e => e.stopPropagation()}>
+      <div className="bg-[rgb(var(--bg-surface))] dark:bg-slate-900 w-full max-w-2xl rounded-[2.5rem] p-8 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh] custom-scrollbar border dark:border-white/10" onClick={e => e.stopPropagation()}>
         {/* ... (Keep existing Header) */}
         <div className="flex justify-between items-center">
-          <h3 className="text-xl font-black text-emerald-950 uppercase">{product ? 'Editar Produto' : 'Novo Produto'}</h3>
+          <h3 className="text-xl font-black text-[rgb(var(--text-main))] dark:text-white uppercase">{product ? 'Editar Produto' : 'Novo Produto'}</h3>
           <button type="button" onClick={onClose} className="p-2 text-gray-300 hover:text-emerald-700 transition-colors"><X size={24} /></button>
         </div>
 
@@ -77,13 +79,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, suppliers, onClose, 
               {/* ... Name ... */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Nome Comercial</label>
-                <input required className="w-full p-4 bg-gray-50 rounded-2xl font-bold border-2 border-transparent focus:bg-white focus:border-emerald-500 outline-none" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                <input required className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold border-2 border-transparent focus:bg-white dark:focus:bg-white/10 focus:border-emerald-500 outline-none text-[rgb(var(--text-main))] dark:text-white" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
               </div>
               {/* ... Category ... */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Categoria</label>
-                <select className="w-full p-4 bg-gray-50 rounded-2xl font-bold border-transparent focus:border-emerald-500 outline-none" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>
-                  <option>Medicamento</option><option>Antibiótico</option><option>Higiene</option><option>Suplemento</option><option>Equipamento</option><option>Geral</option>
+                <select className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold border-transparent focus:border-emerald-500 outline-none text-[rgb(var(--text-main))] dark:text-white" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>
+                  <option className="dark:bg-slate-900">Medicamento</option><option className="dark:bg-slate-900">Antibiótico</option><option className="dark:bg-slate-900">Higiene</option><option className="dark:bg-slate-900">Suplemento</option><option className="dark:bg-slate-900">Equipamento</option><option className="dark:bg-slate-900">Geral</option>
                 </select>
               </div>
             </div>
@@ -92,30 +94,29 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, suppliers, onClose, 
               {/* ... Code ... */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Código / Ref</label>
-                <input required className="w-full p-4 bg-gray-50 rounded-2xl font-bold outline-none" value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} />
+                <input required className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold outline-none text-[rgb(var(--text-main))] dark:text-white" value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} />
               </div>
               {/* ... Supplier ... */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Fornecedor Habitual</label>
-                <select className="w-full p-4 bg-gray-50 rounded-2xl font-bold outline-none" value={formData.supplierId || ''} onChange={e => setFormData({ ...formData, supplierId: e.target.value })}>
-                  <option value="">Selecione...</option>
-                  {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                <select className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold outline-none text-[rgb(var(--text-main))] dark:text-white" value={formData.supplierId || ''} onChange={e => setFormData({ ...formData, supplierId: e.target.value })}>
+                  <option value="" className="dark:bg-slate-900">Selecione...</option>
+                  {suppliers.map(s => <option key={s.id} value={s.id} className="dark:bg-slate-900">{s.name}</option>)}
                 </select>
               </div>
             </div>
 
             {/* Pricing Section */}
-            <div className="bg-emerald-50/50 p-6 rounded-3xl space-y-4 border border-emerald-100/50">
-              {/* ... Keep Pricing Fields ... */}
-              <h4 className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">Informações Financeiras</h4>
+            <div className="bg-emerald-50/50 dark:bg-emerald-900/20 p-6 rounded-3xl space-y-4 border border-emerald-100/50 dark:border-emerald-500/10 transition-colors">
+              <h4 className="text-[10px] font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-widest">Informações Financeiras</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-emerald-600/60 uppercase tracking-widest px-1">Preço de Compra</label>
-                  <input type="number" required min="0" step="0.01" className="w-full p-4 bg-white rounded-2xl font-black text-emerald-950 outline-none border border-emerald-100 focus:border-emerald-500" value={formData.purchasePrice} onChange={e => setFormData({ ...formData, purchasePrice: parseFloat(e.target.value) || 0 })} />
+                  <label className="text-[10px] font-black text-emerald-600/60 dark:text-emerald-400/60 uppercase tracking-widest px-1">Preço de Compra</label>
+                  <input type="number" required min="0" step="0.01" className="w-full p-4 bg-white dark:bg-black/40 rounded-2xl font-black text-emerald-950 dark:text-white outline-none border border-emerald-100 dark:border-white/10 focus:border-emerald-500" value={formData.purchasePrice} onChange={e => setFormData({ ...formData, purchasePrice: parseFloat(e.target.value) || 0 })} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-emerald-600/60 uppercase tracking-widest px-1">Preço de Venda</label>
-                  <input type="number" required min="0" step="0.01" className="w-full p-4 bg-white rounded-2xl font-black text-emerald-700 outline-none border border-emerald-100 focus:border-emerald-500" value={formData.salePrice} onChange={e => setFormData({ ...formData, salePrice: parseFloat(e.target.value) || 0 })} />
+                  <label className="text-[10px] font-black text-emerald-600/60 dark:text-emerald-400/60 uppercase tracking-widest px-1">Preço de Venda</label>
+                  <input type="number" required min="0" step="0.01" className="w-full p-4 bg-white dark:bg-black/40 rounded-2xl font-black text-emerald-700 dark:text-emerald-400 outline-none border border-emerald-100 dark:border-white/10 focus:border-emerald-500" value={formData.salePrice} onChange={e => setFormData({ ...formData, salePrice: parseFloat(e.target.value) || 0 })} />
                 </div>
               </div>
             </div>
@@ -123,25 +124,25 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, suppliers, onClose, 
             {/* Stock Management */}
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">{product ? 'Stock Atual' : 'Stock Inicial'}</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">{product ? t('stock.current', 'pt-MZ') : t('stock.initial', 'pt-MZ')}</label>
                 <input
                   type="number"
                   disabled={!!product}
                   required
-                  className={`w-full p-4 bg-gray-50 rounded-2xl font-bold ${product ? 'text-gray-400 bg-gray-100 cursor-not-allowed' : ''}`}
+                  className={`w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold text-[rgb(var(--text-main))] dark:text-white ${product ? 'opacity-50 cursor-not-allowed' : ''}`}
                   value={formData.quantity}
                   onChange={e => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
                 />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Unidade</label>
-                <select className="w-full p-4 bg-gray-50 rounded-2xl font-bold border-transparent focus:border-emerald-500 outline-none" value={formData.unit || 'Unidade'} onChange={e => setFormData({ ...formData, unit: e.target.value })}>
-                  <option>Unidade</option><option>Caixa</option><option>Pacote</option><option>Frasco</option><option>Kg</option><option>Litro</option><option>Cartela</option>
+                <select className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold border-transparent focus:border-emerald-500 outline-none text-[rgb(var(--text-main))] dark:text-white" value={formData.unit || 'Unidade'} onChange={e => setFormData({ ...formData, unit: e.target.value })}>
+                  <option className="dark:bg-slate-900">Unidade</option><option className="dark:bg-slate-900">Caixa</option><option className="dark:bg-slate-900">Pacote</option><option className="dark:bg-slate-900">Frasco</option><option className="dark:bg-slate-900">Kg</option><option className="dark:bg-slate-900">Litro</option><option className="dark:bg-slate-900">Cartela</option>
                 </select>
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Minimo</label>
-                <input type="number" required min="0" className="w-full p-4 bg-gray-50 rounded-2xl font-bold outline-none" value={formData.minStock} onChange={e => setFormData({ ...formData, minStock: parseInt(e.target.value) || 0 })} />
+                <input type="number" required min="0" className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold outline-none text-[rgb(var(--text-main))] dark:text-white" value={formData.minStock} onChange={e => setFormData({ ...formData, minStock: parseInt(e.target.value) || 0 })} />
               </div>
             </div>
           </div>
@@ -206,30 +207,30 @@ const BulkEditModal: React.FC<BulkEditModalProps> = ({ selectedIds, products, su
 
   return (
     <div className="fixed inset-0 bg-black/60 z-[300] p-4 flex items-center justify-center backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl">
-        <h3 className="text-xl font-black text-emerald-950 uppercase mb-4">Edição em Massa</h3>
-        <p className="text-sm text-gray-500 mb-6 font-medium">A editar <b>{selectedIds.length}</b> produtos selecionados.</p>
+      <div className="bg-[rgb(var(--bg-surface))] dark:bg-slate-900 w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl border dark:border-white/10">
+        <h3 className="text-xl font-black text-[rgb(var(--text-main))] dark:text-white uppercase mb-4">Edição em Massa</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 font-medium">A editar <b>{selectedIds.length}</b> produtos selecionados.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Campo a Editar</label>
-            <select className="w-full p-4 bg-gray-50 rounded-xl font-bold text-sm outline-none" value={field} onChange={e => setField(e.target.value)}>
-              <option value="purchasePrice">Preço de Compra</option>
-              <option value="salePrice">Preço de Venda</option>
-              <option value="supplierId">Fornecedor</option>
-              <option value="minStock">Stock Mínimo</option>
+            <select className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-xl font-bold text-sm outline-none text-[rgb(var(--text-main))] dark:text-white" value={field} onChange={e => setField(e.target.value)}>
+              <option className="dark:bg-slate-900" value="purchasePrice">Preço de Compra</option>
+              <option className="dark:bg-slate-900" value="salePrice">Preço de Venda</option>
+              <option className="dark:bg-slate-900" value="supplierId">Fornecedor</option>
+              <option className="dark:bg-slate-900" value="minStock">Stock Mínimo</option>
             </select>
           </div>
 
           <div className="space-y-1">
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Novo Valor</label>
             {field === 'supplierId' ? (
-              <select className="w-full p-4 bg-gray-50 rounded-xl font-bold text-sm outline-none" value={value} onChange={e => setValue(e.target.value)} required>
-                <option value="">Selecione...</option>
-                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              <select className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-xl font-bold text-sm outline-none text-[rgb(var(--text-main))] dark:text-white" value={value} onChange={e => setValue(e.target.value)} required>
+                <option value="" className="dark:bg-slate-900">Selecione...</option>
+                {suppliers.map(s => <option key={s.id} value={s.id} className="dark:bg-slate-900">{s.name}</option>)}
               </select>
             ) : (
-              <input className="w-full p-4 bg-gray-50 rounded-xl font-bold text-sm outline-none"
+              <input className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-xl font-bold text-sm outline-none text-[rgb(var(--text-main))] dark:text-white"
                 type="number" step="0.01"
                 placeholder="Insira o novo valor..."
                 value={value} onChange={e => setValue(e.target.value)} required
@@ -491,18 +492,18 @@ export const Stock: React.FC<StockProps> = ({ products, setProducts, suppliers, 
 
 
         {/* Tab Navigation */}
-        <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 w-full md:w-fit mx-auto overflow-x-auto custom-scrollbar no-scrollbar">
-          <button onClick={() => setActiveTab('STOCK')} className={`flex-1 md:flex-none px-4 md:px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shrink-0 ${activeTab === 'STOCK' ? 'bg-emerald-700 text-white shadow-md' : 'text-gray-400 hover:bg-gray-50'}`}>
+        <div className="flex bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-1.5 rounded-2xl shadow-sm w-full md:w-fit mx-auto overflow-x-auto custom-scrollbar no-scrollbar">
+          <button onClick={() => setActiveTab('STOCK')} className={`flex-1 md:flex-none px-4 md:px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shrink-0 ${activeTab === 'STOCK' ? 'bg-emerald-700 text-white shadow-md' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5'}`}>
             <LayoutGrid size={16} />
             <span className="whitespace-nowrap md:hidden">Gestão</span>
             <span className="whitespace-nowrap hidden md:inline">Gestão de Stock</span>
           </button>
-          <button onClick={() => setActiveTab('REGISTRY')} className={`flex-1 md:flex-none px-4 md:px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shrink-0 ${activeTab === 'REGISTRY' ? 'bg-emerald-700 text-white shadow-md' : 'text-gray-400 hover:bg-gray-50'}`}>
+          <button onClick={() => setActiveTab('REGISTRY')} className={`flex-1 md:flex-none px-4 md:px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shrink-0 ${activeTab === 'REGISTRY' ? 'bg-emerald-700 text-white shadow-md' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5'}`}>
             <List size={16} />
             <span className="whitespace-nowrap md:hidden">Produtos</span>
             <span className="whitespace-nowrap hidden md:inline">Cadastro de Produtos</span>
           </button>
-          <button onClick={() => setActiveTab('HEALTH_PLANS')} className={`flex-1 md:flex-none px-4 md:px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shrink-0 ${activeTab === 'HEALTH_PLANS' ? 'bg-emerald-700 text-white shadow-md' : 'text-gray-400 hover:bg-gray-50'}`}>
+          <button onClick={() => setActiveTab('HEALTH_PLANS')} className={`flex-1 md:flex-none px-4 md:px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shrink-0 ${activeTab === 'HEALTH_PLANS' ? 'bg-emerald-700 text-white shadow-md' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5'}`}>
             <ShieldCheck size={16} />
             <span className="whitespace-nowrap md:hidden">Planos</span>
             <span className="whitespace-nowrap hidden md:inline">Planos de Saúde</span>
@@ -513,7 +514,7 @@ export const Stock: React.FC<StockProps> = ({ products, setProducts, suppliers, 
           <div className="flex gap-4 items-center">
             <div className="relative group flex-1">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-              <input type="text" placeholder="Pesquisar produto..." className="w-full pl-14 pr-6 py-5 bg-white rounded-2xl border border-gray-100 outline-none font-bold text-sm shadow-sm focus:border-emerald-500 transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <input type="text" placeholder="Pesquisar produto..." className="w-full pl-14 pr-6 py-5 bg-[rgb(var(--bg-surface))] dark:bg-white/5 rounded-2xl border border-transparent outline-none font-bold text-sm shadow-sm focus:border-emerald-500 transition-all text-[rgb(var(--text-main))] dark:text-white" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
           </div>
 
@@ -552,7 +553,7 @@ export const Stock: React.FC<StockProps> = ({ products, setProducts, suppliers, 
                 <div className="py-20 text-center text-gray-300 font-black uppercase tracking-widest text-[10px] opacity-20">Nenhum item encontrado</div>
               ) : (
                 filteredProducts.map(p => (
-                  <div key={p.id} className={`bg-white p-5 rounded-2xl border ${selectedProducts.has(p.id) ? 'border-emerald-500 bg-emerald-50/10 ring-1 ring-emerald-500' : 'border-gray-100'} shadow-sm flex items-center gap-4 group hover:border-emerald-300 transition-all relative overflow-hidden`}>
+                  <div key={p.id} className={`bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-5 rounded-2xl border ${selectedProducts.has(p.id) ? 'border-emerald-500 bg-emerald-50/10 ring-1 ring-emerald-500' : 'border-transparent'} shadow-sm flex items-center gap-4 group hover:border-emerald-300 transition-all relative overflow-hidden`}>
 
                     {/* Checkbox Section */}
                     <div className="z-10" onClick={(e) => { e.stopPropagation(); toggleSelection(p.id); }}>
@@ -566,8 +567,8 @@ export const Stock: React.FC<StockProps> = ({ products, setProducts, suppliers, 
                     </div>
                     <div className="flex-1 min-w-0 pl-2">
                       <div className="flex justify-between items-start">
-                        <h4 className="font-black text-emerald-950 text-sm uppercase truncate leading-tight">{p.name}</h4>
-                        <span className="text-sm font-black text-emerald-700 ml-2">MT {p.salePrice}</span>
+                        <h4 className="font-black text-[rgb(var(--text-main))] dark:text-white text-sm uppercase truncate leading-tight">{p.name}</h4>
+                        <span className="text-sm font-black text-emerald-700 dark:text-emerald-400 ml-2">MT {p.salePrice}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[10px] text-gray-400 font-bold uppercase truncate">{p.category} • Ref: {p.code}</span>
@@ -585,7 +586,7 @@ export const Stock: React.FC<StockProps> = ({ products, setProducts, suppliers, 
 
                     <button
                       onClick={() => { setEditingProduct(p); setIsAdjustmentOpen(true); }}
-                      className="p-3 bg-gray-50 text-emerald-700 rounded-xl hover:bg-emerald-700 hover:text-white transition-all shadow-sm border border-gray-100 active:scale-95"
+                      className="p-3 bg-gray-50 dark:bg-white/5 text-emerald-700 dark:text-emerald-400 rounded-xl hover:bg-emerald-700 hover:text-white transition-all shadow-sm active:scale-95"
                       title="Ajustar Stock"
                     >
                       <ArrowRightLeft size={18} />

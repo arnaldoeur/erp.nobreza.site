@@ -55,6 +55,16 @@ export interface CompanyInfo {
   isDarkMode?: boolean;
   language?: 'pt-MZ' | 'en-US';
   timezone?: string;
+  emailDomain?: string;
+}
+
+export interface ResendDomain {
+  id: string;
+  domain: string;
+  status: 'pending' | 'verified' | 'failed' | 'not_started';
+  dns_records?: any[];
+  resend_id?: string;
+  created_at?: string;
 }
 
 export interface Product {
@@ -203,4 +213,65 @@ export interface CalendarEvent {
   isPersonal?: boolean;
   createdBy: string;
   attendees?: EventAttendee[];
+}
+export interface AppNotification {
+  id: string;
+  userId?: string;
+  type: string;
+  title: string;
+  content: string;
+  read: boolean;
+  metadata?: any;
+  createdAt: Date;
+}
+
+export interface EmailAccount {
+  id: string;
+  company_id: string | number;
+  user_id?: string;
+  account_type: 'COMPANY' | 'TEAM' | 'PERSONAL' | 'SYSTEM';
+  display_name: string;
+  email: string;
+  smtp_host: string;
+  smtp_port: number;
+  smtp_user: string;
+  smtp_pass: string;
+  smtp_secure: boolean;
+  // IMAP
+  imap_host?: string;
+  imap_port?: number;
+  imap_user?: string;
+  imap_pass?: string;
+  imap_secure?: boolean;
+
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface EmailFolder {
+  id: string;
+  account_id: string;
+  name: string;
+  path: string;
+  type: 'INBOX' | 'SENT' | 'DRAFT' | 'TRASH' | 'JUNK' | 'ARCHIVE' | 'CUSTOM';
+  total_count: number;
+  unseen_count: number;
+  last_sync?: string;
+}
+
+export interface EmailMessage {
+  id: string;
+  account_id: string;
+  folder_id: string;
+  uid: number;
+  message_id?: string;
+  subject?: string;
+  from_addr?: string;
+  from_name?: string;
+  to_addr?: string[];
+  date?: string;
+  flags?: string[];
+  has_attachments?: boolean;
+  snippet?: string;
+  body_structure?: any;
 }

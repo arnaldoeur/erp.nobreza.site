@@ -127,8 +127,8 @@ export const Billing: React.FC<BillingProps> = ({ products, companyInfo, documen
 
    if (view === 'PREVIEW' && selectedDoc) {
       return (
-         <div className="fixed inset-0 z-[200] bg-white flex flex-col animate-in slide-in-from-bottom-4 duration-300">
-            <div className="h-16 border-b flex items-center justify-between px-6 shrink-0 bg-gray-50 print:hidden">
+         <div className="fixed inset-0 z-[200] bg-[rgb(var(--bg-app))] dark:bg-black/95 flex flex-col animate-in slide-in-from-bottom-4 duration-300">
+            <div className="h-16 border-b dark:border-white/10 flex items-center justify-between px-6 shrink-0 bg-[rgb(var(--bg-surface))] dark:bg-white/5 print:hidden">
                <button onClick={() => setView('DASHBOARD')} className="p-2 -ml-2"><ChevronLeft size={32} /></button>
                <h3 className="font-black text-xs uppercase tracking-widest">Visualizar Documento</h3>
                <div className="flex gap-2">
@@ -156,10 +156,10 @@ export const Billing: React.FC<BillingProps> = ({ products, companyInfo, documen
    if (view === 'CREATE') {
       return (
          <div className="flex flex-col h-full gap-4 pb-32">
-            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col gap-6">
+            <div className="bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-6 rounded-[2rem] shadow-sm flex flex-col gap-6">
                <div className="flex items-center justify-between">
-                  <button onClick={() => setView('DASHBOARD')} className="p-2 -ml-2 text-emerald-900"><ChevronLeft size={32} /></button>
-                  <h3 className="text-lg font-black uppercase text-emerald-950">Emissão</h3>
+                  <button onClick={() => setView('DASHBOARD')} className="p-2 -ml-2 text-emerald-900 dark:text-emerald-400"><ChevronLeft size={32} /></button>
+                  <h3 className="text-lg font-black uppercase text-[rgb(var(--text-main))] dark:text-white">Emissão</h3>
                   <div className="w-10"></div>
                </div>
 
@@ -170,26 +170,26 @@ export const Billing: React.FC<BillingProps> = ({ products, companyInfo, documen
 
                <div className="space-y-1">
                   <label className="text-[9px] font-black text-gray-400 uppercase px-1">Destinatário</label>
-                  <select className="w-full p-4 bg-gray-50 rounded-2xl font-bold outline-none" value={targetName} onChange={e => setTargetName(e.target.value)}>
+                  <select className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold outline-none text-[rgb(var(--text-main))] dark:text-white" value={targetName} onChange={e => setTargetName(e.target.value)}>
                      <option value="">Selecione...</option>
                      {(docType === 'INVOICE' ? customers : suppliers).map(o => <option key={o.id} value={o.name}>{o.name}</option>)}
                   </select>
                </div>
             </div>
 
-            <div className="bg-white flex-1 p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+            <div className="bg-[rgb(var(--bg-surface))] dark:bg-white/5 flex-1 p-6 rounded-[2rem] shadow-sm flex flex-col overflow-hidden">
                <div className="relative mb-4 shrink-0">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                  <input className="w-full pl-11 pr-4 py-4 bg-gray-50 rounded-2xl text-sm font-bold" placeholder="Pesquisar catálogo..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                  <input className="w-full pl-11 pr-4 py-4 bg-gray-50 dark:bg-white/5 rounded-2xl text-sm font-bold border border-transparent focus:border-emerald-500 outline-none text-[rgb(var(--text-main))] dark:text-white" placeholder="Pesquisar catálogo..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                </div>
                <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                   {filteredProducts.map(p => (
-                     <button key={p.id} onClick={() => addItem(p)} className="w-full p-4 bg-white border border-gray-50 rounded-2xl flex justify-between items-center active:bg-emerald-50 transition-all shadow-sm">
+                     <button key={p.id} onClick={() => addItem(p)} className="w-full p-4 bg-[rgb(var(--bg-surface))] dark:bg-white/5 rounded-2xl flex justify-between items-center active:bg-emerald-50 dark:active:bg-emerald-900/40 transition-all shadow-sm">
                         <div className="text-left min-w-0 flex-1 pr-4">
-                           <p className="font-black text-emerald-950 text-[11px] uppercase truncate">{p.name}</p>
+                           <p className="font-black text-[rgb(var(--text-main))] dark:text-white text-[11px] uppercase truncate">{p.name}</p>
                            <p className="text-[9px] text-gray-400 font-bold">MT {docType === 'PURCHASE_ORDER' ? p.purchasePrice : p.salePrice}</p>
                         </div>
-                        <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-emerald-600"><Plus size={18} /></div>
+                        <div className="w-8 h-8 bg-gray-50 dark:bg-white/10 rounded-lg flex items-center justify-center text-emerald-600 dark:text-emerald-400"><Plus size={18} /></div>
                      </button>
                   ))}
                </div>
@@ -221,12 +221,12 @@ export const Billing: React.FC<BillingProps> = ({ products, companyInfo, documen
 
    return (
       <div className="space-y-6 animate-in fade-in">
-         <div className="bg-white p-6 rounded-[2rem] shadow-sm border flex justify-between items-center">
+         <div className="bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-6 rounded-[2rem] shadow-sm flex justify-between items-center">
             <div>
-               <h3 className="text-xl font-black text-emerald-950 uppercase leading-none">Documentos</h3>
-               <p className="text-[9px] text-gray-400 font-bold uppercase mt-2">Histórico de Faturamento</p>
+               <h3 className="text-xl font-black text-[rgb(var(--text-main))] dark:text-white uppercase leading-none">Documentos</h3>
+               <p className="text-[9px] text-gray-400 dark:text-emerald-400/60 font-bold uppercase mt-2">Histórico de Faturamento</p>
             </div>
-            <button onClick={() => setView('CREATE')} className="p-4 bg-emerald-700 text-white rounded-2xl shadow-xl"><Plus size={24} /></button>
+            <button onClick={() => setView('CREATE')} className="p-4 bg-emerald-700 text-white rounded-2xl shadow-xl hover:bg-emerald-800 transition-all"><Plus size={24} /></button>
          </div>
 
          <div className="space-y-3">
@@ -234,19 +234,19 @@ export const Billing: React.FC<BillingProps> = ({ products, companyInfo, documen
                <div className="py-20 text-center opacity-10 flex flex-col items-center gap-4"><FileText size={80} /><p className="font-black text-xs uppercase tracking-widest">Sem Documentos</p></div>
             ) : (
                documents.map(doc => (
-                  <div key={doc.id} onClick={() => { setSelectedDoc(doc); setView('PREVIEW'); }} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 active:bg-gray-50 transition-all">
-                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${doc.type === 'INVOICE' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
+                  <div key={doc.id} onClick={() => { setSelectedDoc(doc); setView('PREVIEW'); }} className="bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-5 rounded-2xl shadow-sm flex items-center gap-4 active:bg-gray-50 dark:active:bg-white/10 transition-all cursor-pointer">
+                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${doc.type === 'INVOICE' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'}`}>
                         <FileText size={24} />
                      </div>
                      <div className="flex-1 min-w-0">
-                        <p className="font-black text-emerald-950 text-xs uppercase">#{doc.id}</p>
+                        <p className="font-black text-[rgb(var(--text-main))] dark:text-white text-xs uppercase">#{doc.id}</p>
                         <p className="text-[10px] text-gray-400 font-black uppercase truncate mt-0.5">{doc.targetName}</p>
                      </div>
                      <div className="text-right">
-                        <p className="text-sm font-black text-emerald-950">MT {doc.total.toFixed(0)}</p>
+                        <p className="text-sm font-black text-[rgb(var(--text-main))] dark:text-white">MT {doc.total.toFixed(0)}</p>
                         <p className="text-[9px] text-gray-400 font-bold uppercase">{new Date(doc.timestamp).toLocaleDateString()}</p>
                      </div>
-                     <ChevronRight size={16} className="text-gray-200" />
+                     <ChevronRight size={16} className="text-gray-200 dark:text-gray-700" />
                   </div>
                ))
             )}

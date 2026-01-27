@@ -27,11 +27,13 @@ import {
   PlayCircle,
   StopCircle,
   Clock,
-  Fingerprint
+  Fingerprint,
+  Mail
 } from 'lucide-react';
 import { User, UserRole, CompanyInfo } from '../types';
 import { WorkShift } from '../services/time-tracking.service';
 import { t, Language } from '../utils/i18n';
+import { NotificationCenter } from './NotificationCenter';
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -43,15 +45,16 @@ interface SidebarItem {
 const getSidebarItems = (lang: Language): SidebarItem[] => [
   { icon: LayoutDashboard, label: t('nav.dashboard', lang), id: 'dashboard', roles: Object.values(UserRole) },
   { icon: ShoppingCart, label: t('nav.sales', lang) + ' (POS)', id: 'pos', roles: [UserRole.ADMIN, UserRole.COMMERCIAL, UserRole.TECHNICIAN] },
-  { icon: Package, label: t('nav.stock', lang), id: 'stock', roles: [UserRole.ADMIN, UserRole.COMMERCIAL] },
+  { icon: Package, label: t('nav.stock', lang), id: 'stock', roles: [UserRole.ADMIN, UserRole.COMMERCIAL, UserRole.TECHNICIAN] },
   { icon: FileText, label: t('nav.billing', lang), id: 'billing', roles: [UserRole.ADMIN, UserRole.ADMINISTRATIVE] },
   { icon: FolderCheck, label: t('nav.docs', lang), id: 'documents', roles: Object.values(UserRole) },
   { icon: CheckSquare, label: t('nav.tasks', lang), id: 'tasks', roles: Object.values(UserRole) },
   { icon: CalendarIcon, label: t('nav.agenda', lang), id: 'calendar', roles: Object.values(UserRole) },
   { icon: MessageSquare, label: 'Chat Equipe', id: 'social', roles: Object.values(UserRole) },
   { icon: Truck, label: t('nav.suppliers', lang), id: 'suppliers', roles: [UserRole.ADMIN, UserRole.COMMERCIAL] },
-  { icon: Users, label: t('nav.customers', lang), id: 'customers', roles: [UserRole.ADMIN, UserRole.ADMINISTRATIVE] },
-  { icon: SettingsIcon, label: t('nav.settings', lang), id: 'administration', roles: [UserRole.ADMIN] },
+  { icon: Users, label: t('nav.customers', lang), id: 'customers', roles: [UserRole.ADMIN, UserRole.ADMINISTRATIVE, UserRole.COMMERCIAL] },
+  { icon: Mail, label: 'Correio', id: 'email', roles: Object.values(UserRole) },
+  { icon: SettingsIcon, label: t('nav.settings', lang), id: 'administration', roles: Object.values(UserRole) }, // Everyone sees settings (for profile) but tabs are restricted
   { icon: ShieldCheck, label: t('nav.support', lang), id: 'support', roles: Object.values(UserRole) },
   { icon: Lock, label: 'Boss Admin', id: 'SUPER_ADMIN', roles: [UserRole.ADMIN] },
 ];
@@ -126,6 +129,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
           />
         </div>
         <div className="flex items-center gap-3">
+          <NotificationCenter user={user} />
           <button
             onClick={() => handleNavClick('daily-close')}
             className="p-2 bg-red-600 rounded-lg text-white"
@@ -160,7 +164,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
               <img
                 src="/nobreza_erp_logo_white_horizontal.png"
                 alt="Nobreza ERP"
-                className="h-10 w-auto object-contain max-w-full"
+                className="h-10 w-auto object-contain max-w-[80%]"
               />
             </div>
           ) : (
@@ -227,8 +231,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
 
         <div className="p-4 border-t border-emerald-900/50 bg-emerald-900/20 relative" ref={dropdownRef}>
           {isDropdownOpen && (
-            <div className="absolute bottom-full left-4 right-4 mb-4 bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 animate-in slide-in-from-bottom-2 duration-200 z-50">
-              <div className="p-4 border-b bg-gray-50 flex items-center gap-3">
+            <div className="absolute bottom-full left-4 right-4 mb-4 bg-[rgb(var(--bg-surface))] dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-[rgb(var(--border-subtle))] dark:border-white/10 animate-in slide-in-from-bottom-2 duration-200 z-50">
+              <div className="p-4 border-b dark:border-white/10 bg-gray-50/50 dark:bg-white/5 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-700 text-emerald-100 flex items-center justify-center font-black overflow-hidden">
                   {user.photo ? (
                     <img src={user.photo} alt={user.name} className="w-full h-full object-cover" />
@@ -237,14 +241,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
                   )}
                 </div>
                 <div className="overflow-hidden text-left">
-                  <p className="text-xs font-black text-emerald-950 truncate uppercase">{user.name}</p>
-                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{user.role}</p>
+                  <p className="text-xs font-black text-[rgb(var(--text-main))] dark:text-white truncate uppercase">{user.name}</p>
+                  <p className="text-[9px] font-bold text-gray-400 dark:text-emerald-400/60 uppercase tracking-widest">{user.role}</p>
                 </div>
               </div>
               <div className="p-2 space-y-1">
                 <button
                   onClick={() => { setIsDropdownOpen(false); onGoToProfile(); setIsMobileMenuOpen(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 transition-all font-black text-[10px] uppercase tracking-widest text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-400 transition-all font-black text-[10px] uppercase tracking-widest text-left"
                 >
                   <UserIcon size={16} />
                   Ver Perfil
@@ -285,9 +289,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
       </aside >
 
       <main className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="hidden md:flex h-20 bg-[rgb(var(--bg-surface))] dark:bg-black border-b border-gray-100 dark:border-white/5 items-center justify-between px-10 shadow-sm z-10 shrink-0">
+        <header className="hidden md:flex h-20 bg-[rgb(var(--bg-surface))] dark:bg-black border-b border-[rgb(var(--border-subtle))] dark:border-white/5 items-center justify-between px-10 shadow-sm z-10 shrink-0">
           <div className="flex flex-col">
-            <h2 className="text-xl font-black text-emerald-950 uppercase tracking-tight">
+            <h2 className="text-xl font-black text-[rgb(var(--text-main))] dark:text-white uppercase tracking-tight">
               {getSidebarItems(companyInfo.language || 'pt-MZ').find(i => i.id === activeView)?.label || 'Bem-vindo'}
             </h2>
             {notification && (
@@ -312,6 +316,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
                 {t('common.online', companyInfo.language || 'pt-MZ')}
               </span>
             </div>
+            <NotificationCenter user={user} />
             <button
               onClick={() => setActiveView('daily-close')}
               className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-2xl font-black flex items-center gap-2 shadow-xl shadow-red-900/20 transition-all active:scale-95 group"
@@ -326,7 +331,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
           {children}
         </div>
 
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 flex items-center justify-around px-2 z-30 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[rgb(var(--bg-surface))] dark:bg-black border-t border-[rgb(var(--border-subtle))] dark:border-white/10 flex items-center justify-around px-2 z-30 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
           <BottomNavButton active={activeView === 'dashboard'} icon={LayoutDashboard} onClick={() => setActiveView('dashboard')} label="Home" />
           <BottomNavButton active={activeView === 'pos'} icon={ShoppingCart} onClick={() => setActiveView('pos')} label="Vendas" />
           <BottomNavButton active={activeView === 'stock'} icon={Package} onClick={() => setActiveView('stock')} label="Stock" />

@@ -412,7 +412,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
       {/* Top Section: Greeting + Clock + Quote = Fluid Height */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 shrink-0">
         {/* Left: Greeting & Clock */}
-        <div className="lg:col-span-2 flex flex-col md:flex-row justify-between items-start md:items-center bg-[rgb(var(--bg-surface))] dark:bg-black/40 p-6 rounded-[2rem] shadow-sm border border-[rgb(var(--border-subtle))] dark:border-white/5 overflow-hidden relative">
+        <div className="lg:col-span-2 flex flex-col md:flex-row justify-between items-start md:items-center bg-[rgb(var(--bg-surface))] dark:bg-black/40 p-6 rounded-[2rem] shadow-sm overflow-hidden relative">
           <div className="relative z-10 flex items-center gap-4">
             <div className="w-14 h-14 bg-emerald-950/5 rounded-2xl flex items-center justify-center overflow-hidden shrink-0">
               {user?.photo ? (
@@ -509,7 +509,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
       {/* Bottom Section: Chart + Critical Alerts = Takes Remaining Space */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full lg:flex-1 min-h-0">
         {/* Sales Chart */}
-        <div className="lg:col-span-2 bg-[rgb(var(--bg-surface))] dark:bg-black/20 p-6 rounded-[2rem] shadow-sm border border-[rgb(var(--border-subtle))] dark:border-white/5 flex flex-col h-[500px] lg:h-[480px] w-full">
+        <div className="lg:col-span-2 bg-[rgb(var(--bg-surface))] dark:bg-black/20 p-6 rounded-[2rem] shadow-sm flex flex-col h-[500px] lg:h-[480px] w-full">
           <div className="flex justify-between items-center mb-4 shrink-0">
             <h3 className="text-base font-black flex items-center gap-3 text-[rgb(var(--text-main))] dark:text-white uppercase tracking-tight">
               <TrendingUp size={20} className="text-emerald-600" />
@@ -523,10 +523,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
                   className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${chartPeriod === period ? 'bg-[rgb(var(--bg-surface))] dark:bg-emerald-600 dark:text-white text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                     }`}
                 >
-                  {period === 'daily' && t('daily-close.today', lang) || 'Diário'}
-                  {period === '15days' && '15 Dias'}
-                  {period === '1month' && '1 Mês'}
-                  {period === '3months' && '3 Meses'}
+                  {period === 'daily' && t('dashboard.period.today', lang)}
+                  {period === '15days' && t('dashboard.period.15days', lang)}
+                  {period === '1month' && t('dashboard.period.1month', lang)}
+                  {period === '3months' && t('dashboard.period.3months', lang)}
                 </button>
               ))}
             </div>
@@ -566,7 +566,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
         </div>
 
         {/* Notificações */}
-        <div className="bg-[rgb(var(--bg-surface))] dark:bg-black/20 p-6 rounded-[2rem] shadow-sm border border-[rgb(var(--border-subtle))] dark:border-white/5 flex flex-col h-[500px] lg:h-[480px] overflow-hidden">
+        <div className="bg-[rgb(var(--bg-surface))] dark:bg-black/20 p-6 rounded-[2rem] shadow-sm flex flex-col h-[500px] lg:h-[480px] overflow-hidden">
           <h3 className="text-base font-black flex items-center gap-3 text-[rgb(var(--text-main))] dark:text-white uppercase tracking-tight mb-4 shrink-0">
             <Zap size={20} className="text-amber-500" />
             Notificações
@@ -660,7 +660,7 @@ const StatCard = ({ icon: Icon, label, value, change, color, onClick }: any) => 
   return (
     <div
       onClick={onClick}
-      className={`bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-4 rounded-[1.5rem] shadow-sm border border-[rgb(var(--border-subtle))] dark:border-white/5 group active:scale-95 transition-all cursor-pointer hover:shadow-md ${style.bg} flex flex-col items-center justify-center text-center gap-1.5 h-full transition-colors`}
+      className={`bg-[rgb(var(--bg-surface))] dark:bg-white/5 p-4 rounded-[1.5rem] shadow-sm group active:scale-95 transition-all cursor-pointer hover:shadow-md ${style.bg} flex flex-col items-center justify-center text-center gap-1.5 h-full transition-colors`}
     >
       <div className={`w-10 h-10 rounded-full ${style.iconBg} flex items-center justify-center shrink-0 shadow-inner mb-0.5`}>
         <Icon size={20} />

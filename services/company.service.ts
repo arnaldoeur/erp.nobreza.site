@@ -49,7 +49,8 @@ export const CompanyService = {
                 shifts: data.shifts || [],
                 timezone: data.timezone || 'Africa/Maputo',
                 language: data.language || 'pt-MZ',
-                isDarkMode: data.is_dark_mode || false
+                isDarkMode: data.is_dark_mode || false,
+                emailDomain: data.email_domain
             };
         } catch (error) {
             console.error('Error fetching company info:', error);
@@ -78,7 +79,8 @@ export const CompanyService = {
             shifts: info.shifts || [],
             timezone: info.timezone || 'Africa/Maputo',
             language: info.language,
-            is_dark_mode: info.isDarkMode
+            is_dark_mode: info.isDarkMode,
+            email_domain: info.emailDomain
         };
 
         try {
