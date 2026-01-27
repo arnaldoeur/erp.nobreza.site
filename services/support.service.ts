@@ -118,7 +118,7 @@ export const SupportService = {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    model: "openai/gpt-4o-mini", // Cost-effective
+                    model: "google/gemini-2.0-flash-lite-preview-02-05:free",
                     messages: [
                         { role: "system", content: systemPrompt },
                         ...history.map(m => ({
@@ -130,7 +130,11 @@ export const SupportService = {
                 })
             });
 
-            if (!response.ok) throw new Error('AI Service Error');
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('OpenRouter Error Details:', errorData);
+                throw new Error(errorData.error?.message || 'AI Service Error');
+            }
 
             const aiData = await response.json();
             const aiText = aiData.choices?.[0]?.message?.content || "Desculpe, não consegui processar sua solicitação.";
@@ -138,9 +142,12 @@ export const SupportService = {
             // 3. Save AI Answer to DB
             await SupportService.sendMessage(chatId, 'assistant', aiText);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("AI Generation Failed:", error);
-            await SupportService.sendMessage(chatId, 'assistant', "⚠️ Estou com dificuldades técnicas momentâneas. Tente novamente em instantes.");
+            const errorMessage = error.message?.includes('401')
+                ? "Erro de autenticação na IA. Por favor, contacte o suporte."
+                : "⚠️ Estou com dificuldades técnicas momentâneas (OpenRouter/API). Tente novamente em instantes.";
+            await SupportService.sendMessage(chatId, 'assistant', errorMessage);
         }
     }
 };

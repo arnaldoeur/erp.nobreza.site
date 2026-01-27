@@ -258,6 +258,7 @@ export const EmailClient: React.FC<EmailClientProps> = ({ companyId, currentUser
                     <EmailCompose
                         account={selectedAccount}
                         companyInfo={companyInfo}
+                        currentUser={currentUser}
                         onClose={() => {
                             setIsComposing(false);
                             setComposeData({});

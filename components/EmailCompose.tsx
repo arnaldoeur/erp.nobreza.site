@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Send, Paperclip, Type, Image as ImageIcon, Sparkles, Loader2, PenSquare, Bold, Italic, List, AlignLeft, Info } from 'lucide-react';
-import { EmailAccount, CompanyInfo } from '../types';
+import { EmailAccount, CompanyInfo, User } from '../types';
 import { EmailClientService } from '../services/email-client.service';
 
 interface EmailComposeProps {
@@ -11,10 +11,11 @@ interface EmailComposeProps {
     initialRecipient?: string;
     initialSubject?: string;
     initialBody?: string;
+    currentUser: User;
 }
 
 export const EmailCompose: React.FC<EmailComposeProps> = ({
-    account, companyInfo, onClose, onSent,
+    account, companyInfo, onClose, onSent, currentUser,
     initialRecipient = '', initialSubject = '', initialBody = ''
 }) => {
     const [loading, setLoading] = useState(false);
@@ -46,8 +47,13 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({
         <tr>
             <td style="vertical-align: top;">
                 <div style="font-weight: 800; color: #064e3b; text-transform: uppercase; font-size: 15px; letter-spacing: 0.05em; margin-bottom: 2px; line-height: 1.2;">${companyInfo.name}</div>
-                <div style="color: #10b981; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; line-height: 1;">${companyInfo.slogan || 'Gestão Inteligente de Farmácias'}</div>
+                <div style="color: #10b981; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; line-height: 1;">${companyInfo.slogan || 'Gestão Inteligente de Farmácias'}</div>
                 
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 13px; font-weight: 800; color: #1e293b; line-height: 1;">${currentUser.name}</div>
+                    <div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px;">${currentUser.responsibility || 'Equipa Nobreza'}</div>
+                </div>
+
                 <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 15px;">
                     ${companyInfo.phone ? `<span style="font-size: 11px; color: #475569; font-weight: 600; display: inline-flex; align-items: center;">
                         <span style="margin-right: 4px; opacity: 0.8;">📞</span> <a href="tel:${companyInfo.phone}" style="color: #475569; text-decoration: none;">${companyInfo.phone}</a>
@@ -59,7 +65,7 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({
 
                 <div style="background-color: #f8fafc; border-radius: 8px; padding: 10px 15px; display: inline-block;">
                     <div style="font-size: 9px; color: #94a3b8; font-weight: 600; letter-spacing: 0.025em; text-transform: uppercase;">
-                        Eco-friendly ERP • <span style="color: #059669;">Nobreza ERP</span> by <span style="color: #064e3b; font-weight: 800;">Zyftech Lda</span>
+                        Eco-friendly ERP • <span style="color: #059669;">Nobreza ERP</span> by <span style="color: #064e3b; font-weight: 800;">Zyph Tech, Lda</span>
                     </div>
                 </div>
             </td>
