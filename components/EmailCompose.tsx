@@ -37,32 +37,32 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({
     const logoUrl = ensureAbsoluteUrl(companyInfo.logoHorizontal || companyInfo.logo || '');
 
     const signatureHtml = `
-<div style="font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; border-top: 2px solid #10b981; padding-top: 32px; margin-top: 48px; max-width: 600px;">
-    <table border="0" cellpadding="0" cellspacing="0" style="width: 100%;">
+<div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border-top: 1px solid #10b981; padding-top: 24px; margin-top: 40px; max-width: 600px; color: #1e293b;">
+    <table border="0" cellpadding="0" cellspacing="0" style="width: 100%; font-family: 'Inter', sans-serif;">
         <tr>
-            ${logoUrl ? `<td style="vertical-align: top; padding-bottom: 24px;" colspan="2">
-                <img src="${logoUrl}" alt="Logotipo" style="max-height: 70px; max-width: 220px; width: auto; height: auto; display: block;" />
+            ${logoUrl ? `<td style="vertical-align: top; padding-bottom: 20px;">
+                <img src="${logoUrl}" alt="Logotipo" style="max-height: 70px; max-width: 220px; width: auto; height: auto;" />
             </td>` : ''}
         </tr>
         <tr>
             <td style="vertical-align: top;">
-                <div style="font-weight: 800; color: #064e3b; text-transform: uppercase; font-size: 14px; letter-spacing: 0.05em; margin-bottom: 4px;">${companyInfo.name}</div>
-                <div style="color: #10b981; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px;">${companyInfo.slogan || 'Gestão Inteligente de Farmácias'}</div>
+                <div style="font-weight: 800; color: #064e3b; text-transform: uppercase; font-size: 14px; letter-spacing: 0.05em; margin-bottom: 2px;">${companyInfo.name}</div>
+                <div style="color: #10b981; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;">${companyInfo.slogan || 'Gestão Inteligente de Farmácias'}</div>
                 
-                <div style="margin-bottom: 20px;">
+                <div style="margin-bottom: 16px;">
                     <div style="font-size: 13px; font-weight: 800; color: #1e293b; line-height: 1.2;">${currentUser.name}</div>
                     <div style="font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px;">${currentUser.responsibility || 'Equipa Nobreza'}</div>
                 </div>
 
-                <div style="margin-bottom: 20px; color: #475569; font-size: 11px;">
+                <div style="margin-bottom: 16px; color: #475569; font-size: 11px;">
                     ${companyInfo.phone ? `<span style="font-weight: 600;">📞 ${companyInfo.phone}</span>` : ''}
-                    ${companyInfo.phone && companyInfo.website ? `<span style="margin: 0 12px; color: #cbd5e1;">|</span>` : ''}
+                    ${companyInfo.phone && companyInfo.website ? `<span style="margin: 0 10px; color: #cbd5e1;">|</span>` : ''}
                     ${companyInfo.website ? `<span style="font-weight: 600;">🌐 <a href="${companyInfo.website.startsWith('http') ? companyInfo.website : 'https://' + companyInfo.website}" style="color: #475569; text-decoration: none;">${companyInfo.website}</a></span>` : ''}
                 </div>
 
-                <div style="background-color: #f8fafc; border-radius: 10px; padding: 12px 16px; border: 1px solid #f1f5f9; display: inline-block;">
+                <div style="background-color: #f8fafc; border-radius: 8px; padding: 10px 14px; border: 1px solid #f1f5f9; display: inline-block;">
                     <div style="font-size: 9px; color: #94a3b8; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">
-                        Eco-friendly ERP • <span style="color: #059669;">Nobreza ERP</span> by <span style="color: #064e3b; font-weight: 800;">Zyph Tech, Lda</span>
+                        Eco-friendly ERP • <span style="color: #059669;">Nobreza ERP</span> by <span style="color: #064e3b; font-weight: 800;">Zyph Tech</span>
                     </div>
                 </div>
             </td>
