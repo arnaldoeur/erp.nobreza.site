@@ -109,12 +109,6 @@ export interface BillingDocument {
   items: SaleItem[];
   total: number;
   targetName: string;
-  targetDetails?: {
-    nuit?: string;
-    address?: string;
-    email?: string;
-    contact?: string;
-  };
   status: 'PENDING' | 'PAID' | 'SENT';
   performedBy: string;
 }

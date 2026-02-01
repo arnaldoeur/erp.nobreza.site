@@ -22,12 +22,12 @@ export const BillingService = {
             id: d.id,
             companyId: String(d.company_id),
             type: d.type as any,
-            timestamp: new Date(d.created_at || d.date),
+            timestamp: new Date(d.created_at),
             items: d.items || [],
             total: d.total || 0,
             targetName: d.customer_name || 'Consumidor Final',
             status: d.status as any,
-            performedBy: d.created_by || 'Sistema'
+            performedBy: d.name || 'Sistema' // Use 'name' from DB for the document name/desc
         }));
     },
 
@@ -42,10 +42,9 @@ export const BillingService = {
                 type: doc.type,
                 customer_name: doc.targetName,
                 total: doc.total,
-                status: doc.status,
                 items: doc.items,
-                created_by: doc.performedBy,
-                date: new Date()
+                user_id: user.id,
+                created_at: new Date()
             });
 
         if (error) {
