@@ -4,12 +4,15 @@ import { AuthService } from '../services/auth.service';
 import { supabase } from '../services/supabase';
 import { User } from '../types';
 import { Lock, Mail, Loader2, AlertCircle, ArrowRight, ShieldCheck, UserPlus, HelpCircle, ArrowLeft, Building2, Phone, MapPin, FileText, User as UserIcon } from 'lucide-react';
+import { Privacy } from './Privacy';
+import { Terms } from './Terms';
+import { Documentation } from './Documentation';
 
 interface LoginProps {
     onLoginSuccess: (user: User) => void;
 }
 
-type ViewState = 'LOGIN' | 'REGISTER' | 'RECOVERY' | 'SUPPORT' | 'ACTIVATE';
+type ViewState = 'LOGIN' | 'REGISTER' | 'RECOVERY' | 'SUPPORT' | 'ACTIVATE' | 'PRIVACY' | 'TERMS' | 'DOCS';
 
 export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     const [view, setView] = useState<ViewState>('LOGIN');
@@ -46,6 +49,10 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         setRegisterStep(1);
         // Optional: clear fields? standard practice usually keeps them for UX unless confirmed success
     };
+
+    if (view === 'PRIVACY') return <Privacy onBack={() => setView('LOGIN')} />;
+    if (view === 'TERMS') return <Terms onBack={() => setView('LOGIN')} />;
+    if (view === 'DOCS') return <Documentation onBack={() => setView('LOGIN')} />;
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -410,7 +417,14 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     <p className="text-emerald-100/40 text-xs font-medium">
                         Desenvolvido por <a href="https://zyph.tech" target="_blank" rel="noreferrer" className="text-white font-bold hover:text-emerald-300 transition-colors cursor-pointer">Zyph Tech</a>
                     </p>
-                    <p className="text-emerald-100/20 text-[10px]">v2.5.0 (Build 2026)</p>
+                    <div className="flex items-center justify-center gap-4 text-[10px] text-emerald-100/30 uppercase font-bold tracking-widest">
+                        <span onClick={() => setView('PRIVACY')} className="hover:text-white cursor-pointer transition-colors">Privacidade</span>
+                        <span>•</span>
+                        <span onClick={() => setView('TERMS')} className="hover:text-white cursor-pointer transition-colors">Termos</span>
+                        <span>•</span>
+                        <span onClick={() => setView('DOCS')} className="hover:text-white cursor-pointer transition-colors">Docs & Sistema</span>
+                    </div>
+                    <p className="text-emerald-100/20 text-[10px] mt-2">v2.5.0 (Build 2026)</p>
                 </div>
             </div>
         </div>
