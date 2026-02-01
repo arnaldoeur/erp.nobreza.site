@@ -80,6 +80,7 @@ export const SupportService = {
             companyId: number;
             sales: any[];
             products: any[];
+            dailyClosures: any[];
         }
     ) => {
         try {

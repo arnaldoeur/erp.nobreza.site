@@ -128,8 +128,9 @@ export const Support: React.FC<SupportProps> = ({ currentUser, sales, products, 
                     userName: currentUser.name,
                     role: currentUser.role,
                     companyId: currentUser.companyId,
-                    sales,
-                    products
+                    sales: sales || [],
+                    products: products || [],
+                    dailyClosures: dailyClosures || []
                 }
             );
 

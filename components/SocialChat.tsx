@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { CollabService, CollabMessage } from '../services/collab.service';
 import { User } from '../types';
 import { supabase } from '../services/supabase';
+import { NotificationService } from '../services/notification.service';
 
 interface SocialChatProps {
     currentUser: User;
@@ -129,6 +130,35 @@ export const SocialChat: React.FC<SocialChatProps> = ({ currentUser, team }) => 
             });
             setNewMessage('');
             setShowMentions(false);
+
+            // NOTIFY MEMBERS
+            if (activeGroup && groupMembers.length > 0) {
+                const recipients = groupMembers.filter(m => m.user_id !== currentUser.id);
+                recipients.forEach(member => {
+                    // Check if mentioned
+                    const isMentioned = mentionIds.includes(member.user_id);
+
+                    NotificationService.sendInApp({
+                        userId: member.user_id,
+                        type: 'MESSAGE',
+                        title: isMentioned ? `🔴 Menção em ${activeGroup.name}` : `Nova mensagem em ${activeGroup.name}`,
+                        content: isMentioned
+                            ? `${currentUser.name} mencionou você: "${newMessage.substring(0, 50)}..."`
+                            : `${currentUser.name}: "${newMessage.substring(0, 50)}..."`,
+                        metadata: { groupId: activeGroup.id, groupName: activeGroup.name }
+                    });
+
+                    // For mentions, we might want to ensure they get an email/system alert too
+                    if (isMentioned) {
+                        NotificationService.invokeNativeEmail({
+                            to: [member.user.email], // assuming user object has email joined
+                            subject: `Nova menção de ${currentUser.name} no Nobreza ERP`,
+                            html: `<p>Olá,</p><p>Você foi mencionado por <b>${currentUser.name}</b> no grupo <b>${activeGroup.name}</b>:</p><blockquote>${newMessage}</blockquote><p>Acesse a plataforma para responder.</p>`
+                        });
+                    }
+                });
+            }
+
         } catch (e) {
             console.error("Error sending message:", e);
         }
