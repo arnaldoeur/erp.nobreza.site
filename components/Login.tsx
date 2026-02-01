@@ -152,11 +152,11 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     <div className="relative pt-12 pb-6 px-8 text-center">
                         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-50"></div>
 
-                        <div className="w-20 h-20 mx-auto bg-white/5 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/5 mb-6 group cursor-pointer" onClick={() => { setView('LOGIN'); resetForm(); }}>
+                        <div className="mb-6 cursor-pointer hover:scale-105 transition-transform" onClick={() => { setView('LOGIN'); resetForm(); }}>
                             <img
                                 src="/nobreza_erp_logo_white_horizontal.png"
                                 alt="Nobreza"
-                                className="h-10 w-auto object-contain transition-transform duration-500 group-hover:scale-110"
+                                className="h-24 w-auto mx-auto object-contain"
                                 onError={(e) => {
                                     e.currentTarget.style.display = 'none';
                                     e.currentTarget.parentElement!.innerHTML = '<span class="text-3xl">💊</span>';
