@@ -27,7 +27,7 @@ export const BillingService = {
             total: d.total || 0,
             targetName: d.customer_name || 'Consumidor Final',
             status: d.status as any,
-            performedBy: d.name || 'Sistema' // Use 'name' from DB for the document name/desc
+            performedBy: d.created_by || 'Sistema'
         }));
     },
 
@@ -42,7 +42,10 @@ export const BillingService = {
                 type: doc.type,
                 customer_name: doc.targetName,
                 total: doc.total,
+                status: doc.status,
                 items: doc.items,
+                type: doc.type,
+                created_by: user.name,
                 user_id: user.id,
                 created_at: new Date()
             });
