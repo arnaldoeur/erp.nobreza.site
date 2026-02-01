@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { DailyClosure, CompanyInfo, User, AppNotification } from '../types';
+import { DailyClosure, CompanyInfo, User, AppNotification, Sale } from '../types';
 import { NotificationTemplates } from './notification-templates';
 
 /**
@@ -57,9 +57,11 @@ export const NotificationService = {
     },
 
     /**
-     * Sends a Stock Alert Report.
+     * Sends a Stock Alert Report for all low stock items.
      */
     sendStockAlert: async (lowStockItems: any[], companyInfo: CompanyInfo) => {
+        if (!lowStockItems || lowStockItems.length === 0) return;
+
         // 1. Send In-App to Warehouse/Admins
         await NotificationService.notifyRole(String(companyInfo.id), ['ADMIN', 'TECHNICIAN'], {
             type: 'STOCK',
@@ -68,17 +70,38 @@ export const NotificationService = {
             metadata: { count: lowStockItems.length }
         });
 
-        // 2. Send Email
-        const item = lowStockItems[0];
+        // 2. Send Emails for the first few items to avoid giant emails, or summarized
+        const summary = lowStockItems.map(i => `${i.name}: ${i.quantity} unidades (Min: ${i.minStock})`).join('\n');
+
         return NotificationService.invokeNativeEmail({
             type: 'STOCK_ALERT',
             template: 'STOCK_LOW',
             to: Array.from(new Set([companyInfo.email])).filter(Boolean),
             data: {
-                user_name: 'Gestor',
+                user_name: 'Gestor de Stock',
                 company_name: companyInfo.name,
-                product_name: item.name,
-                quantity: item.quantity
+                product_name: lowStockItems.length === 1 ? lowStockItems[0].name : `${lowStockItems.length} Produtos`,
+                quantity: lowStockItems.length === 1 ? lowStockItems[0].quantity : 'Vários',
+                details: summary
+            }
+        });
+    },
+
+    /**
+     * Sends a real-time notification for a Sale.
+     */
+    sendSaleEmail: async (sale: Sale, companyInfo: CompanyInfo, user: User) => {
+        return NotificationService.invokeNativeEmail({
+            type: 'SALE_NOTIFICATION',
+            template: 'INVOICE_EMITTED',
+            to: [companyInfo.email],
+            data: {
+                invoice_number: sale.id,
+                company_name: companyInfo.name,
+                total: sale.total.toLocaleString(),
+                customer_name: sale.customerName || 'Consumidor Final',
+                performed_by: user.name,
+                items_count: sale.items.length
             }
         });
     },

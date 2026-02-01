@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Lock, Save, AlertTriangle, CheckCircle2, History, AlertCircle } from 'lucide-react';
-import { DailyClosure, Sale, User as UserType } from '../types';
+import { DailyClosure, Sale, User as UserType, CompanyInfo } from '../types';
 import { NotificationService } from '../services';
 
 interface DailyCloseProps {
@@ -10,9 +10,10 @@ interface DailyCloseProps {
   onConfirmClosure: (closure: DailyClosure) => void;
   onUpdateClosure?: (closure: DailyClosure) => void;
   user: UserType;
+  companyInfo: CompanyInfo;
 }
 
-export const DailyClose: React.FC<DailyCloseProps> = ({ sales, dailyClosures, onConfirmClosure, user }) => {
+export const DailyClose: React.FC<DailyCloseProps> = ({ sales, dailyClosures, onConfirmClosure, user, companyInfo }) => {
   const [cashValue, setCashValue] = useState<string>('');
   const [observations, setObservations] = useState('');
   const [isFinished, setIsFinished] = useState(false);
@@ -79,16 +80,8 @@ export const DailyClose: React.FC<DailyCloseProps> = ({ sales, dailyClosures, on
       onConfirmClosure(newClosure);
 
       // Notify via Email
-      NotificationService.sendDailyClosureEmail(newClosure, {
-        name: 'Empresa',
-        address: '',
-        phone: '',
-        nuit: '',
-        email: '',
-        website: '',
-        id: '',
-        slogan: ''
-      }, user).finally(() => console.log("Email Notification Processed"));
+      NotificationService.sendDailyClosureEmail(newClosure, companyInfo, user)
+        .finally(() => console.log("Email Notification Processed"));
       // Note: Passing minimal company info as it's not available in props directly here, strictly strictly should come from props or service
       // To fix this cleanly I should pass companyInfo to DailyClose or fetch it.
 

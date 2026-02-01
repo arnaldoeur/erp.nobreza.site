@@ -256,6 +256,21 @@ const App: React.FC = () => {
       }));
       await ProductService.updateStock(itemsToUpdate);
       setProducts(await ProductService.getAll());
+
+      // REAL-TIME NOTIFICATIONS
+      if (currentUser) {
+        // 1. Sale Notification
+        NotificationService.sendSaleEmail(newSale, companyInfo, currentUser)
+          .catch(err => console.warn("[App] Sale email skipped:", err));
+
+        // 2. Stock Alert Check
+        const currentProducts = await ProductService.getAll();
+        const lowStock = currentProducts.filter(p => p.quantity <= (p.minStock || 0));
+        if (lowStock.length > 0) {
+          NotificationService.sendStockAlert(lowStock, companyInfo)
+            .catch(err => console.warn("[App] Stock alert skipped:", err));
+        }
+      }
     } catch (error: any) {
       alert(`Erro ao processar venda: ${error?.message || 'Verifique a conexão.'}`);
     }
@@ -362,7 +377,7 @@ const App: React.FC = () => {
       {activeView === 'dashboard' && <Dashboard products={products} sales={salesHistory} onQuickAction={navigateWithAction} user={currentUser} expenses={expenses} companyInfo={companyInfo} />}
       {activeView === 'pos' && <POS products={products} customers={customers} companyInfo={companyInfo} onSaleComplete={handleSale} onQuickAddCustomer={handleAddCustomer} salesHistory={salesHistory} currentUser={currentUser} initialAction={pendingAction} onActionHandled={() => setPendingAction(null)} />}
       {activeView === 'stock' && <Stock products={products} setProducts={setProducts} suppliers={suppliers} initialModalOpen={pendingAction === 'new_product'} onModalHandled={() => setPendingAction(null)} lang={companyInfo.language as Language} />}
-      {activeView === 'daily-close' && <DailyClose sales={salesHistory} dailyClosures={dailyClosures} onConfirmClosure={handleAddClosure} user={currentUser} />}
+      {activeView === 'daily-close' && <DailyClose sales={salesHistory} dailyClosures={dailyClosures} onConfirmClosure={handleAddClosure} user={currentUser} companyInfo={companyInfo} />}
       {activeView === 'billing' && <Billing products={products} companyInfo={companyInfo} documents={billingDocuments} onAddDocument={handleAddDocument} onDeleteDocument={handleDeleteDocument} initialCreateMode={pendingAction === 'new_invoice' || pendingAction === 'new_purchase'} initialType={pendingAction === 'new_purchase' ? 'PURCHASE_ORDER' : 'INVOICE'} onModeHandled={() => setPendingAction(null)} suppliers={suppliers} customers={customers} currentUser={currentUser} />}
       {activeView === 'suppliers' && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} products={products} onGenerateOrder={(doc) => { handleAddDocument(doc); setActiveView('billing'); }} initialModalOpen={pendingAction === 'new_supplier'} onModalHandled={() => setPendingAction(null)} currentUser={currentUser} />}
       {activeView === 'customers' && <Customers customers={customers} setCustomers={setCustomers} sales={salesHistory} initialModalOpen={pendingAction === 'new_customer'} onModalHandled={() => setPendingAction(null)} currentUser={currentUser} />}
