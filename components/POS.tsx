@@ -7,6 +7,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { Product, SaleItem, PaymentMethod, Sale, Customer, CompanyInfo } from '../types';
 import { NotificationService } from '../services/notification.service';
+import { BillingService } from '../services/billing.service';
 
 // --- Components ---
 
@@ -343,7 +344,7 @@ export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSa
     }
 
     const newSale: Sale = {
-      id: `FAC - ${Date.now().toString().slice(-6)} `,
+      id: `FAC-${Date.now().toString().slice(-6)}`,
       timestamp: new Date(),
       items: [...cart],
       total: total,
@@ -354,7 +355,32 @@ export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSa
       performedBy: currentUser?.name || 'Sistema',
       companyId: companyInfo.id
     };
-    onSaleComplete(newSale);
+
+    // --- CRITICAL FIX: Persist to Documents Repository ---
+    // This ensures the sale appears in "Faturação" and Dashboard Charts
+    try {
+      BillingService.add({
+        id: newSale.id,
+        companyId: String(companyInfo.id),
+        type: 'RECEIPT', // POS sales are effectively Receipts
+        TargetName: finalCustomerName || 'Consumidor Final', // Use consistent casing if needed, checking type def
+        targetName: finalCustomerName || 'Consumidor Final',
+        date: newSale.timestamp,
+        items: newSale.items.map(i => ({
+          description: i.productName,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          total: i.total
+        })),
+        total: newSale.total,
+        status: 'PAID',
+        created_by: newSale.performedBy
+      }).catch(err => console.error("Failed to save document persist:", err));
+    } catch (e) {
+      console.error("Error initiating document save", e);
+    }
+
+    onSaleComplete(newSale); // Updates local state and potentially dashboard
     setCurrentSale(newSale);
 
     // Trigger In-App Notification
