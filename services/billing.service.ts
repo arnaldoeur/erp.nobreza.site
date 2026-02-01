@@ -39,7 +39,6 @@ export const BillingService = {
             .from('documents')
             .insert({
                 company_id: user.companyId,
-                type: doc.type,
                 customer_name: doc.targetName,
                 name: doc.id,
                 total: doc.total,
