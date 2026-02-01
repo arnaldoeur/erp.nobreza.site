@@ -34,7 +34,7 @@ interface BillingProps {
    products: Product[];
    companyInfo: CompanyInfo;
    documents: BillingDocument[];
-   onAddDocument: (doc: BillingDocument) => void;
+   onAddDocument: (doc: BillingDocument) => Promise<void>;
    onDeleteDocument: (id: string) => void;
    initialCreateMode?: boolean;
    initialType?: DocumentType;
@@ -53,6 +53,7 @@ export const Billing: React.FC<BillingProps> = ({ products, companyInfo, documen
    const [searchTerm, setSearchTerm] = useState('');
 
    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+   const [isSaving, setIsSaving] = useState(false);
 
 
    useEffect(() => {
@@ -92,29 +93,44 @@ export const Billing: React.FC<BillingProps> = ({ products, companyInfo, documen
    };
 
 
-   const handleCreate = () => {
-      const newDoc: BillingDocument = {
-         id: `${docType === 'INVOICE' ? 'FT' : 'PC'}-${Date.now().toString().slice(-6)}`,
-         companyId: currentUser.companyId,
-         type: docType,
-         timestamp: new Date(),
-         items: [...items],
-         total: items.reduce((sum, i) => sum + i.total, 0),
-         targetName,
-         status: 'SENT',
-         performedBy: currentUser.name
-      };
-      onAddDocument(newDoc);
-      setSelectedDoc(newDoc);
-      setView('PREVIEW');
-      setItems([]);
-      setTargetName('');
+   const handleCreate = async () => {
+      if (!targetName) {
+         alert("Por favor, selecione um destinatário.");
+         return;
+      }
 
-      LogService.add({
-         action: docType === 'INVOICE' ? 'Emissão de Fatura' : 'Emissão de Pedido',
-         details: `${docType === 'INVOICE' ? 'Fatura' : 'Pedido'} #${newDoc.id} para ${targetName} - Total: MT ${newDoc.total.toLocaleString()}`,
-         companyId: currentUser.companyId
-      });
+      setIsSaving(true);
+      try {
+         const newDoc: BillingDocument = {
+            id: `${docType === 'INVOICE' ? 'FT' : 'PC'}-${Date.now().toString().slice(-6)}`,
+            companyId: currentUser.companyId,
+            type: docType,
+            timestamp: new Date(),
+            items: [...items],
+            total: items.reduce((sum, i) => sum + i.total, 0),
+            targetName,
+            status: 'SENT',
+            performedBy: currentUser.name
+         };
+
+         await onAddDocument(newDoc);
+
+         setSelectedDoc(newDoc);
+         setView('PREVIEW');
+         setItems([]);
+         setTargetName('');
+
+         LogService.add({
+            action: docType === 'INVOICE' ? 'Emissão de Fatura' : 'Emissão de Pedido',
+            details: `${docType === 'INVOICE' ? 'Fatura' : 'Pedido'} #${newDoc.id} para ${targetName} - Total: MT ${newDoc.total.toLocaleString()}`,
+            companyId: currentUser.companyId
+         });
+      } catch (error: any) {
+         console.error("Failed to save document:", error);
+         alert(`Erro ao salvar documento: ${error.message || 'Erro desconhecido'}`);
+      } finally {
+         setIsSaving(false);
+      }
    };
 
    const filteredProducts = products.filter(p =>

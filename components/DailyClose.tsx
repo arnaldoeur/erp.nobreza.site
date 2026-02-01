@@ -127,17 +127,17 @@ export const DailyClose: React.FC<DailyCloseProps> = ({ sales, dailyClosures, on
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-24 md:pb-10">
-      <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 w-full md:w-fit mx-auto">
+      <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-white/10 w-full md:w-fit mx-auto">
         <button onClick={() => setActiveTab('FORM')} className={`flex-1 md:px-10 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'FORM' ? 'bg-emerald-700 text-white shadow-md' : 'text-gray-400'}`}>Operação Atual</button>
         <button onClick={() => setActiveTab('HISTORY')} className={`flex-1 md:px-10 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'HISTORY' ? 'bg-emerald-700 text-white shadow-md' : 'text-gray-400'}`}>Histórico ({todayClosures.length})</button>
       </div>
 
       {activeTab === 'FORM' ? (
-        <div className="bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-xl border border-gray-100 space-y-8 animate-in slide-in-from-bottom-4">
-          <div className="flex items-center gap-4 border-b border-gray-50 pb-6">
-            <div className="p-4 bg-red-50 text-red-600 rounded-2xl shadow-inner"><Lock size={24} /></div>
+        <div className="bg-white dark:bg-slate-900 p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-xl border border-gray-100 dark:border-white/10 space-y-8 animate-in slide-in-from-bottom-4">
+          <div className="flex items-center gap-4 border-b border-gray-50 dark:border-white/5 pb-6">
+            <div className="p-4 bg-red-50 dark:bg-red-500/20 text-red-600 rounded-2xl shadow-inner"><Lock size={24} /></div>
             <div>
-              <h3 className="text-xl font-black text-emerald-950 uppercase tracking-tight leading-none">Fecho de Caixa</h3>
+              <h3 className="text-xl font-black text-emerald-950 dark:text-emerald-400 uppercase tracking-tight leading-none">Fecho de Caixa</h3>
               <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">
                 {currentShiftName} em curso
               </p>
@@ -146,15 +146,15 @@ export const DailyClose: React.FC<DailyCloseProps> = ({ sales, dailyClosures, on
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Movimento do Turno</h4>
-              <div className="bg-gray-50 p-6 rounded-3xl border-2 border-dashed border-gray-200">
-                <p className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.3em] mb-1">Vendas (Sistema)</p>
-                <p className="text-4xl font-black text-emerald-950 tracking-tighter">MT {systemTotal.toLocaleString()}</p>
+              <h4 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest px-2">Movimento do Turno</h4>
+              <div className="bg-gray-50 dark:bg-slate-800 p-6 rounded-3xl border-2 border-dashed border-gray-200 dark:border-white/10">
+                <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-[0.3em] mb-1">Vendas (Sistema)</p>
+                <p className="text-4xl font-black text-emerald-950 dark:text-white tracking-tighter">MT {systemTotal.toLocaleString()}</p>
                 <p className="text-[9px] text-gray-400 font-bold mt-4 uppercase">{salesThisShift.length} Vendas desde {shiftStartTime.toLocaleTimeString().slice(0, 5)}</p>
               </div>
 
               {todayClosures.length > 0 && (
-                <div className="p-4 bg-blue-50 text-blue-700 rounded-2xl text-[10px] font-bold uppercase border border-blue-100 flex items-center gap-2">
+                <div className="p-4 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-2xl text-[10px] font-bold uppercase border border-blue-100 dark:border-blue-500/20 flex items-center gap-2">
                   <AlertCircle size={16} />
                   <span>Turno anterior fechado às {new Date(todayClosures[0].createdAt).toLocaleTimeString().slice(0, 5)}</span>
                 </div>
@@ -163,13 +163,13 @@ export const DailyClose: React.FC<DailyCloseProps> = ({ sales, dailyClosures, on
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Valor Físico (Contado)</label>
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest px-2">Valor Físico (Contado)</label>
                 <div className="relative">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xl font-black text-gray-300">MT</span>
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xl font-black text-gray-300 dark:text-white/20">MT</span>
                   <input
                     type="number"
                     inputMode="decimal"
-                    className="w-full pl-16 pr-6 py-6 bg-white border-2 border-gray-100 rounded-2xl focus:border-red-500 outline-none text-3xl font-black text-emerald-950 shadow-inner"
+                    className="w-full pl-16 pr-6 py-6 bg-white dark:bg-black/40 border-2 border-gray-100 dark:border-white/10 rounded-2xl focus:border-red-500 outline-none text-3xl font-black text-emerald-950 dark:text-white shadow-inner"
                     placeholder="0,00"
                     value={cashValue}
                     onChange={e => setCashValue(e.target.value)}
@@ -178,7 +178,7 @@ export const DailyClose: React.FC<DailyCloseProps> = ({ sales, dailyClosures, on
               </div>
 
               {difference !== 0 && cashValue !== '' && (
-                <div className={`p-4 rounded-2xl border-2 flex items-center gap-3 animate-in slide-in-from-top-2 ${difference < 0 ? 'bg-red-50 border-red-100 text-red-600' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>
+                <div className={`p-4 rounded-2xl border-2 flex items-center gap-3 animate-in slide-in-from-top-2 ${difference < 0 ? 'bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-400' : 'bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 text-blue-700 dark:text-blue-400'}`}>
                   <AlertTriangle size={24} />
                   <div className="flex-1">
                     <p className="text-[10px] font-black uppercase tracking-wide">Diferença de Caixa</p>
@@ -188,9 +188,9 @@ export const DailyClose: React.FC<DailyCloseProps> = ({ sales, dailyClosures, on
               )}
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Observações</label>
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest px-2">Observações</label>
                 <textarea
-                  className="w-full p-5 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-emerald-500 outline-none font-bold text-sm text-gray-700 min-h-[100px] transition-all"
+                  className="w-full p-5 bg-gray-50 dark:bg-black/20 border-2 border-transparent rounded-2xl focus:bg-white dark:focus:bg-black/40 focus:border-emerald-500 outline-none font-bold text-sm text-gray-700 dark:text-white min-h-[100px] transition-all"
                   placeholder="Justifique quebras ou sobras..."
                   value={observations}
                   onChange={e => setObservations(e.target.value)}

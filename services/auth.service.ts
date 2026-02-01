@@ -1,9 +1,18 @@
 import { User, UserRole } from '../types';
-
 import { supabase } from './supabase';
 
 export const AuthService = {
     login: async (email: string, password: string): Promise<User> => {
+        // 0. Check if user exists in public.users for better feedback (RLS Safe)
+        const { data: userExists, error: rpcError } = await supabase
+            .rpc('check_user_active_profile', { target_email: email.toLowerCase().trim() });
+
+        if (rpcError) console.error("RPC Error:", rpcError);
+
+        if (!userExists) {
+            throw new Error('E-mail não encontrado no sistema. Se é o seu primeiro acesso, use a opção abaixo.');
+        }
+
         // 1. Strict Authentication via Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
             email: email.toLowerCase(),
@@ -11,11 +20,10 @@ export const AuthService = {
         });
 
         if (authError || !authData.user) {
-            throw new Error('Credenciais inválidas (Password incorreta).');
+            throw new Error('Palavra-passe incorreta. Por favor, tente novamente.');
         }
 
         // 2. Fetch User Profile from 'public.users'
-        // Try linking by Auth ID (Best Practice)
         const { data: user, error } = await supabase
             .from('users')
             .select('*')
@@ -24,7 +32,6 @@ export const AuthService = {
 
         let targetUser = user;
 
-        // Fallback: If public user not found by ID (e.g. created manually), try by Email
         if (error || !targetUser) {
             const { data: legacyUser, error: legacyError } = await supabase
                 .from('users')
@@ -32,7 +39,6 @@ export const AuthService = {
                 .ilike('email', email)
                 .single();
 
-            // REPAIR LOGIC: If still no user, we create one automatically from Auth Data
             if (legacyError || !legacyUser) {
                 console.warn("User record missing in public.users. Attempting auto-repair...");
 
@@ -40,13 +46,12 @@ export const AuthService = {
                     id: authData.user.id,
                     name: authData.user.user_metadata?.name || email.split('@')[0],
                     email: email,
-                    company_id: authData.user.user_metadata?.company_id || null, // Best effort link
+                    company_id: authData.user.user_metadata?.company_id || null,
                     active: true,
-                    role: 'ADMIN', // Default to Admin to ensure access
+                    role: 'ADMIN',
                     created_at: new Date()
                 };
 
-                // If company_id is null, try to find ANY company (Emergency Mode) or create a placeholder
                 if (!repairUser.company_id) {
                     const { data: anyCompany } = await supabase.from('companies').select('id').limit(1).single();
                     if (anyCompany) repairUser.company_id = anyCompany.id;
@@ -69,7 +74,6 @@ export const AuthService = {
 
         if (!targetUser.active) throw new Error('Utilizador inativo.');
 
-        // 3. Verify Company Status
         const { data: company, error: companyError } = await supabase
             .from('companies')
             .select('*')
@@ -94,23 +98,20 @@ export const AuthService = {
         return mappedUser;
     },
 
-    register: async (user: Partial<User>, password?: string): Promise<User> => {
-        // Multi-tenant Registration:
-        // 1. Create a "New Company" (Placeholder Name)
-        // 2. Register in Supabase Auth
-        // 3. Create User linked to Company in 'public.users'
-
+    register: async (user: Partial<User>, password?: string, companyData?: { name: string, nuit?: string, phone?: string, address?: string }): Promise<User> => {
         if (!user.email || !password) {
             throw new Error("Email e Palavra-passe são obrigatórios.");
         }
 
-        // 1. Create Company (Public allowed)
         const { data: company, error: companyError } = await supabase
             .from('companies')
             .insert({
-                name: user.name ? `Farmácia de ${user.name}` : 'Nova Farmácia',
+                name: companyData?.name || (user.name ? `Farmácia de ${user.name}` : 'Nova Farmácia'),
+                nuit: companyData?.nuit || '',
+                contact: companyData?.phone || '',
+                address: companyData?.address || '',
                 active: true,
-                theme_color: '#10b981' // Emerald-500 default
+                theme_color: '#10b981'
             })
             .select()
             .single();
@@ -120,7 +121,6 @@ export const AuthService = {
             throw new Error('Erro ao criar empresa: ' + companyError.message);
         }
 
-        // 2. Register in Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: user.email.toLowerCase(),
             password: password,
@@ -141,7 +141,6 @@ export const AuthService = {
             throw new Error('Falha crítica no registo.');
         }
 
-        // 3. Create User in Public Table MANUALLY (Reverted per request)
         const newUser = {
             id: authData.user.id,
             name: user.name,
@@ -160,7 +159,6 @@ export const AuthService = {
 
         if (userError) {
             console.error("User creation error:", userError);
-            // Ignore Duplicate Key error (if Trigger ran properly)
             if (!userError.message.includes('duplicate key')) {
                 throw new Error('Erro ao gravar dados do utilizador: ' + userError.message);
             }
@@ -188,7 +186,6 @@ export const AuthService = {
             return null;
         }
 
-        // Try to recover profile
         try {
             const { data: user, error } = await supabase
                 .from('users')
@@ -198,12 +195,10 @@ export const AuthService = {
 
             let targetCompanyId = user?.company_id || session.user.user_metadata?.company_id;
 
-            // If still no companyId, try to find the most recent one (Repair Mode)
             if (!targetCompanyId) {
                 const { data: companies } = await supabase.from('companies').select('id').order('created_at', { ascending: false }).limit(1);
                 if (companies && companies.length > 0) {
                     targetCompanyId = companies[0].id;
-                    // Update user/profile with this salvaged ID
                     await supabase.from('users').update({ company_id: targetCompanyId }).eq('id', session.user.id);
                 }
             }
@@ -222,7 +217,6 @@ export const AuthService = {
                 return mappedUser;
             }
 
-            // Fallback by email if ID match failed
             const { data: secondaryUser, error: secondaryError } = await supabase
                 .from('users')
                 .select('*')
@@ -312,15 +306,22 @@ export const AuthService = {
             .single();
 
         if (error) throw error;
-        return data as User;
+
+        return {
+            ...data,
+            companyId: data.company_id,
+            employeeId: data.employee_id,
+            sequentialId: data.sequential_id,
+            baseSalary: data.base_salary,
+            baseHours: data.base_hours,
+            hireDate: new Date(data.created_at || new Date())
+        } as User;
     },
 
     updateTeam: async (newTeam: User[]): Promise<void> => {
-        // Generally should update individual users, but keeping signature
         const currentUser = AuthService.getCurrentUser();
         if (!currentUser) return;
 
-        // Ensure all updated users belong to this company
         const safeTeam = newTeam.map(u => ({
             ...u,
             company_id: currentUser.companyId,
@@ -342,23 +343,22 @@ export const AuthService = {
                 location: user.location,
                 social_security_number: user.socialSecurityNumber,
                 photo: user.photo
-                // Role is intentionally excluded for security (handled by Admin only)
             })
             .eq('id', user.id);
 
         if (error) throw new Error("Erro ao atualizar perfil: " + error.message);
 
-        // Update local storage if it's the current user
         const current = AuthService.getCurrentUser();
         if (current && current.id === user.id) {
             localStorage.setItem('nobreza_current_user', JSON.stringify(user));
+            // Dispatch event for App.tsx to pick up changes immediately
+            window.dispatchEvent(new CustomEvent('nobreza-user-updated', { detail: user }));
         }
     },
 
     activateAccount: async (email: string, password: string, name: string): Promise<void> => {
         const normalizedEmail = email.toLowerCase().trim();
 
-        // 1. Check if the user exists in public.users (Profile Check)
         const { data: exists, error: profileError } = await supabase
             .rpc('check_user_active_profile', { target_email: normalizedEmail });
 
@@ -366,7 +366,6 @@ export const AuthService = {
             throw new Error("Utilizador não encontrado na nossa base de dados. Por favor, contacte o administrador para ser adicionado à equipa.");
         }
 
-        // 2. Register in Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: normalizedEmail,
             password,
@@ -384,7 +383,6 @@ export const AuthService = {
 
         if (!authData.user) throw new Error("Falha ao criar conta de autenticação.");
 
-        // 3. Claim the placeholder profile
         const { data: claimed, error: claimError } = await supabase.rpc('claim_public_profile', {
             target_email: normalizedEmail
         });
@@ -396,6 +394,16 @@ export const AuthService = {
     },
 
     resetPassword: async (email: string): Promise<void> => {
+        // Check if user exists first for better feedback (RLS Safe)
+        const { data: userExists, error: rpcError } = await supabase
+            .rpc('check_user_active_profile', { target_email: email.toLowerCase().trim() });
+
+        if (rpcError) console.error("RPC Error:", rpcError);
+
+        if (!userExists) {
+            throw new Error('E-mail não encontrado no sistema. Verifique se digitou corretamente.');
+        }
+
         const { data, error } = await supabase.functions.invoke('resend-domains', {
             body: {
                 action: 'REQUEST_PASSWORD_RESET',
@@ -404,7 +412,7 @@ export const AuthService = {
             }
         });
 
-        if (error) throw new Error("Erro na Edge Function: " + error.message);
+        if (error) throw new Error("Erro na comunicação com o servidor de email: " + error.message);
         if (data?.error) throw new Error(data.error);
     },
 

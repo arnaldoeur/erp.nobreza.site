@@ -80,7 +80,7 @@ export const ProductService = {
         const { data, error } = await supabase.from('products').insert(newProduct).select().single();
         if (error) {
             console.error('Error adding product:', error);
-            return null;
+            throw error;
         }
         return {
             id: data.id,
@@ -98,9 +98,9 @@ export const ProductService = {
         };
     },
 
-    update: async (product: Product): Promise<void> => {
+    update: async (product: Product): Promise<Product | null> => {
         const user = AuthService.getCurrentUser();
-        if (!user) return;
+        if (!user) return null;
 
         const dbProduct = {
             name: product.name,
@@ -110,21 +110,42 @@ export const ProductService = {
             sale_price: product.salePrice,
             quantity: product.quantity,
             min_stock: product.minStock,
-            supplier_id: product.supplierId || null, // Ensure null if empty
+            supplier_id: product.supplierId || null,
             batch: product.batch,
             expiry_date: product.expiryDate
         };
 
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('products')
             .update(dbProduct)
             .eq('id', product.id)
-            .eq('company_id', user.companyId); // Security check
+            .eq('company_id', user.companyId)
+            .select()
+            .single();
 
         if (error) {
             console.error('Error updating product:', error);
+            // If invalid UUID text representation (e.g. updating a mock ID against real DB), return null to trigger add
+            if (error.code === '22P02') return null;
             throw error;
         }
+
+        if (!data) return null;
+
+        return {
+            id: data.id,
+            companyId: data.company_id,
+            name: data.name,
+            category: data.category,
+            code: data.code,
+            purchasePrice: data.purchase_price,
+            salePrice: data.sale_price,
+            quantity: data.quantity,
+            minStock: data.min_stock,
+            supplierId: data.supplier_id,
+            batch: data.batch,
+            expiryDate: data.expiry_date ? new Date(data.expiry_date) : undefined
+        };
     },
 
     updateStock: async (items: { productId: string; quantityToRemove: number }[]): Promise<void> => {

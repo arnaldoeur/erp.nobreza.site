@@ -74,7 +74,10 @@ export const TimeTrackingService = {
             query = query.eq('user_id', userId);
         }
         if (startDate) {
-            query = query.gte('start_time', startDate);
+            // Adjust to start of local day in UTC
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            query = query.gte('start_time', start.toISOString());
         }
         if (endDate) {
             // Ensure end date includes the whole day

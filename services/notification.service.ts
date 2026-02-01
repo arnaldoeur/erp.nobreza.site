@@ -323,6 +323,25 @@ export const NotificationService = {
                 resend_id: result?.id
             });
 
+            // TRIGGER IN-APP NOTIFICATION FOR SENDER/ADMIN
+            // We notify the current user (if known) or just log it as a system event that might reach admins
+            // attempting to extract user_id from payload data if available, or just broadcast to admin if generic
+            const recipientId = payload.data?.user_id;
+
+            if (recipientId) {
+                await NotificationService.sendInApp({
+                    userId: recipientId,
+                    type: 'EMAIL_SENT',
+                    title: '📧 E-mail Enviado',
+                    content: `E-mail "${payload.subject}" enviado para ${payload.to}`,
+                    metadata: { type: 'EMAIL', resend_id: result?.id }
+                });
+            } else {
+                // If we don't know the specific user context, maybe notify the company admin?
+                // For now, let's just log it if we have a company ID. 
+                // We'll skip generic broadcast to avoid spamming everyone for every system email unless critical.
+            }
+
             return true;
         } catch (error: any) {
             console.error('Native email sending failed:', error);

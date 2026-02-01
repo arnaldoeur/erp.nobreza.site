@@ -9,19 +9,13 @@ export const NotificationTemplates = {
     USER_WELCOME: {
         subject: "Bem-vindo à {{company_name}}!",
         html: `
-            <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; color: #1e293b;">
-                <div style="background: #064e3b; padding: 40px; text-align: center;">
-                    <h1 style="color: white; margin: 0; font-size: 24px;">Seja muito bem-vindo(a)!</h1>
-                </div>
-                <div style="padding: 40px; line-height: 1.6;">
-                    <p>Olá, <strong>{{user_name}}</strong>,</p>
-                    <p>A empresa <strong>{{company_name}}</strong> foi registrada com sucesso no Nobreza ERP e, a partir de agora, você passa a contar com ferramentas pensadas para organizar processos, aumentar o controlo financeiro e apoiar o crescimento sustentável da sua farmácia.</p>
-                    <p>Recomendamos que conclua as configurações iniciais para ativar relatórios, alertas automáticos e análises inteligentes.</p>
-                    <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; pt: 20px; font-size: 12px; color: #64748b;">
-                        — Equipe Nobreza ERP | Gestão Inteligente para Farmácias
-                    </div>
-                </div>
-            </div>
+            <h2 style="color: #064e3b; margin-bottom: 24px;">Seja muito bem-vindo(a)!</h2>
+            <p>Olá, <strong>{{user_name}}</strong>,</p>
+            <p>A empresa <strong>{{company_name}}</strong> foi registrada com sucesso no <strong>Nobreza ERP</strong>.</p>
+            <p>A partir de agora, você conta com ferramentas pensadas para organizar processos, aumentar o controlo financeiro e apoiar o crescimento sustentável da sua farmácia.</p>
+            <p style="background: #f0fdf4; padding: 20px; border-radius: 12px; border-left: 4px solid #10b981; color: #065f46; font-size: 14px;">
+                <strong>Recomendação:</strong> Conclua as configurações iniciais para ativar relatórios, alertas automáticos e análises inteligentes.
+            </p>
         `
     },
     FIRST_LOGIN: {
@@ -51,13 +45,13 @@ export const NotificationTemplates = {
     STOCK_LOW: {
         subject: "⚠️ Alerta de Stock Baixo: {{product_name}}",
         html: `
-            <div style="font-family: sans-serif; padding: 20px; color: #1e293b;">
-                <p>Atenção, <strong>{{user_name}}</strong>.</p>
-                <p>O produto <strong>{{product_name}}</strong> encontra-se com stock reduzido, restando apenas <strong>{{quantity}}</strong> unidades em armazém.</p>
-                <p>Manter este produto disponível é importante para evitar perda de vendas e frustração de clientes.</p>
-                <p>Considere realizar reposição o quanto antes.</p>
-                <p style="margin-top: 20px; color: #64748b;">— Equipe Nobreza ERP | Gestão Inteligente para Farmácias</p>
+            <h2 style="color: #991b1b; margin-bottom: 20px;">⚠️ Alerta de Inventário</h2>
+            <p>Atenção, <strong>{{user_name}}</strong>.</p>
+            <div style="background: #fef2f2; padding: 20px; border-radius: 12px; border: 1px solid #fee2e2; margin: 20px 0;">
+                <p style="margin: 0; color: #991b1b; font-size: 18px;"><strong>{{product_name}}</strong></p>
+                <p style="margin: 5px 0 0 0; color: #b91c1c;">Stock Restante: <strong>{{quantity}} unidades</strong></p>
             </div>
+            <p>Manter este produto disponível é importante para evitar perda de vendas e frustração de clientes. Considere realizar a reposição o quanto antes.</p>
         `
     },
     OUT_OF_STOCK: {
@@ -144,12 +138,12 @@ export const NotificationTemplates = {
     TASK_PENDING: {
         subject: "📌 Tarefa Pendente: {{task_name}}",
         html: `
-            <div style="font-family: sans-serif; padding: 20px; color: #1e293b;">
-                <p>A tarefa <strong>{{task_name}}</strong> permanece pendente no sistema.</p>
-                <p>Concluir atividades no tempo certo ajuda a evitar falhas operacionais e melhora a fluidez do atendimento ao cliente.</p>
-                <p>Recomendamos a verificação do painel de tarefas.</p>
-                <p style="margin-top: 20px; color: #64748b;">— Equipe Nobreza ERP | Gestão Inteligente para Farmácias</p>
+            <h2 style="color: #0f172a; margin-bottom: 20px;">📌 Tarefa Aguardando</h2>
+            <p>A tarefa <strong>{{task_name}}</strong> permanece pendente no sistema.</p>
+            <div style="background: #fffbeb; padding: 20px; border-radius: 12px; border: 1px solid #fef3c7; color: #92400e; margin: 20px 0;">
+                "{{details}}"
             </div>
+            <p>Concluir atividades no tempo certo ajuda a evitar falhas operacionais e melhora a fluidez do atendimento ao cliente.</p>
         `
     },
 
@@ -157,23 +151,23 @@ export const NotificationTemplates = {
     MONTHLY_REPORT: {
         subject: "📊 Relatório Mensal Disponível: {{month}}",
         html: `
-            <div style="font-family: sans-serif; padding: 20px; color: #1e293b;">
-                <p>O relatório financeiro referente ao mês de <strong>{{month}}</strong> já está disponível para consulta.</p>
-                <p>Nele poderá analisar faturação, despesas, produtos mais vendidos e margens de lucro.</p>
-                <p>Tomar decisões com base em dados é o caminho para um crescimento consistente.</p>
-                <p style="margin-top: 20px; color: #64748b;">— Equipe Nobreza ERP | Gestão Inteligente para Farmácias</p>
-            </div>
+            <h2 style="color: #064e3b; margin-bottom: 20px;">📊 Desempenho Mensal</h2>
+            <p>O relatório financeiro referente ao mês de <strong>{{month}}</strong> já está disponível para consulta.</p>
+            <p>Nele poderá analisar faturação, despesas, produtos mais vendidos e margens de lucro.</p>
+            <p style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; color: #475569;">
+                Tomar decisões com base em dados é o caminho para um crescimento consistente.
+            </p>
         `
     },
     AUTO_INSIGHT: {
         subject: "💡 Insight Automático Nobreza ERP",
         html: `
-            <div style="font-family: sans-serif; padding: 20px; color: #1e293b;">
-                <p>O sistema identificou que os clientes da <strong>{{company_name}}</strong> compram mais produtos da categoria <strong>{{product_category}}</strong> no período das <strong>{{best_time}}</strong>.</p>
-                <p>Ajustar a reposição de stock e a escala da equipa nesses horários pode aumentar significativamente as vendas.</p>
-                <p>Este insight foi gerada automaticamente pela inteligência do Nobreza ERP.</p>
-                <p style="margin-top: 20px; color: #64748b;">— Equipe Nobreza ERP | Gestão Inteligente para Farmácias</p>
+            <h2 style="color: #0d9488; margin-bottom: 20px;">💡 Insight de Gestão</h2>
+            <p>O sistema identificou uma oportunidade para a <strong>{{company_name}}</strong>:</p>
+            <div style="background: #f0f9ff; padding: 20px; border-radius: 12px; border: 1px solid #e0f2fe; color: #0369a1; margin: 20px 0;">
+                Seus clientes compram mais produtos da categoria <strong>{{product_category}}</strong> no período das <strong>{{best_time}}</strong>.
             </div>
+            <p>Ajustar a reposição de stock e a escala da equipa nesses horários pode aumentar significativamente as vendas.</p>
         `
     },
 

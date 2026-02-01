@@ -44,8 +44,8 @@ interface SidebarItem {
 
 const getSidebarItems = (lang: Language): SidebarItem[] => [
   { icon: LayoutDashboard, label: t('nav.dashboard', lang), id: 'dashboard', roles: Object.values(UserRole) },
-  { icon: ShoppingCart, label: t('nav.sales', lang) + ' (POS)', id: 'pos', roles: [UserRole.ADMIN, UserRole.COMMERCIAL, UserRole.TECHNICIAN] },
-  { icon: Package, label: t('nav.stock', lang), id: 'stock', roles: [UserRole.ADMIN, UserRole.COMMERCIAL, UserRole.TECHNICIAN] },
+  { icon: ShoppingCart, label: t('nav.sales', lang) + ' (POS)', id: 'pos', roles: [UserRole.ADMIN, UserRole.COMMERCIAL, UserRole.TECHNICIAN, UserRole.ADMINISTRATIVE] },
+  { icon: Package, label: t('nav.stock', lang), id: 'stock', roles: [UserRole.ADMIN, UserRole.COMMERCIAL, UserRole.TECHNICIAN, UserRole.ADMINISTRATIVE] },
   { icon: FileText, label: t('nav.billing', lang), id: 'billing', roles: [UserRole.ADMIN, UserRole.ADMINISTRATIVE] },
   { icon: FolderCheck, label: t('nav.docs', lang), id: 'documents', roles: Object.values(UserRole) },
   { icon: CheckSquare, label: t('nav.tasks', lang), id: 'tasks', roles: Object.values(UserRole) },
@@ -180,6 +180,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
 
         <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto custom-scrollbar min-h-0">
           {getSidebarItems(companyInfo.language || 'pt-MZ').filter(item => {
+            if (!user) return false;
             if (item.id === 'SUPER_ADMIN') {
               return user.email === 'admin@nobreza.site';
             }

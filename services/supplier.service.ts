@@ -111,5 +111,32 @@ export const SupplierService = {
             console.error('Error deleting supplier:', error);
             throw error;
         }
+    },
+
+    findOrCreateByName: async (name: string): Promise<string | null> => {
+        const user = AuthService.getCurrentUser();
+        if (!user || !name) return null;
+
+        const trimmedName = name.trim();
+        const { data: existing } = await supabase
+            .from('suppliers')
+            .select('id')
+            .eq('company_id', user.companyId)
+            .ilike('name', trimmedName)
+            .maybeSingle();
+
+        if (existing) return existing.id;
+
+        const { data: created, error } = await supabase
+            .from('suppliers')
+            .insert({ company_id: user.companyId, name: trimmedName })
+            .select('id')
+            .single();
+
+        if (error) {
+            console.error('Error creating supplier by name:', error);
+            return null;
+        }
+        return created.id;
     }
 };

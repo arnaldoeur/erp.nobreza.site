@@ -273,13 +273,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+              <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-blue-100 dark:border-blue-500/20 shadow-sm">
                 <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Total Investido (Custo)</p>
-                <p className="text-xl font-black text-blue-950">MT {invested.toLocaleString()}</p>
+                <p className="text-xl font-black text-blue-950 dark:text-blue-50">MT {invested.toLocaleString()}</p>
               </div>
-              <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+              <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-500/20 shadow-sm">
                 <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Lucro Estimado</p>
-                <p className="text-xl font-black text-emerald-950">MT {profitPotential.toLocaleString()}</p>
+                <p className="text-xl font-black text-emerald-950 dark:text-emerald-50">MT {profitPotential.toLocaleString()}</p>
               </div>
             </div>
 
@@ -314,8 +314,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
               <span className="text-lg font-black text-red-600">{allLowStock.length} Itens</span>
             </div>
 
-            <div className="bg-red-50/50 rounded-2xl border border-red-100 overflow-hidden">
-              <div className="grid grid-cols-12 gap-4 p-4 border-b border-red-100 bg-red-50 text-[10px] uppercase font-black text-red-400 tracking-widest">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden">
+              <div className="grid grid-cols-12 gap-4 p-4 border-b border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-slate-900/50 text-[10px] uppercase font-black text-gray-500 dark:text-gray-400 tracking-widest">
                 <div className="col-span-6">Produto</div>
                 <div className="col-span-3 text-center">Stock Atual</div>
                 <div className="col-span-3 text-right">Mínimo</div>
@@ -329,16 +329,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
                   </div>
                 ) : (
                   allLowStock.map((p, idx) => (
-                    <div key={p.id} className={`grid grid-cols-12 gap-4 p-4 items-center hover:bg-red-50 transition-colors ${idx !== allLowStock.length - 1 ? 'border-b border-red-50' : ''}`}>
+                    <div key={p.id} className={`grid grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${idx !== allLowStock.length - 1 ? 'border-b border-gray-50 dark:border-white/5' : ''}`}>
                       <div className="col-span-6">
-                        <p className="text-xs font-black text-red-950 uppercase truncate">{p.name}</p>
-                        <p className="text-[9px] text-red-300 font-bold uppercase">{p.code}</p>
+                        <p className="text-xs font-black text-gray-900 dark:text-white uppercase truncate">{p.name}</p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase">{p.code}</p>
                       </div>
                       <div className="col-span-3 text-center">
-                        <span className="inline-block px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-black">{p.quantity}</span>
+                        <span className="inline-block px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-xs font-black">{p.quantity}</span>
                       </div>
                       <div className="col-span-3 text-right">
-                        <span className="text-xs font-bold text-red-400">{p.minStock} Un.</span>
+                        <span className="text-xs font-bold text-gray-400">{p.minStock} Un.</span>
                       </div>
                     </div>
                   ))
@@ -368,35 +368,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
             </div>
 
             <div className="space-y-4">
-              <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100 flex items-center gap-4">
-                <div className="p-3 bg-white text-emerald-600 rounded-xl shadow-sm"><Banknote size={24} /></div>
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-amber-100 dark:border-amber-500/20 shadow-sm flex items-center gap-4">
+                <div className="p-3 bg-white dark:bg-slate-900 text-emerald-600 rounded-xl shadow-sm border border-gray-50 dark:border-white/5"><Banknote size={24} /></div>
                 <div className="flex-1">
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Numerário (Cash)</p>
-                  <p className="text-2xl font-black text-emerald-950">MT {(byMethod['CASH'] || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-black text-emerald-950 dark:text-white">MT {(byMethod['CASH'] || 0).toLocaleString()}</p>
                 </div>
               </div>
 
-              <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100 flex items-center gap-4">
-                <div className="p-3 bg-white text-red-600 rounded-xl shadow-sm"><Smartphone size={24} /></div>
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-amber-100 dark:border-amber-500/20 shadow-sm flex items-center gap-4">
+                <div className="p-3 bg-white dark:bg-slate-900 text-red-600 rounded-xl shadow-sm border border-gray-50 dark:border-white/5"><Smartphone size={24} /></div>
                 <div className="flex-1">
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">M-Pesa</p>
-                  <p className="text-2xl font-black text-red-950">MT {(byMethod['MPESA'] || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-black text-red-950 dark:text-white">MT {(byMethod['MPESA'] || 0).toLocaleString()}</p>
                 </div>
               </div>
 
-              <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100 flex items-center gap-4">
-                <div className="p-3 bg-white text-purple-600 rounded-xl shadow-sm"><Zap size={24} /></div>
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-amber-100 dark:border-amber-500/20 shadow-sm flex items-center gap-4">
+                <div className="p-3 bg-white dark:bg-slate-900 text-purple-600 rounded-xl shadow-sm border border-gray-50 dark:border-white/5"><Zap size={24} /></div>
                 <div className="flex-1">
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">E-Mola</p>
-                  <p className="text-2xl font-black text-purple-950">MT {(byMethod['EMOLA'] || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-black text-purple-950 dark:text-white">MT {(byMethod['EMOLA'] || 0).toLocaleString()}</p>
                 </div>
               </div>
 
-              <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100 flex items-center gap-4">
-                <div className="p-3 bg-white text-blue-600 rounded-xl shadow-sm"><CreditCard size={24} /></div>
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-amber-100 dark:border-amber-500/20 shadow-sm flex items-center gap-4">
+                <div className="p-3 bg-white dark:bg-slate-900 text-blue-600 rounded-xl shadow-sm border border-gray-50 dark:border-white/5"><CreditCard size={24} /></div>
                 <div className="flex-1">
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">POS / Transferência</p>
-                  <p className="text-2xl font-black text-blue-950">MT {((byMethod['TRANSFER'] || 0) + (byMethod['OTHER'] || 0)).toLocaleString()}</p>
+                  <p className="text-2xl font-black text-blue-950 dark:text-white">MT {((byMethod['TRANSFER'] || 0) + (byMethod['OTHER'] || 0)).toLocaleString()}</p>
                 </div>
               </div>
             </div>

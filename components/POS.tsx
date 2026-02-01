@@ -144,7 +144,7 @@ const Receipt: React.FC<ReceiptProps> = ({ sale, companyInfo, onClose, currentUs
         }
       `}</style>
 
-      <div className="bg-[rgb(var(--bg-surface))] dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col h-auto max-h-[90vh] print:shadow-none print:max-w-none print:h-auto print:rounded-none border dark:border-white/10">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col h-auto max-h-[90vh] print:shadow-none print:max-w-none print:h-auto print:rounded-none border dark:border-white/10">
         <div className="p-4 border-b dark:border-white/10 flex justify-between items-center bg-gray-50 dark:bg-white/5 print:hidden shrink-0">
           <div className="flex gap-2">
             <button onClick={() => handlePrint('THERMAL')} className="flex items-center gap-2 px-3 py-2 bg-emerald-100 text-emerald-800 rounded-xl hover:bg-emerald-200 transition-colors">
@@ -162,7 +162,7 @@ const Receipt: React.FC<ReceiptProps> = ({ sale, companyInfo, onClose, currentUs
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600"><X size={20} /></button>
         </div>
 
-        <div id="pos-receipt" className="flex-1 overflow-y-auto p-6 md:p-8 text-center font-mono text-[11px] print:overflow-visible print:px-2 print:py-0 bg-white dark:bg-white/5 dark:text-white">
+        <div id="pos-receipt" className="flex-1 overflow-y-auto p-6 md:p-8 text-center font-mono text-[11px] print:overflow-visible print:px-2 print:py-0 bg-white dark:bg-slate-800 dark:text-white">
           <div className="mb-6 flex flex-col items-center">
             {/* Logo Logic: A4 uses Horizontal, Thermal uses Vertical or Principal */}
             {((printMode === 'A4' && (companyInfo.logoHorizontal || true)) || companyInfo.logoVertical || companyInfo.logo || true) && (
@@ -686,15 +686,15 @@ const PaymentModal = ({ total, onClose, onSelectMethod, showOtherInput, otherDet
             <PaymentBtn key={pm} icon={CreditCard} label={pm} onClick={() => onSelectMethod(pm)} color="bg-purple-600" />
           ))}
 
-          <PaymentBtn icon={MoreHorizontal} label="Outro" onClick={() => onSelectMethod('OTHER')} color="bg-gray-700" />
+          <PaymentBtn icon={MoreHorizontal} label="Outro" onClick={() => onSelectMethod('OTHER')} color="bg-slate-700" />
         </div>
       ) : (
         <div className="space-y-6 animate-in slide-in-from-bottom-4">
-          <div className="bg-white/10 p-6 rounded-3xl border border-white/10">
-            <label className="block text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-4">Detalhes do Pagamento</label>
+          <div className="bg-slate-800 p-6 rounded-3xl border border-white/10 shadow-xl">
+            <label className="block text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-4 font-mono">Detalhes do Pagamento</label>
             <input
               autoFocus
-              className="w-full bg-white/5 border-2 border-white/20 rounded-2xl p-5 text-white font-black text-lg outline-none focus:border-emerald-500 transition-all placeholder-white/30"
+              className="w-full bg-black/40 border-2 border-white/10 rounded-2xl p-5 text-white font-black text-lg outline-none focus:border-emerald-500 transition-all placeholder-white/20"
               placeholder="Ex: Cheque Nº 123..."
               value={otherDetails}
               onChange={e => setOtherDetails(e.target.value)}

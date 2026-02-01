@@ -113,7 +113,10 @@ export const Tasks: React.FC<TasksProps> = ({ currentUser, team }) => {
                 {(['PENDING', 'PROGRESS', 'DONE'] as const).map(status => (
                     <div
                         key={status}
-                        className="bg-slate-50/50 p-4 rounded-[2.5rem] border border-slate-100 flex flex-col h-full overflow-hidden transition-colors hover:bg-slate-50/80"
+                        className={`p-4 rounded-[2.5rem] border flex flex-col h-full overflow-hidden transition-all hover:shadow-inner ${status === 'PENDING' ? 'bg-slate-50/50 border-slate-100 hover:bg-slate-50/80' :
+                            status === 'PROGRESS' ? 'bg-amber-50/30 border-amber-100 hover:bg-amber-50/50' :
+                                'bg-emerald-50/30 border-emerald-100 hover:bg-emerald-50/50'
+                            }`}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => {
                             e.preventDefault();
@@ -125,8 +128,11 @@ export const Tasks: React.FC<TasksProps> = ({ currentUser, team }) => {
                         }}
                     >
                         <div className="flex items-center justify-between mb-6 px-4 shrink-0">
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                <div className={`w-2 h-2 rounded-full ${status === 'PENDING' ? 'bg-slate-400' : status === 'PROGRESS' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                            <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 ${status === 'PENDING' ? 'text-slate-400' :
+                                status === 'PROGRESS' ? 'text-amber-600' :
+                                    'text-emerald-700'
+                                }`}>
+                                <div className={`w-2.5 h-2.5 rounded-full shadow-sm ${status === 'PENDING' ? 'bg-slate-400' : status === 'PROGRESS' ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
                                 {status === 'PENDING' ? 'Pendentes' : status === 'PROGRESS' ? 'Em Curso' : 'Concluído'}
                             </h3>
                             <span className="bg-white text-slate-400 text-[10px] font-black px-2.5 py-1 rounded-full border border-slate-100">
@@ -144,15 +150,23 @@ export const Tasks: React.FC<TasksProps> = ({ currentUser, team }) => {
                                         e.dataTransfer.effectAllowed = 'move';
                                     }}
                                     onClick={() => { setEditingTask(task); setIsModalOpen(true); }}
-                                    className="bg-white p-5 rounded-[1.8rem] shadow-sm border border-slate-50 group hover:border-emerald-500/50 hover:shadow-xl hover:shadow-slate-200/50 transition-all cursor-grab active:cursor-grabbing relative hover:-translate-y-1"
+                                    className={`bg-white dark:bg-slate-800 p-5 rounded-[1.8rem] shadow-sm border-2 transition-all cursor-grab active:cursor-grabbing relative hover:-translate-y-1 group hover:shadow-xl ${status === 'PENDING' ? 'border-slate-100 dark:border-white/5 hover:border-slate-200' :
+                                        status === 'PROGRESS' ? 'border-amber-100 dark:border-amber-500/20 hover:border-amber-200 shadow-amber-900/5' :
+                                            'border-emerald-100 dark:border-emerald-500/20 hover:border-emerald-200 shadow-emerald-900/5'
+                                        }`}
                                 >
+                                    {/* Status Indicator Bar */}
+                                    <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 rounded-r-full ${status === 'PENDING' ? 'bg-slate-200' :
+                                        status === 'PROGRESS' ? 'bg-amber-400' :
+                                            'bg-emerald-500'
+                                        }`} />
                                     <div className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full w-fit mb-3 ${getPriorityColor(task.priority)}`}>
                                         {task.priority}
                                     </div>
                                     <h4 className="text-sm font-black text-slate-950 mb-1 uppercase tracking-tight leading-tight">{task.title}</h4>
                                     <p className="text-[11px] font-bold text-slate-400 line-clamp-2 mb-4 leading-relaxed">{task.description || 'Sem descrição.'}</p>
 
-                                    <div className="flex items-center justify-between border-t border-slate-50 pt-4">
+                                    <div className="flex items-center justify-between border-t border-slate-100 dark:border-white/5 pt-4">
                                         <div className="flex flex-col gap-1.5">
                                             <div className="flex items-center gap-1.5 text-[9px] font-black uppercase text-slate-400">
                                                 <Calendar size={12} className="text-emerald-600" />
@@ -166,7 +180,7 @@ export const Tasks: React.FC<TasksProps> = ({ currentUser, team }) => {
                                             )}
                                         </div>
                                         <div className="flex -space-x-2">
-                                            <div className="w-8 h-8 rounded-xl bg-emerald-50 border-2 border-white flex items-center justify-center text-[10px] font-black text-emerald-700 shadow-sm" title={getAssigneeName(task.assigned_to)}>
+                                            <div className="w-8 h-8 rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-white dark:border-slate-700 flex items-center justify-center text-[10px] font-black text-gray-700 dark:text-gray-300 shadow-sm" title={getAssigneeName(task.assigned_to)}>
                                                 {getAssigneeName(task.assigned_to)[0]}
                                             </div>
                                         </div>

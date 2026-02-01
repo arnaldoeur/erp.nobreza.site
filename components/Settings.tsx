@@ -190,6 +190,18 @@ export const Settings: React.FC<SettingsProps> = ({
   companyInfo, setCompanyInfo, team, onUpdateTeam, currentUser,
   dailyClosures, logs, sales, products, expenses = [], initialTab, onTabHandled, onAddSale
 }) => {
+  const roleLabels: Record<string, string> = {
+    ADMIN: 'ADMINISTRADOR',
+    COMMERCIAL: 'COMERCIAL',
+    TECHNICIAN: 'TÉCNICO',
+    ADMINISTRATIVE: 'ADMINISTRATIVO',
+    PARTNER: 'PARCEIRO',
+    HEALTH: 'PESSOAL DE SAÚDE',
+    OTHER: 'OUTRO'
+  };
+
+  const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
   const [activeTab, setActiveTab] = useState<'REPORTS' | 'FINANCE' | 'EXPENSES' | 'CAIXA' | 'COMPANY' | 'TEAM' | 'PROFILE' | 'PERFORMANCE' | 'SYSTEM'>('REPORTS');
   const [nextEmployeeId, setNextEmployeeId] = useState<string>('');
 
@@ -236,8 +248,14 @@ export const Settings: React.FC<SettingsProps> = ({
     }
   }, [reportFilter.type, reportFilter.startDate, reportFilter.endDate]);
 
+  useEffect(() => {
+    setTempInfo(companyInfo);
+  }, [companyInfo]);
+
   const [priceAdjustmentAmount, setPriceAdjustmentAmount] = useState<number>(0);
   const [adjustingPrices, setAdjustingPrices] = useState(false);
+
+
   const [isReportPreviewOpen, setIsReportPreviewOpen] = useState(false);
   const [previewScale, setPreviewScale] = useState(0.85);
 
@@ -393,15 +411,19 @@ export const Settings: React.FC<SettingsProps> = ({
   const analytics = useMemo(() => {
     if (!sales || !dailyClosures) return { totalInMonth: 0, totalDivergence: 0, salesCount: 0, totalExpenses: 0, netProfit: 0, topProducts: [], byMethod: {} as any };
 
-    const monthSales = sales.filter(s => {
-      const d = new Date(s.timestamp);
-      return d.getMonth() === reportFilter.month && d.getFullYear() === reportFilter.year;
-    });
+    // Robust date ranges for filtering
+    const start = new Date(reportFilter.startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(reportFilter.endDate);
+    end.setHours(23, 59, 59, 999);
 
-    const monthExpenses = expenses.filter(e => {
-      const d = new Date(e.date || e.timestamp);
-      return d.getMonth() === reportFilter.month && d.getFullYear() === reportFilter.year;
-    });
+    const isWithinRange = (dateStr: Date | string) => {
+      const d = new Date(dateStr);
+      return d >= start && d <= end;
+    };
+
+    const monthSales = sales.filter(s => isWithinRange(s.timestamp));
+    const monthExpenses = expenses.filter(e => isWithinRange(e.date || e.timestamp));
 
     const totalInMonth = monthSales.reduce((a, b) => a + b.total, 0);
     const totalExpenses = monthExpenses.reduce((a, b) => a + (b.amount || 0), 0);
@@ -413,10 +435,7 @@ export const Settings: React.FC<SettingsProps> = ({
       byMethod[m] = (byMethod[m] || 0) + s.total;
     });
 
-    const totalDivergence = dailyClosures.filter(c => {
-      const d = new Date(c.closureDate);
-      return d.getMonth() === reportFilter.month && d.getFullYear() === reportFilter.year;
-    }).reduce((a, b) => a + (b.difference || 0), 0);
+    const totalDivergence = dailyClosures.filter(c => isWithinRange(c.closureDate)).reduce((a, b) => a + (b.difference || 0), 0);
 
     // Calculate Investments (Expenses with category 'STOCK' or 'PURCHASE' or 'FORNECEDOR')
     const stockInvestments = monthExpenses
@@ -430,7 +449,6 @@ export const Settings: React.FC<SettingsProps> = ({
     let stockOutputs = 0;
     monthSales.forEach(s => {
       s.items.forEach(item => {
-        // Find product to get its *current* purchase price (best effort)
         const product = products.find(p => p.id === item.productId || p.name === item.productName);
         const costPrice = product ? Number(product.purchasePrice || 0) : 0;
         stockOutputs += (item.quantity * costPrice);
@@ -450,8 +468,8 @@ export const Settings: React.FC<SettingsProps> = ({
       byMethod,
       topProducts: [],
       bestSeller,
-      stockInvestments, // New field
-      stockOutputs      // New field
+      stockInvestments,
+      stockOutputs
     };
   }, [sales, dailyClosures, expenses, reportFilter, products]);
 
@@ -601,7 +619,6 @@ export const Settings: React.FC<SettingsProps> = ({
     }
   };
 
-  const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 md:space-y-10 animate-in fade-in pb-20">
@@ -617,7 +634,7 @@ export const Settings: React.FC<SettingsProps> = ({
           </>
         )}
 
-        {currentUser.role === 'ADMIN' && (
+        {(currentUser.role === 'ADMIN' || currentUser.role === 'ADMINISTRATIVE') && (
           <TabButton active={activeTab === 'COMPANY'} onClick={() => setActiveTab('COMPANY')} icon={Building2} label="Empresa" />
         )}
 
@@ -1304,13 +1321,22 @@ export const Settings: React.FC<SettingsProps> = ({
                         <span className="text-[9px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-mono">{member.employeeId}</span>
                       )}
                     </p>
-                    <p className="text-[10px] text-emerald-600 font-bold uppercase truncate">{member.role} • {member.responsibility}</p>
+                    <p className="text-[10px] text-emerald-600 font-bold uppercase truncate">{roleLabels[member.role] || member.role} • {member.responsibility}</p>
                     {member.email && (
                       <p className="text-[9px] text-gray-400 font-medium truncate">{member.email}</p>
                     )}
                   </div>
                   {(currentUser.role === 'ADMIN' || currentUser.role === 'ADMINISTRATIVE') && (
-                    <button onClick={() => { setEditingEmployee(member); setIsEmployeeModalOpen(true); }} className="p-3 text-gray-300 hover:text-emerald-700"><Edit2 size={18} /></button>
+                    <button
+                      onClick={() => { setEditingEmployee(member); setIsEmployeeModalOpen(true); }}
+                      className={`p-3 transition-colors ${(currentUser.role === 'ADMINISTRATIVE' && member.role === 'ADMIN')
+                        ? 'text-gray-100 cursor-not-allowed pointer-events-none'
+                        : 'text-gray-300 hover:text-emerald-700'
+                        }`}
+                      disabled={currentUser.role === 'ADMINISTRATIVE' && member.role === 'ADMIN'}
+                    >
+                      <Edit2 size={18} />
+                    </button>
                   )}
                 </div>
               ))}
@@ -1433,10 +1459,20 @@ export const Settings: React.FC<SettingsProps> = ({
                     <div className="relative">
                       <select name="role" required defaultValue={editingEmployee?.role} className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm appearance-none cursor-pointer transition-all">
                         {Object.values(UserRole).map(r => {
-                          // Only Super Admin can create/edit ADMIN roles
-                          const isSuperAdmin = currentUser.email === 'admin@nobreza.site';
-                          if (r === 'ADMIN' && !isSuperAdmin) return null;
-                          return <option key={r} value={r}>{r}</option>;
+                          // Only ADMIN can create/edit ADMIN roles
+                          if (r === 'ADMIN' && currentUser.role !== 'ADMIN') return null;
+
+                          const labels: Record<UserRole, string> = {
+                            ADMIN: 'ADMIN',
+                            COMMERCIAL: 'COMMERCIAL',
+                            TECHNICIAN: 'TECHNICIAN',
+                            ADMINISTRATIVE: 'ADMINISTRATIVE',
+                            PARTNER: 'PARTNER',
+                            HEALTH: 'PESSOAL DE SAÚDE',
+                            OTHER: 'OUTRO'
+                          };
+
+                          return <option key={r} value={r}>{labels[r] || r}</option>;
                         })}
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><ChevronRight size={16} className="rotate-90" /></div>
