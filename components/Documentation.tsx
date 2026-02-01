@@ -15,9 +15,14 @@ export const Documentation: React.FC<Props> = ({ onBack }) => {
                     <h1 className="text-2xl font-black uppercase tracking-widest flex items-center gap-3">
                         <Book size={28} className="text-emerald-400" /> Documentação do Sistema
                     </h1>
-                    <button onClick={onBack} className="text-xs font-bold uppercase tracking-widest bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all flex items-center gap-2">
-                        <ArrowLeft size={16} /> Voltar
-                    </button>
+                    <div className="flex gap-2">
+                        <button onClick={() => window.print()} className="text-xs font-bold uppercase tracking-widest bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+                            <ArrowLeft size={16} className="rotate-[-90deg]" /> Baixar PDF
+                        </button>
+                        <button onClick={onBack} className="text-xs font-bold uppercase tracking-widest bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+                            <ArrowLeft size={16} /> Voltar
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content */}
@@ -26,10 +31,14 @@ export const Documentation: React.FC<Props> = ({ onBack }) => {
                     {/* Intro */}
                     <section className="bg-emerald-50 p-8 rounded-3xl border border-emerald-100">
                         <h2 className="text-xl font-black text-emerald-950 uppercase mb-4">Visão Geral</h2>
-                        <p className="text-emerald-900 font-medium">
-                            O <strong>Nobreza ERP</strong> é uma plataforma de gestão integrada desenvolvida especificamente para o setor farmacêutico em Moçambique.
+                        <p className="text-emerald-900 font-medium mb-4">
+                            O <strong>Nobreza ERP</strong> é uma plataforma de gestão integrada desenvolvida pela <a href="https://zyph.co.mz" target="_blank" className="underline decoration-emerald-400 decoration-2 underline-offset-2 hover:text-emerald-700">Zyph Tech</a> especificamente para o setor farmacêutico em Moçambique.
                             Nossa missão é unificar vendas, estoque, finanças e inteligência artificial numa única interface intuitiva e moderna.
                         </p>
+                        <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 bg-white/50 p-3 rounded-xl border border-emerald-100/50">
+                            <Shield size={16} />
+                            <span>Privacidade Garantida: Os dados de cada farmácia são armazenados em bancos de dados isolados, garantindo que nenhuma outra empresa tenha acesso às suas informações.</span>
+                        </div>
                     </section>
 
                     {/* Modules Structure */}

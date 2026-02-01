@@ -15,9 +15,14 @@ export const Terms: React.FC<Props> = ({ onBack }) => {
                     <h1 className="text-2xl font-black uppercase tracking-widest flex items-center gap-3">
                         <Scale size={28} className="text-emerald-400" /> Termos de Serviço
                     </h1>
-                    <button onClick={onBack} className="text-xs font-bold uppercase tracking-widest bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all flex items-center gap-2">
-                        <ArrowLeft size={16} /> Voltar
-                    </button>
+                    <div className="flex gap-2">
+                        <button onClick={() => window.print()} className="text-xs font-bold uppercase tracking-widest bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+                            <ArrowLeft size={16} className="rotate-[-90deg]" /> Baixar PDF
+                        </button>
+                        <button onClick={onBack} className="text-xs font-bold uppercase tracking-widest bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+                            <ArrowLeft size={16} /> Voltar
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content */}
