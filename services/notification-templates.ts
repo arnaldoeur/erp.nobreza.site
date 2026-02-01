@@ -179,5 +179,21 @@ export const NotificationTemplates = {
     BRAND_MSG_2: {
         subject: "Crescer é um processo contínuo.",
         html: `<h1>Cada relatório analisado, cada stock bem controlado e cada decisão consciente constroem um negócio mais forte.</h1><p>Continue avançando. O crescimento é um processo contínuo.</p><p>— Equipe Nobreza ERP</p>`
+    },
+
+    // 7. System & Utilities
+    GENERIC_ACTION: {
+        subject: "{{title}}",
+        html: `
+            <div style="font-family: sans-serif; color: #1e293b;">
+                <h2 style="color: #064e3b; margin-bottom: 16px;">{{title}}</h2>
+                <div style="background: #f8fafc; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
+                    <p style="margin: 0; line-height: 1.6;">{{details}}</p>
+                </div>
+                <p style="font-size: 13px; color: #64748b;">
+                    Esta é uma notificação automática do sistema <strong>Nobreza ERP</strong>.
+                </p>
+            </div>
+        `
     }
 };

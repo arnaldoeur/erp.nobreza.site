@@ -260,16 +260,21 @@ export const NotificationService = {
                 html = html.replace(regex, d[key]);
             });
         } else {
-            // Fallback for non-templated emails
-            html = payload.html || `
-                <div style="font-family: sans-serif; padding: 20px;">
-                    <h2 style="color: #064e3b;">${payload.subject}</h2>
-                    <hr/>
-                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px;">
-                        ${JSON.stringify(d)}
-                    </div>
-                </div>
-            `;
+            // HIGH-QUALITY Fallback for non-templated emails
+            const tmpl = (NotificationTemplates as any).GENERIC_ACTION;
+            subject = payload.subject || "Notificação Nobreza ERP";
+            html = tmpl.html;
+
+            const details = typeof d === 'string' ? d : (d.details || d.message || JSON.stringify(d));
+            const replacements: any = {
+                title: subject,
+                details: details
+            };
+
+            Object.keys(replacements).forEach(key => {
+                const regex = new RegExp(`{{${key}}}`, 'g');
+                html = html.replace(regex, replacements[key]);
+            });
         }
 
         try {

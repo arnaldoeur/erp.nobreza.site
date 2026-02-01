@@ -8,12 +8,74 @@ const corsHeaders = {
 };
 
 /**
- * Ultra-Clean Responsive HTML Email Wrapper
- * No header, no closing text. Just a focused container for the message body.
+ * Premium Responsive HTML Email Wrapper
  */
 function wrap(html: string, sub: string) {
     const year = new Date().getFullYear();
-    return "<!DOCTYPE html><html lang='pt'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>" + sub + "</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#ffffff;margin:0;padding:20px 0;}.container{max-width:600px;margin:0 auto;background:#ffffff;padding:20px;}.content{color:#1e293b;line-height:1.6;font-size:16px;}.footer{margin-top:50px;padding-top:20px;border-top:1px solid #f1f5f9;text-align:center;color:#94a3b8;font-size:11px;}</style></head><body><div class='container'><div class='content'>" + html + "</div><div class='footer'>&copy; " + year + " Nobreza ERP. Luanda, Angola.</div></div></body></html>";
+    const primaryColor = "#10b981"; // Emerald 500
+    const textColor = "#1e293b"; // Slate 800
+
+    return `
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${sub}</title>
+    <style>
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background-color: #f8fafc; 
+            margin: 0; 
+            padding: 40px 0; 
+            -webkit-font-smoothing: antialiased;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: #ffffff; 
+            padding: 40px; 
+            border-radius: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid #f1f5f9;
+        }
+        .content { 
+            color: ${textColor}; 
+            line-height: 1.7; 
+            font-size: 16px; 
+        }
+        .footer { 
+            margin-top: 40px; 
+            padding-top: 24px; 
+            border-top: 1px solid #f1f5f9; 
+            text-align: center; 
+            color: #94a3b8; 
+            font-size: 11px; 
+            letter-spacing: 0.025em;
+        }
+        .brand-accent {
+            width: 40px;
+            height: 4px;
+            background-color: ${primaryColor};
+            border-radius: 2px;
+            margin-bottom: 32px;
+        }
+        a { color: ${primaryColor}; text-decoration: none; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="brand-accent"></div>
+        <div class="content">
+            ${html}
+        </div>
+        <div class="footer">
+            &copy; ${year} <strong>Nobreza ERP</strong> • Gestão Inteligente de Farmácias<br/>
+            Luanda, Angola • Made with passion by Zyph Tech
+        </div>
+    </div>
+</body>
+</html>`;
 }
 
 Deno.serve(async (req: Request) => {
