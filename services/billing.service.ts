@@ -41,7 +41,7 @@ export const BillingService = {
                 company_id: user.companyId,
                 type: doc.type,
                 customer_name: doc.targetName,
-                name: doc.id, // satisfying the NOT NULL constraint on 'name'
+                name: doc.id,
                 total: doc.total,
                 status: doc.status,
                 items: doc.items,
