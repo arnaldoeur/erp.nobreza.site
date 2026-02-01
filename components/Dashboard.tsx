@@ -164,25 +164,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
     const data: { name: string; sales: number }[] = [];
 
     if (chartPeriod === 'daily') {
-      // Daily Logic (Hourly based on Company Hours)
-      let startHour = 8;
-      let endHour = 20;
-
-      const openingTime = companyInfo?.openingTime || companyInfo?.workingHours?.start;
-      const closingTime = companyInfo?.closingTime || companyInfo?.workingHours?.end;
-
-      if (openingTime && closingTime) {
-        startHour = parseInt(openingTime.split(':')[0]) || 8;
-        endHour = parseInt(closingTime.split(':')[0]) || 20;
-        if (endHour < startHour) endHour = 23; // Simple daily visualization
-      }
-
-      const length = Math.max(1, endHour - startHour + 1);
-
-      return Array.from({ length }, (_, i) => i + startHour).map(hour => {
-        const h = hour % 24;
-        const hourLabel = `${h.toString().padStart(2, '0')}:00`;
-        const salesInHour = salesToday.filter(s => new Date(s.timestamp).getHours() === h);
+      // Force 24h view to ensure all sales are visible regardless of business hours/timezone
+      return Array.from({ length: 24 }, (_, i) => i).map(hour => {
+        const hourLabel = `${hour.toString().padStart(2, '0')}:00`;
+        const salesInHour = salesToday.filter(s => {
+          const d = new Date(s.timestamp);
+          return d.getHours() === hour;
+        });
         const amount = salesInHour.reduce((sum, s) => sum + s.total, 0);
         return { name: hourLabel, sales: amount };
       });
@@ -585,7 +573,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
                   </p>
                   <p className="text-[9px] text-emerald-600 dark:text-emerald-400/70 font-bold uppercase mt-1">MT {sale.total.toLocaleString()} • {new Date(sale.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
-                <ChevronRight size={14} className="text-emerald-300 dark:text-emerald-700" />
+                <button
+                  onClick={() => onQuickAction?.('pos', 'view_receipt_' + sale.id)}
+                  className="p-2 hover:bg-emerald-100 dark:hover:bg-white/10 rounded-full transition-colors text-emerald-600"
+                >
+                  <FileText size={16} />
+                </button>
               </div>
             ))}
 

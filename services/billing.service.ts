@@ -44,7 +44,7 @@ export const BillingService = {
                 total: doc.total,
                 status: doc.status,
                 items: doc.items,
-                // created_by: user.name, // Removed: column does not exist
+                created_by: doc.performedBy,
                 date: new Date()
             });
 

@@ -256,9 +256,11 @@ interface POSProps {
   onQuickAddCustomer: (customer: Customer) => void;
   salesHistory: Sale[];
   currentUser?: { name: string; email: string };
+  initialAction?: string | null;
+  onActionHandled?: () => void;
 }
 
-export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSaleComplete, onQuickAddCustomer, salesHistory, currentUser }) => {
+export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSaleComplete, onQuickAddCustomer, salesHistory, currentUser, initialAction, onActionHandled }) => {
   // State
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<SaleItem[]>([]);
@@ -270,6 +272,18 @@ export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSa
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [otherDetails, setOtherDetails] = useState('');
   const [showOtherInput, setShowOtherInput] = useState(false);
+
+  // Handle Initial Action (e.g., View Receipt from Dashboard)
+  React.useEffect(() => {
+    if (initialAction && initialAction.startsWith('view_receipt_')) {
+      const saleId = initialAction.replace('view_receipt_', '');
+      const saleToView = salesHistory.find(s => s.id === saleId);
+      if (saleToView) {
+        setCurrentSale(saleToView);
+        if (onActionHandled) onActionHandled();
+      }
+    }
+  }, [initialAction, salesHistory, onActionHandled]);
 
   // Derived State
   const filteredProducts = useMemo(() => {
@@ -356,25 +370,24 @@ export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSa
       companyId: companyInfo.id
     };
 
-    // --- CRITICAL FIX: Persist to Documents Repository ---
-    // This ensures the sale appears in "Faturação" and Dashboard Charts
     try {
       BillingService.add({
         id: newSale.id,
         companyId: String(companyInfo.id),
-        type: 'RECEIPT', // POS sales are effectively Receipts
-        TargetName: finalCustomerName || 'Consumidor Final', // Use consistent casing if needed, checking type def
+        type: 'RECEIPT',
         targetName: finalCustomerName || 'Consumidor Final',
-        date: newSale.timestamp,
+        timestamp: newSale.timestamp,
         items: newSale.items.map(i => ({
-          description: i.productName,
+          productId: i.productId,
+          companyId: companyInfo.id,
+          productName: i.productName,
           quantity: i.quantity,
           unitPrice: i.unitPrice,
           total: i.total
         })),
         total: newSale.total,
         status: 'PAID',
-        created_by: newSale.performedBy
+        performedBy: newSale.performedBy
       }).catch(err => console.error("Failed to save document persist:", err));
     } catch (e) {
       console.error("Error initiating document save", e);

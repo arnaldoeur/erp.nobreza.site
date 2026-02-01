@@ -99,7 +99,7 @@ export interface SaleItem {
 
 export type PaymentMethod = 'CASH' | 'MPESA' | 'EMOLA' | 'MKESH' | 'TRANSFER' | 'OTHER' | string;
 
-export type DocumentType = 'INVOICE' | 'PURCHASE_ORDER' | 'SUPPLIER_INVOICE';
+export type DocumentType = 'INVOICE' | 'PURCHASE_ORDER' | 'SUPPLIER_INVOICE' | 'RECEIPT';
 
 export interface BillingDocument {
   id: string;
