@@ -1,0 +1,106 @@
+﻿node : C:\Users\arnal\
+erp.nobreza.site\NOBRE
+ZA-ERP---GESTAO-INTELI
+GENTE-DE-FARMACIAS\nod
+e_modules\path-to-rege
+xp\dist\index.js:96
+At line:1 char:1
++ node server.js > 
+out.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (C:\Users\a   
+ rnal\...ist\index    
+.js:96:String) []    
+, RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+            throw new 
+PathError(`Missing 
+parameter name at 
+index ${index}`, str);
+                  ^
+
+PathError 
+[TypeError]: Missing 
+parameter name at 
+index 1: *; visit http
+s://git.new/pathToRege
+xpError for info
+    at name (C:\Users\
+arnal\erp.nobreza.site
+\NOBREZA-ERP---GESTAO-
+INTELIGENTE-DE-FARMACI
+AS\node_modules\path-t
+o-regexp\dist\index.js
+:96:19)
+    at parse (C:\Users
+\arnal\erp.nobreza.sit
+e\NOBREZA-ERP---GESTAO
+-INTELIGENTE-DE-FARMAC
+IAS\node_modules\path-
+to-regexp\dist\index.j
+s:113:68)
+    at pathToRegexp (C
+:\Users\arnal\erp.nobr
+eza.site\NOBREZA-ERP--
+-GESTAO-INTELIGENTE-DE
+-FARMACIAS\node_module
+s\path-to-regexp\dist\
+index.js:267:58)
+    at Object.match (C
+:\Users\arnal\erp.nobr
+eza.site\NOBREZA-ERP--
+-GESTAO-INTELIGENTE-DE
+-FARMACIAS\node_module
+s\path-to-regexp\dist\
+index.js:237:30)
+    at matcher (C:\Use
+rs\arnal\erp.nobreza.s
+ite\NOBREZA-ERP---GEST
+AO-INTELIGENTE-DE-FARM
+ACIAS\node_modules\rou
+ter\lib\layer.js:86:23
+)
+    at new Layer (C:\U
+sers\arnal\erp.nobreza
+.site\NOBREZA-ERP---GE
+STAO-INTELIGENTE-DE-FA
+RMACIAS\node_modules\r
+outer\lib\layer.js:93:
+62)
+    at router.route (C
+:\Users\arnal\erp.nobr
+eza.site\NOBREZA-ERP--
+-GESTAO-INTELIGENTE-DE
+-FARMACIAS\node_module
+s\router\index.js:428:
+17)
+    at app.route (C:\U
+sers\arnal\erp.nobreza
+.site\NOBREZA-ERP---GE
+STAO-INTELIGENTE-DE-FA
+RMACIAS\node_modules\e
+xpress\lib\application
+.js:257:22)
+    at app.<computed> 
+[as get] (C:\Users\arn
+al\erp.nobreza.site\NO
+BREZA-ERP---GESTAO-INT
+ELIGENTE-DE-FARMACIAS\
+node_modules\express\l
+ib\application.js:478:
+22)
+    at file:///C:/User
+s/arnal/erp.nobreza.si
+te/NOBREZA-ERP---GESTA
+O-INTELIGENTE-DE-FARMA
+CIAS/server.js:15:5 {
+  originalPath: '*'
+}
+
+Node.js v24.11.1
