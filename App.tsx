@@ -51,18 +51,12 @@ const App: React.FC = () => {
   const [initializing, setInitializing] = useState(true);
 
   const [showIntro, setShowIntro] = useState(true);
-  const [showLanding, setShowLanding] = useState(
-    window.location.pathname === '/landing-page' ||
-    (!AuthService.getCurrentUser() && (window.location.pathname === '/' || window.location.pathname === ''))
-  );
+  const [showLanding, setShowLanding] = useState(window.location.pathname === '/landing-page');
 
   // Handle URL changes (simple routing)
   useEffect(() => {
     const handlePopState = () => {
-      setShowLanding(
-        window.location.pathname === '/landing-page' ||
-        (!AuthService.getCurrentUser() && (window.location.pathname === '/' || window.location.pathname === ''))
-      );
+      setShowLanding(window.location.pathname === '/landing-page');
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
