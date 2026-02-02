@@ -119,10 +119,14 @@ export const CustomerService = {
         if (updates.email) dbUpdates.email = updates.email;
         if (updates.address) dbUpdates.address = updates.address;
 
+        const user = AuthService.getCurrentUser();
+        if (!user) throw new Error('Unauthorized');
+
         const { data, error } = await supabase
             .from('customers')
             .update(dbUpdates)
             .eq('id', id)
+            .eq('company_id', user.companyId)
             .select()
             .single();
 
@@ -164,10 +168,14 @@ export const CustomerService = {
     },
 
     delete: async (id: string): Promise<void> => {
+        const user = AuthService.getCurrentUser();
+        if (!user) return;
+
         const { error } = await supabase
             .from('customers')
             .delete()
-            .eq('id', id);
+            .eq('id', id)
+            .eq('company_id', user.companyId);
 
         if (error) {
             throw new Error('Failed to delete customer');

@@ -121,7 +121,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
   return (
     <div className="flex flex-col md:flex-row h-[100dvh] bg-[rgb(var(--bg-app))] overflow-hidden transition-colors duration-300">
       <header className="md:hidden h-16 bg-emerald-950 dark:bg-black text-white flex items-center justify-between px-4 z-50 shrink-0 shadow-lg">
-        <div className="flex items-center gap-2 overflow-hidden cursor-pointer" onClick={() => handleNavClick('dashboard')}>
+        <div className="flex items-center gap-2 overflow-hidden cursor-pointer" onClick={() => {
+          window.history.pushState({}, '', '/landing-page');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}>
           <img
             src="/nobreza_erp_logo_white_horizontal.png"
             alt="Nobreza ERP"
@@ -160,7 +163,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
           </button>
 
           {!collapsed ? (
-            <div className="flex items-center gap-3 px-2 cursor-pointer w-full" onClick={() => setActiveView('dashboard')}>
+            <div className="flex items-center gap-3 px-2 cursor-pointer w-full" onClick={() => {
+              window.history.pushState({}, '', '/landing-page');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}>
               <img
                 src="/nobreza_erp_logo_white_horizontal.png"
                 alt="Nobreza ERP"
@@ -168,7 +174,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
               />
             </div>
           ) : (
-            <div className="flex flex-col items-center cursor-pointer w-full" onClick={() => setActiveView('dashboard')}>
+            <div className="flex flex-col items-center cursor-pointer w-full" onClick={() => {
+              window.history.pushState({}, '', '/landing-page');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}>
               <img
                 src="/NERP ICONE.png"
                 alt="N"

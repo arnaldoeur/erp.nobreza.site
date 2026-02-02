@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { AuthService } from '../services/auth.service';
 import { supabase } from '../services/supabase';
 import { User } from '../types';
-import { Lock, Mail, Loader2, AlertCircle, ArrowRight, ShieldCheck, UserPlus, HelpCircle, ArrowLeft, Building2, Phone, MapPin, FileText, User as UserIcon } from 'lucide-react';
+import { Lock, Mail, Loader2, AlertCircle, ArrowRight, ShieldCheck, UserPlus, HelpCircle, ArrowLeft, Building2, Phone, MapPin, FileText, User as UserIcon, Globe } from 'lucide-react';
 import { Privacy } from './Privacy';
 import { Terms } from './Terms';
 import { Documentation } from './Documentation';
@@ -159,7 +159,23 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     <div className="relative pt-12 pb-6 px-8 text-center">
                         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-50"></div>
 
-                        <div className="mb-6 cursor-pointer hover:scale-105 transition-transform" onClick={() => { setView('LOGIN'); resetForm(); }}>
+                        <div className="absolute top-4 right-8 z-[20]">
+                            <button
+                                onClick={() => {
+                                    window.history.pushState({}, '', '/landing-page');
+                                    window.dispatchEvent(new PopStateEvent('popstate'));
+                                }}
+                                className="text-[10px] font-black text-white/40 hover:text-emerald-400 uppercase tracking-widest flex items-center gap-2 transition-all group/back"
+                            >
+                                <Globe size={14} className="group-hover/back:rotate-12 transition-transform" />
+                                <span>Ver Website</span>
+                            </button>
+                        </div>
+
+                        <div className="mb-6 cursor-pointer hover:scale-105 transition-transform" onClick={() => {
+                            window.history.pushState({}, '', '/landing-page');
+                            window.dispatchEvent(new PopStateEvent('popstate'));
+                        }}>
                             <img
                                 src="/nobreza_erp_logo_white_horizontal.png"
                                 alt="Nobreza"

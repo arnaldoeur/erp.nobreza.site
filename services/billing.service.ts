@@ -57,10 +57,14 @@ export const BillingService = {
     },
 
     delete: async (id: string): Promise<void> => {
+        const user = AuthService.getCurrentUser();
+        if (!user) return;
+
         const { error } = await supabase
             .from('documents')
             .delete()
-            .eq('id', id);
+            .eq('id', id)
+            .eq('company_id', user.companyId);
 
         if (error) {
             console.error('Error deleting document:', error);

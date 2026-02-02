@@ -65,9 +65,13 @@ export const TimeTrackingService = {
 
     // Get history for reporting
     getShifts: async (userId?: string, startDate?: string, endDate?: string): Promise<WorkShift[]> => {
+        const { data: profile } = await supabase.from('users').select('company_id').eq('id', userId || (await supabase.auth.getUser()).data.user?.id).single();
+        if (!profile) return [];
+
         let query = supabase
             .from('work_shifts')
             .select('*')
+            .eq('company_id', profile.company_id)
             .order('start_time', { ascending: false });
 
         if (userId) {

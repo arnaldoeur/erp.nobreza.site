@@ -145,8 +145,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
     return withinRange && hasConfig;
   }, [companyInfo, currentTotalMinutes, activeShift]);
 
-  const today = new Date().toLocaleDateString();
-  const salesToday = sales.filter(s => new Date(s.timestamp).toLocaleDateString() === today);
+  // Today's sales filtered by Mozambique day
+  const salesToday = useMemo(() => {
+    const tz = companyInfo?.timezone || 'Africa/Maputo';
+    const companyTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: tz }); // YYYY-MM-DD
+
+    return sales.filter(s => {
+      const saleDateStr = new Date(s.timestamp).toLocaleDateString('en-CA', { timeZone: tz });
+      return saleDateStr === companyTodayStr;
+    });
+  }, [sales, companyInfo]);
+
   const totalSalesToday = salesToday.reduce((sum, s) => sum + s.total, 0);
 
   const lowStockCount = products.filter(p => Number(p.quantity) <= Number(p.minStock)).length;
@@ -160,16 +169,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
 
   // Chart Data Calculation
   const chartData = useMemo(() => {
-    const now = new Date();
+    const tz = companyInfo?.timezone || 'Africa/Maputo';
     const data: { name: string; sales: number }[] = [];
 
     if (chartPeriod === 'daily') {
-      // Force 24h view to ensure all sales are visible regardless of business hours/timezone
       return Array.from({ length: 24 }, (_, i) => i).map(hour => {
         const hourLabel = `${hour.toString().padStart(2, '0')}:00`;
         const salesInHour = salesToday.filter(s => {
-          const d = new Date(s.timestamp);
-          return d.getHours() === hour;
+          // Extract the hour in company's timezone
+          const hourInTz = parseInt(new Date(s.timestamp).toLocaleTimeString('en-GB', {
+            timeZone: tz,
+            hour: '2-digit',
+            hour12: false
+          }));
+          return hourInTz === hour;
         });
         const amount = salesInHour.reduce((sum, s) => sum + s.total, 0);
         return { name: hourLabel, sales: amount };
@@ -181,9 +194,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
       if (chartPeriod === '3months') days = 90;
 
       const startDate = new Date();
-      startDate.setDate(now.getDate() - days);
+      startDate.setDate(startDate.getDate() - days);
 
-      // Initialize map with 0 for all days to show gaps
       const dateMap = new Map<string, number>();
       for (let i = 0; i <= days; i++) {
         const d = new Date(startDate);
@@ -192,11 +204,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
         dateMap.set(label, 0);
       }
 
-      // Fill with actual sales
-      sales.filter(s => new Date(s.timestamp) >= startDate).forEach(s => {
-        const dateKey = new Date(s.timestamp).toLocaleDateString('pt-MZ', { day: '2-digit', month: '2-digit' });
-        if (dateMap.has(dateKey)) {
-          dateMap.set(dateKey, (dateMap.get(dateKey) || 0) + s.total);
+      sales.forEach(s => {
+        const d = new Date(s.timestamp);
+        if (d >= startDate) {
+          const dateKey = d.toLocaleDateString('pt-MZ', {
+            day: '2-digit',
+            month: '2-digit',
+            timeZone: tz
+          });
+          if (dateMap.has(dateKey)) {
+            dateMap.set(dateKey, (dateMap.get(dateKey) || 0) + s.total);
+          }
         }
       });
 

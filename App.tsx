@@ -39,6 +39,7 @@ import { SocialChat } from './components/SocialChat';
 import { Support } from './components/Support';
 import { Calendar } from './components/Calendar';
 import { EmailCenter } from './components/EmailCenter';
+import { LandingPage } from './components/LandingPage';
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState('dashboard');
@@ -50,6 +51,22 @@ const App: React.FC = () => {
   const [initializing, setInitializing] = useState(true);
 
   const [showIntro, setShowIntro] = useState(true);
+  const [showLanding, setShowLanding] = useState(
+    window.location.pathname === '/landing-page' ||
+    (!AuthService.getCurrentUser() && (window.location.pathname === '/' || window.location.pathname === ''))
+  );
+
+  // Handle URL changes (simple routing)
+  useEffect(() => {
+    const handlePopState = () => {
+      setShowLanding(
+        window.location.pathname === '/landing-page' ||
+        (!AuthService.getCurrentUser() && (window.location.pathname === '/' || window.location.pathname === ''))
+      );
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Data State
   const [products, setProducts] = useState<Product[]>([]);
@@ -333,6 +350,13 @@ const App: React.FC = () => {
   };
 
   // Render Logic
+
+  if (showLanding) {
+    return <LandingPage onEnter={() => {
+      window.history.pushState({}, '', '/');
+      setShowLanding(false);
+    }} />;
+  }
 
   if (loading || (currentUser && initializing)) {
     if (showIntro) return <InitialLoader onComplete={() => setShowIntro(false)} />;

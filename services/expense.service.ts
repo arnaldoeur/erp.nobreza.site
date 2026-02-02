@@ -20,6 +20,7 @@ export const ExpenseService = {
         const { data, error } = await supabase
             .from('expenses')
             .select('*')
+            .eq('company_id', user.companyId)
             .order('date', { ascending: false });
 
         if (error) {
@@ -71,7 +72,14 @@ export const ExpenseService = {
     },
 
     delete: async (id: string): Promise<void> => {
-        const { error } = await supabase.from('expenses').delete().eq('id', id);
+        const user = AuthService.getCurrentUser();
+        if (!user) return;
+
+        const { error } = await supabase
+            .from('expenses')
+            .delete()
+            .eq('id', id)
+            .eq('company_id', user.companyId);
         if (error) throw error;
     }
 };

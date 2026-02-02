@@ -101,6 +101,10 @@ export const Billing: React.FC<BillingProps> = ({ products, companyInfo, documen
 
       setIsSaving(true);
       try {
+         const targetInfo = docType === 'INVOICE'
+            ? customers.find(c => c.name === targetName)
+            : suppliers.find(s => s.name === targetName);
+
          const newDoc: BillingDocument = {
             id: `${docType === 'INVOICE' ? 'FT' : 'PC'}-${Date.now().toString().slice(-6)}`,
             companyId: currentUser.companyId,
@@ -109,6 +113,12 @@ export const Billing: React.FC<BillingProps> = ({ products, companyInfo, documen
             items: [...items],
             total: items.reduce((sum, i) => sum + i.total, 0),
             targetName,
+            targetDetails: targetInfo ? {
+               nuit: targetInfo.nuit,
+               address: targetInfo.address || (targetInfo as any).location,
+               contact: targetInfo.contact,
+               email: targetInfo.email
+            } : undefined,
             status: 'SENT',
             performedBy: currentUser.name
          };
@@ -300,7 +310,9 @@ const DocumentPreview = ({ doc, companyInfo, onEdit, onDelete }: { doc: BillingD
                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">{companyInfo.slogan}</p>
             </div>
             <div className="text-right">
-               <h2 className="text-5xl font-black text-gray-100 uppercase tracking-tighter">Fatura</h2>
+               <h2 className="text-5xl font-black text-gray-100 uppercase tracking-tighter">
+                  {doc.type === 'INVOICE' ? 'Fatura' : doc.type === 'PURCHASE_ORDER' ? 'Pedido' : 'Documento'}
+               </h2>
                <div className="mt-4 space-y-1 text-[10px] uppercase font-bold text-gray-500">
                   <p>Data: <span className="text-emerald-950">{new Date(doc.timestamp).toLocaleDateString()}</span></p>
                   <p>Documento: <span className="text-emerald-950">#{doc.id}</span></p>
@@ -312,24 +324,29 @@ const DocumentPreview = ({ doc, companyInfo, onEdit, onDelete }: { doc: BillingD
          {/* Info Grid */}
          <div className="px-12 md:px-16 grid grid-cols-2 gap-12 mb-12">
             <div>
-               <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-2">De:</p>
-               <p className="font-bold text-sm text-gray-800">{companyInfo.name}</p>
-               <p className="text-xs text-gray-500 mt-1">{companyInfo.address}</p>
-               <p className="text-xs text-gray-500 mt-1 font-mono">NUIT: {companyInfo.nuit}</p>
-               <p className="text-xs text-gray-500">{companyInfo.email}</p>
+               <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 border-b border-gray-100 pb-2">De:</p>
+               <p className="font-black text-sm text-gray-800 uppercase tracking-tight">{companyInfo.name}</p>
+               <div className="text-[10px] text-gray-500 mt-2 space-y-1 font-bold uppercase tracking-tight">
+                  <p>{companyInfo.address}</p>
+                  <p className="font-mono text-[11px]">NUIT: {companyInfo.nuit}</p>
+                  <p>EMAIL: {companyInfo.email}</p>
+                  {companyInfo.phone && <p>TEL: {companyInfo.phone}</p>}
+               </div>
             </div>
             <div>
-               <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-2">Para:</p>
-               <p className="font-bold text-sm text-emerald-950 uppercase">{doc.targetName}</p>
+               <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 border-b border-gray-100 pb-2">Para:</p>
+               <p className="font-black text-sm text-emerald-950 uppercase tracking-tight">{doc.targetName}</p>
                {doc.targetDetails ? (
-                  <div className="text-xs text-gray-500 mt-1 space-y-0.5">
-                     {doc.targetDetails.nuit && <p>NUIT: {doc.targetDetails.nuit}</p>}
-                     {doc.targetDetails.address && <p>{doc.targetDetails.address}</p>}
-                     {doc.targetDetails.contact && <p>Tel: {doc.targetDetails.contact}</p>}
-                     {doc.targetDetails.email && <p>{doc.targetDetails.email}</p>}
+                  <div className="text-[10px] text-gray-500 mt-2 space-y-1 font-bold uppercase tracking-tight">
+                     <p className="font-mono text-[11px]">NUIT: {doc.targetDetails.nuit || '---'}</p>
+                     <p>{doc.targetDetails.address || '---'}</p>
+                     <p>TEL: {doc.targetDetails.contact || '---'}</p>
+                     <p>EMAIL: {doc.targetDetails.email || '---'}</p>
                   </div>
                ) : (
-                  <p className="text-xs text-gray-500 mt-1">Cliente / Fornecedor</p>
+                  <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-tight italic">
+                     {doc.type === 'INVOICE' ? 'Cliente Não Identificado' : 'Fornecedor Não Identificado'}
+                  </p>
                )}
             </div>
          </div>
@@ -377,7 +394,9 @@ const DocumentPreview = ({ doc, companyInfo, onEdit, onDelete }: { doc: BillingD
             <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[9px] uppercase font-bold text-gray-400">
                <p>Documento processado por computador.</p>
                <div className="flex gap-4">
-                  <span>{companyInfo.website || 'nobreza.co.mz'}</span>
+                  <a href={`https://${companyInfo.website || 'nobreza.site'}`} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 transition-colors">
+                     {companyInfo.website || 'nobreza.site'}
+                  </a>
                   <span>•</span>
                   <span>Gerado em {new Date().toLocaleDateString()}</span>
                </div>
