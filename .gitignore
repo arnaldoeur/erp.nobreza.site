@@ -55,3 +55,16 @@ Thumbs.db
 # Plataformas de deploy antigas
 # ---------------------------------------------------------------------------
 .vercel
+
+# ---------------------------------------------------------------------------
+# Ferramentas de IA locais
+# ---------------------------------------------------------------------------
+# Configuração de assistentes de código. É preferência de cada programador,
+# não faz parte da aplicação, e estava a trazer 2 MB de dados de terceiros
+# (incluindo .pyc compilados) para dentro do repositório.
+.agent/
+.claude/
+.cursor/
+.gemini/
+__pycache__/
+*.pyc
