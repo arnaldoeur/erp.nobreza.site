@@ -157,8 +157,20 @@ if (config.auth.jwtSecret && config.auth.jwtSecret === config.auth.jwtRefreshSec
 }
 
 if (errors.length > 0) {
-    console.error('\nConfiguração inválida — o servidor não vai arrancar:\n');
+    console.error('\nConfiguração inválida:\n');
     for (const error of errors) console.error(`  • ${error}`);
     console.error('\nConsulte .env.example para a lista completa de variáveis.\n');
-    process.exit(1);
 }
+
+/**
+ * Problemas de configuração encontrados. Vazio quando está tudo bem.
+ *
+ * Antes, este módulo terminava o processo aqui mesmo. O efeito era que uma
+ * variável em falta se manifestava como uma página 503 genérica do servidor
+ * de alojamento, indistinguível de qualquer outra avaria — e a explicação
+ * ficava só nos logs, que nem sempre estão à mão de quem está a instalar.
+ *
+ * A decisão de arrancar ou não passa para o ponto de entrada, que sabe
+ * responder a pedidos e consegue dizer o que falta.
+ */
+export const configErrors = errors;
