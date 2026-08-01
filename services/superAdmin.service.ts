@@ -1,50 +1,52 @@
-import { supabase } from './supabase';
-import { User, CompanyInfo, Sale, SystemLog } from '../types';
+import { api } from './api';
+
+/**
+ * Gestão da plataforma.
+ *
+ * Estas consultas liam as tabelas de empresas e utilizadores por inteiro a
+ * partir do browser, sem qualquer verificação de que quem as fazia tinha
+ * esse direito — a distinção era feita por uma comparação de e-mail no
+ * frontend. Passam a exigir a marca de super administrador no token.
+ */
 
 export const SuperAdminService = {
-    // Global Metrics
-    getGlobalStats: async () => {
-        const { count: companiesCount } = await supabase.from('companies').select('*', { count: 'exact', head: true });
-        const { count: usersCount } = await supabase.from('users').select('*', { count: 'exact', head: true });
-
-        // For revenue, we might need a sum. Large dataset warning in production.
-        const { data: sales } = await supabase.from('sales').select('total');
-        const totalRevenue = sales?.reduce((acc, curr) => acc + (curr.total || 0), 0) || 0;
-
-        return { companiesCount: companiesCount || 0, usersCount: usersCount || 0, totalRevenue };
+    getGlobalStats: async (): Promise<{ companiesCount: number; usersCount: number; totalRevenue: number }> => {
+        return api.get('/platform/stats');
     },
 
-    // Companies Management
     getAllCompanies: async () => {
-        const { data, error } = await supabase.from('companies').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
-        return data as CompanyInfo[];
+        return api.get<Array<{
+            id: number; name: string; nuit: string; email: string;
+            contact: string; active: boolean; userCount: number; createdAt: string;
+        }>>('/platform/companies');
     },
 
-    createCompany: async (company: Partial<CompanyInfo>) => {
-        const { data, error } = await supabase.from('companies').insert(company).select().single();
-        if (error) throw error;
-        return data;
+    setCompanyActive: async (id: number, active: boolean): Promise<void> => {
+        await api.patch(`/platform/companies/${id}`, { active });
     },
 
-    deleteCompany: async (id: string) => {
-        const { error } = await supabase.from('companies').delete().eq('id', id);
-        if (error) throw error;
+    createCompany: async (company: { name: string; adminName: string; adminEmail: string; nuit?: string; email?: string; contact?: string }) => {
+        return api.post<{ id: number; name: string }>('/platform/companies', company);
     },
 
-    // Users Management
+    /**
+     * Remove uma empresa e todos os seus dados.
+     *
+     * Exige o nome exato como confirmação, porque a operação é irreversível
+     * e as chaves estrangeiras removem em cascata tudo o que lhe pertence.
+     */
+    deleteCompany: async (id: number, confirmName: string): Promise<void> => {
+        await api.post(`/platform/companies/${id}/delete`, { confirmName });
+    },
+
+    deleteUser: async (id: string): Promise<void> => {
+        await api.delete(`/platform/users/${id}`);
+    },
+
     getAllUsers: async () => {
-        // Join with companies to show where they belong
-        const { data, error } = await supabase.from('users').select('*, companies(name)').order('created_at', { ascending: false });
-        if (error) throw error;
-        return data;
+        return api.get<Array<{
+            id: string; name: string; email: string; role: string;
+            active: boolean; lastLoginAt?: string; company: { id: number; name: string };
+        }>>('/platform/users');
     },
-
-    deleteUser: async (id: string) => {
-        const { error } = await supabase.from('users').delete().eq('id', id);
-        if (error) throw error;
-    },
-
-    // Super Admins (Mocked logic for now, or based on specific table if requested later)
-    // Currently we rely on strict email check in frontend/RLS.
 };

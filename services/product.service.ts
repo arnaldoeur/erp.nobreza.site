@@ -1,225 +1,95 @@
-
 import { Product } from '../types';
-import { supabase } from './supabase';
-import { AuthService } from './auth.service';
+import { api } from './api';
+
+/**
+ * Catálogo de produtos.
+ *
+ * `updateStock` foi removido. Existia para abater existências a partir do
+ * browser, uma leitura seguida de escrita por cada artigo, sem transação e
+ * sem verificação — duas vendas simultâneas do mesmo produto perdiam um dos
+ * abates. O stock passa a ser abatido pelo servidor, dentro da transação da
+ * venda.
+ */
+
+function toProduct(raw: any): Product {
+    return {
+        ...raw,
+        expiryDate: raw.expiryDate ? new Date(raw.expiryDate) : undefined,
+    } as Product;
+}
+
+function toPayload(product: Partial<Product>) {
+    return {
+        name: product.name,
+        category: product.category,
+        code: product.code,
+        purchasePrice: product.purchasePrice,
+        salePrice: product.salePrice,
+        quantity: product.quantity,
+        minStock: product.minStock,
+        unit: product.unit,
+        batch: product.batch,
+        expiryDate: product.expiryDate,
+        supplierId: product.supplierId || null,
+    };
+}
 
 export const ProductService = {
     getAll: async (): Promise<Product[]> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) return [];
-
-        const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .eq('company_id', user.companyId);
-
-        if (error) {
-            console.error('Error fetching products:', error);
-            return [];
-        }
-        return (data || []).map((p: any) => ({
-            id: p.id,
-            companyId: p.company_id,
-            name: p.name,
-            category: p.category,
-            code: p.code,
-            purchasePrice: p.purchase_price,
-            salePrice: p.sale_price,
-            quantity: p.quantity,
-            minStock: p.min_stock,
-            supplierId: p.supplier_id,
-            batch: p.batch,
-            expiryDate: p.expiry_date ? new Date(p.expiry_date) : undefined
-        }));
+        const products = await api.get<any[]>('/products');
+        return products.map(toProduct);
     },
 
-    addBatch: async (products: Partial<Product>[]): Promise<void> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) return;
-
-        const dbProducts = products.map(p => ({
-            company_id: user.companyId,
-            name: p.name,
-            category: p.category || 'Geral',
-            code: p.code || `IMP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-            purchase_price: p.purchasePrice || 0,
-            sale_price: p.salePrice || 0,
-            quantity: p.quantity || 0,
-            min_stock: p.minStock || 5,
-            supplier_id: p.supplierId,
-            batch: p.batch,
-            expiry_date: p.expiryDate
-        }));
-
-        const { error } = await supabase.from('products').insert(dbProducts);
-
-        if (error) {
-            console.error('Error batch adding products:', error);
-            throw error;
-        }
+    add: async (product: Product): Promise<Product> => {
+        return toProduct(await api.post<any>('/products', toPayload(product)));
     },
 
-    add: async (product: Product): Promise<Product | null> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) return null;
-
-        const newProduct = {
-            company_id: user.companyId,
-            name: product.name,
-            category: product.category,
-            code: product.code,
-            purchase_price: product.purchasePrice,
-            sale_price: product.salePrice,
-            quantity: product.quantity,
-            min_stock: product.minStock,
-            supplier_id: product.supplierId || null,
-            batch: product.batch,
-            expiry_date: product.expiryDate
-        };
-
-        const { data, error } = await supabase.from('products').insert(newProduct).select().single();
-        if (error) {
-            console.error('Error adding product:', error);
-            throw error;
-        }
-        return {
-            id: data.id,
-            companyId: data.company_id,
-            name: data.name,
-            category: data.category,
-            code: data.code,
-            purchasePrice: data.purchase_price,
-            salePrice: data.sale_price,
-            quantity: data.quantity,
-            minStock: data.min_stock,
-            supplierId: data.supplier_id,
-            batch: data.batch,
-            expiryDate: data.expiry_date ? new Date(data.expiry_date) : undefined
-        };
+    update: async (product: Product): Promise<Product> => {
+        return toProduct(await api.put<any>(`/products/${product.id}`, toPayload(product)));
     },
 
-    update: async (product: Product): Promise<Product | null> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) return null;
-
-        const dbProduct = {
-            name: product.name,
-            category: product.category,
-            code: product.code,
-            purchase_price: product.purchasePrice,
-            sale_price: product.salePrice,
-            quantity: product.quantity,
-            min_stock: product.minStock,
-            supplier_id: product.supplierId || null,
-            batch: product.batch,
-            expiry_date: product.expiryDate
-        };
-
-        const { data, error } = await supabase
-            .from('products')
-            .update(dbProduct)
-            .eq('id', product.id)
-            .eq('company_id', user.companyId)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error updating product:', error);
-            // If invalid UUID text representation (e.g. updating a mock ID against real DB), return null to trigger add
-            if (error.code === '22P02') return null;
-            throw error;
-        }
-
-        if (!data) return null;
-
-        return {
-            id: data.id,
-            companyId: data.company_id,
-            name: data.name,
-            category: data.category,
-            code: data.code,
-            purchasePrice: data.purchase_price,
-            salePrice: data.sale_price,
-            quantity: data.quantity,
-            minStock: data.min_stock,
-            supplierId: data.supplier_id,
-            batch: data.batch,
-            expiryDate: data.expiry_date ? new Date(data.expiry_date) : undefined
-        };
-    },
-
-    updateStock: async (items: { productId: string; quantityToRemove: number }[]): Promise<void> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) return;
-
-        // ideally use RPC
-        for (const item of items) {
-            const { data: product } = await supabase
-                .from('products')
-                .select('quantity')
-                .eq('id', item.productId)
-                .eq('company_id', user.companyId)
-                .single();
-
-            if (product) {
-                const newQty = Math.max(0, product.quantity - item.quantityToRemove);
-                await supabase
-                    .from('products')
-                    .update({ quantity: newQty })
-                    .eq('id', item.productId)
-                    .eq('company_id', user.companyId);
-            }
-        }
+    addBatch: async (products: Partial<Product>[]): Promise<number> => {
+        const { created } = await api.post<{ created: number }>('/products/batch', {
+            products: products.map(toPayload),
+        });
+        return created;
     },
 
     delete: async (id: string): Promise<void> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) return;
-
-        const { error } = await supabase
-            .from('products')
-            .delete()
-            .eq('id', id)
-            .eq('company_id', user.companyId);
-
-        if (error) {
-            console.error('Error deleting product:', error);
-            throw error;
-        }
+        await api.delete(`/products/${id}`);
     },
 
-    bulkUpdate: async (ids: string[], field: string, value: any): Promise<void> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) return;
-
-        const dbField = field.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-
-        const { error } = await supabase
-            .from('products')
-            .update({ [dbField]: value })
-            .in('id', ids)
-            .eq('company_id', user.companyId);
-
-        if (error) {
-            console.error('Error in bulk update:', error);
-            throw error;
-        }
+    bulkUpdate: async (ids: string[], field: string, value: any): Promise<number> => {
+        const { updated } = await api.patch<{ updated: number }>('/products/bulk', { ids, field, value });
+        return updated;
     },
 
-    bulkDelete: async (ids: string[]): Promise<void> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) return;
+    bulkDelete: async (ids: string[]): Promise<number> => {
+        const { deleted } = await api.post<{ deleted: number }>('/products/bulk-delete', { ids });
+        return deleted;
+    },
 
-        const { error } = await supabase
-            .from('products')
-            .delete()
-            .in('id', ids)
-            .eq('company_id', user.companyId);
+    /**
+     * Ajusta todos os preços de venda por uma percentagem.
+     *
+     * Substitui a chamada direta ao RPC `adjust_all_prices` a partir do
+     * browser, que reescrevia o catálogo inteiro sem limite nem registo.
+     */
+    adjustAllPrices: async (percentage: number): Promise<number> => {
+        const { updated } = await api.post<{ updated: number }>('/products/adjust-prices', { percentage });
+        return updated;
+    },
 
-        if (error) {
-            console.error('Error in bulk delete:', error);
-            throw error;
-        }
-    }
+    /** Produtos em rutura ou abaixo do mínimo definido. */
+    getLowStock: async (): Promise<Array<{ id: string; name: string; quantity: number; minStock: number; unit: string }>> => {
+        return api.get('/stock/alerts');
+    },
+
+    /** Histórico de entradas e saídas de um produto. Não existia antes. */
+    getMovements: async (productId: string) => {
+        return api.get<Array<{
+            id: string; quantityDelta: number; quantityAfter: number;
+            reason: string; notes?: string; performedBy: string; createdAt: string;
+        }>>(`/products/${productId}/movements`);
+    },
 };
-

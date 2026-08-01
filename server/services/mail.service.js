@@ -138,3 +138,33 @@ export async function sendAccountActivationEmail(to, name, activationUrl, expire
         `,
     });
 }
+
+/**
+ * Verifica se é possível autenticar num servidor SMTP.
+ *
+ * Usa uma ligação própria e descartável, para não perturbar o transporte
+ * partilhado que envia as mensagens do sistema.
+ */
+export async function verifySmtpAccount({ host, port, secure, user, password }) {
+    if (!host || !user || !password) {
+        return { ok: false, message: 'Servidor, utilizador e palavra-passe são obrigatórios.' };
+    }
+
+    const probe = nodemailer.createTransport({
+        host,
+        port: port || 465,
+        secure: secure !== false,
+        auth: { user, pass: password },
+        connectionTimeout: 10000,
+        greetingTimeout: 8000,
+    });
+
+    try {
+        await probe.verify();
+        return { ok: true, message: 'Ligação estabelecida com sucesso.' };
+    } catch (error) {
+        return { ok: false, message: `Falha na ligação: ${error.message}` };
+    } finally {
+        probe.close();
+    }
+}

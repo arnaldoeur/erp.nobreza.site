@@ -9,6 +9,7 @@ interface OnboardingProps {
 export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState<CompanyInfo>({
+        id: '',
         name: '',
         slogan: '',
         nuit: '',

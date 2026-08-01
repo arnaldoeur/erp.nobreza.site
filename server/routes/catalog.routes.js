@@ -226,6 +226,34 @@ catalogRouter.patch('/products/bulk', asyncHandler(async (req, res) => {
     res.json({ updated: result.affectedRows });
 }));
 
+/**
+ * Ajusta todos os preços de venda por uma percentagem.
+ *
+ * Substitui o RPC `adjust_all_prices`. A percentagem é limitada a um
+ * intervalo razoável e a operação fica registada — antes era uma chamada
+ * direta a uma função da base de dados a partir do browser, sem limite nem
+ * rasto, capaz de reescrever o catálogo inteiro num pedido.
+ */
+catalogRouter.post('/products/adjust-prices', requireRole('ADMIN', 'ADMINISTRATIVE'), asyncHandler(async (req, res) => {
+    const percentage = requireInt(req.body?.percentage, 'percentagem', { min: -90, max: 500 });
+
+    const result = await query(
+        `UPDATE products
+            SET sale_price = ROUND(sale_price * (1 + ? / 100), 2)
+          WHERE company_id = ?`,
+        [percentage, req.auth.companyId]
+    );
+
+    await logAction({
+        companyId: req.auth.companyId, userId: req.auth.userId,
+        action: 'PRICE_ADJUSTMENT',
+        details: `Preços de venda ajustados em ${percentage}% (${result.affectedRows} produtos)`,
+        ip: req.ip,
+    });
+
+    res.json({ updated: result.affectedRows, percentage });
+}));
+
 catalogRouter.delete('/products/:id', requireRole('ADMIN', 'ADMINISTRATIVE'), asyncHandler(async (req, res) => {
     const id = requireUuid(req.params.id, 'produto');
     const result = await query('DELETE FROM products WHERE id = ? AND company_id = ?', [id, req.auth.companyId]);

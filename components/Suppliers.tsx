@@ -336,12 +336,13 @@ export const Suppliers: React.FC<SuppliersProps> = ({ suppliers, setSuppliers, p
                     const f = e.target.files?.[0];
                     if (f) {
                       const r = new FileReader();
+                      // Se ainda não há fornecedor em edição (formulário novo),
+                      // criamos um registo vazio para poder mostrar a
+                      // pré-visualização do logótipo. Faltava-lhe `companyId`,
+                      // que o tipo exige.
                       r.onloadend = () => setEditingSupplier(prev => prev ? { ...prev, logo: r.result as string } : {
-                        // Create temp object if new (needs reasonable defaults or existing state logic to handle 'new' vs 'edit' properly)
-                        // Actually if editingSupplier is null (New), we should probably initialize it or handle it.
-                        // But wait, if new, editingSupplier is null. 
-                        // I need to setEditingSupplier to a temp object to show the preview.
-                        id: '', name: '', nuit: '', location: '', contact: '', email: '', conditions: '', isPreferred: false, logo: r.result as string
+                        id: '', companyId: '', name: '', nuit: '', location: '', contact: '',
+                        email: '', conditions: '', isPreferred: false, logo: r.result as string
                       });
                       r.readAsDataURL(f);
                     }

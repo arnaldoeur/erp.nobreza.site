@@ -41,7 +41,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ user }) 
     }, [unreadCount]);
 
     const loadNotifications = async () => {
-        const data = await NotificationService.getNotifications(user.id);
+        const data = await NotificationService.getNotifications();
         setNotifications(data);
     };
 

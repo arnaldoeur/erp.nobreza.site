@@ -3,7 +3,6 @@ import { MessageSquare, Send, Smile, Paperclip, MoreVertical, Search, AtSign, Pl
 import { createPortal } from 'react-dom';
 import { CollabService, CollabMessage } from '../services/collab.service';
 import { User } from '../types';
-import { supabase } from '../services/supabase';
 import { NotificationService } from '../services/notification.service';
 
 interface SocialChatProps {
@@ -37,6 +36,11 @@ export const SocialChat: React.FC<SocialChatProps> = ({ currentUser, team }) => 
 
     const [isLoading, setIsLoading] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Espelho de `messages` para a sondagem poder ler a última mensagem sem
+    // se tornar dependente do estado e reiniciar o intervalo a cada receção.
+    const messagesRef = useRef<CollabMessage[]>([]);
+    useEffect(() => { messagesRef.current = messages; }, [messages]);
 
     // Initial Load
     useEffect(() => {
@@ -78,19 +82,43 @@ export const SocialChat: React.FC<SocialChatProps> = ({ currentUser, team }) => 
         };
         loadData();
 
-        // Real-time subscription
-        const channel = supabase.channel(`group-${activeGroup.id}`)
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'erp_chat_messages',
-                filter: `grupo_id=eq.${activeGroup.id}`
-            }, (payload) => {
-                setMessages(prev => [...prev, payload.new as CollabMessage]);
-            })
-            .subscribe();
+        // Mensagens novas por sondagem.
+        //
+        // Substitui a subscrição em tempo real do Supabase, que não tem
+        // equivalente em MySQL. A cada ciclo perguntamos apenas o que chegou
+        // depois da última mensagem que já temos, pelo que a resposta é
+        // normalmente vazia e o custo é o de uma leitura por índice.
+        let cancelled = false;
 
-        return () => { channel.unsubscribe(); };
+        const poll = async () => {
+            if (cancelled || document.hidden) return;
+            try {
+                const latest = messagesRef.current[messagesRef.current.length - 1];
+                const incoming = await CollabService.getMessages(activeGroup.id, latest?.created_at);
+                if (cancelled || incoming.length === 0) return;
+
+                setMessages(prev => {
+                    // O envio otimista pode já ter colocado a mensagem na
+                    // lista; filtramos por identificador para não duplicar.
+                    const known = new Set(prev.map(m => m.id));
+                    const fresh = incoming.filter(m => !known.has(m.id));
+                    return fresh.length > 0 ? [...prev, ...fresh] : prev;
+                });
+            } catch {
+                // Falha de rede momentânea: o ciclo seguinte tenta de novo.
+            }
+        };
+
+        const interval = setInterval(poll, 4000);
+        // Voltar ao separador deve mostrar o que chegou entretanto, sem
+        // esperar pelo próximo ciclo.
+        document.addEventListener('visibilitychange', poll);
+
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+            document.removeEventListener('visibilitychange', poll);
+        };
     }, [activeGroup]);
 
     useEffect(() => {
@@ -113,7 +141,7 @@ export const SocialChat: React.FC<SocialChatProps> = ({ currentUser, team }) => 
             .map(u => u.id);
 
         const msg: CollabMessage = {
-            company_id: currentUser.companyId,
+            company_id: String(currentUser.companyId),
             user_id: currentUser.id,
             user_name: currentUser.name,
             group_id: activeGroup.id,
@@ -151,9 +179,11 @@ export const SocialChat: React.FC<SocialChatProps> = ({ currentUser, team }) => 
                     // For mentions, we might want to ensure they get an email/system alert too
                     if (isMentioned) {
                         NotificationService.invokeNativeEmail({
-                            to: [member.user.email], // assuming user object has email joined
+                            to: [member.user.email],
                             subject: `Nova menção de ${currentUser.name} no Nobreza ERP`,
-                            html: `<p>Olá,</p><p>Você foi mencionado por <b>${currentUser.name}</b> no grupo <b>${activeGroup.name}</b>:</p><blockquote>${newMessage}</blockquote><p>Acesse a plataforma para responder.</p>`
+                            data: {
+                                details: `Foi mencionado por ${currentUser.name} no grupo "${activeGroup.name}": ${newMessage}`
+                            }
                         });
                     }
                 });
@@ -167,16 +197,9 @@ export const SocialChat: React.FC<SocialChatProps> = ({ currentUser, team }) => 
     const handleCreateGroup = async () => {
         if (!newGroupName.trim()) return;
         try {
-            const { data, error } = await supabase.from('erp_chat_groups').insert([{
-                name: newGroupName,
-                company_id: currentUser.companyId,
-                created_by: currentUser.id
-            }]).select().single();
-
-            if (error) throw error;
-
-            // Auto add creator
-            await CollabService.addGroupMember(data.id, currentUser.id, 'ADMIN');
+            // Quem cria o grupo é adicionado como administrador pelo servidor,
+            // na mesma transação — não é preciso um segundo pedido.
+            const data = await CollabService.createGroup(newGroupName);
 
             setGroups([...groups, data]);
             setActiveGroup(data);
@@ -207,9 +230,9 @@ export const SocialChat: React.FC<SocialChatProps> = ({ currentUser, team }) => 
         if (!e.target.files?.length || !activeGroup) return;
         try {
             const file = e.target.files[0];
-            const url = await CollabService.uploadFile(file, 'documents');
+            const uploaded = await CollabService.uploadFile(file, file.name, 'Imagens de grupo');
 
-            const updated = await CollabService.updateGroup(activeGroup.id, { image_url: url });
+            const updated = await CollabService.updateGroup(activeGroup.id, { image_url: uploaded.file_url });
             setGroups(groups.map(g => g.id === updated.id ? updated : g));
             setActiveGroup(updated);
             alert("Imagem do grupo atualizada!");
@@ -233,7 +256,7 @@ export const SocialChat: React.FC<SocialChatProps> = ({ currentUser, team }) => 
             const url = await CollabService.uploadFile(filePreview.file, 'documents');
 
             const msg: CollabMessage = {
-                company_id: currentUser.companyId,
+                company_id: String(currentUser.companyId),
                 user_id: currentUser.id,
                 user_name: currentUser.name,
                 group_id: activeGroup.id,
@@ -409,7 +432,7 @@ export const SocialChat: React.FC<SocialChatProps> = ({ currentUser, team }) => 
 
                             <div className="flex items-center gap-1 md:gap-2">
                                 <button onClick={() => setShowGroupSettings(!showGroupSettings)} className={`p-2 rounded-lg transition-colors ${showGroupSettings ? 'bg-emerald-50 text-emerald-700' : 'text-slate-400 hover:bg-slate-50'}`}>
-                                    <Info size={18} md:size={20} />
+                                    <Info size={18} />
                                 </button>
                             </div>
                         </div>

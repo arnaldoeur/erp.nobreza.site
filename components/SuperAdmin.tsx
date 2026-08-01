@@ -22,10 +22,22 @@ interface SuperAdminProps {
     onLogout: () => void;
 }
 
+/** Forma exata devolvida por `/platform/companies`. */
+interface PlatformCompany {
+    id: number;
+    name: string;
+    nuit: string;
+    email: string;
+    contact: string;
+    active: boolean;
+    userCount: number;
+    createdAt: string;
+}
+
 export const SuperAdmin: React.FC<SuperAdminProps> = ({ currentUser, onLogout }) => {
     const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'COMPANIES' | 'USERS'>('OVERVIEW');
     const [stats, setStats] = useState({ companiesCount: 0, usersCount: 0, totalRevenue: 0 });
-    const [companies, setCompanies] = useState<CompanyInfo[]>([]);
+    const [companies, setCompanies] = useState<PlatformCompany[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshKey, setRefreshKey] = useState(0);
@@ -57,13 +69,16 @@ export const SuperAdmin: React.FC<SuperAdminProps> = ({ currentUser, onLogout })
         const name = (form.elements.namedItem('name') as HTMLInputElement).value;
         if (!name) return;
 
+        // A empresa nasce com um administrador. Sem ele, ninguém conseguiria
+        // entrar nela — e era isso que o registo anónimo antigo resolvia mal.
+        const adminName = prompt('Nome do administrador desta empresa:');
+        if (!adminName) return;
+        const adminEmail = prompt('E-mail do administrador (receberá o convite):');
+        if (!adminEmail) return;
+
         if (confirm(`Criar nova empresa: ${name}?`)) {
             try {
-                await SuperAdminService.createCompany({
-                    name,
-                    active: true,
-                    themeColor: '#10b981'
-                });
+                await SuperAdminService.createCompany({ name, adminName, adminEmail });
                 setRefreshKey(prev => prev + 1);
                 form.reset();
             } catch (e) {
@@ -77,7 +92,7 @@ export const SuperAdmin: React.FC<SuperAdminProps> = ({ currentUser, onLogout })
             const confirmName = prompt(`Digite "${name}" para confirmar a exclusão:`);
             if (confirmName === name) {
                 try {
-                    await SuperAdminService.deleteCompany(id);
+                    await SuperAdminService.deleteCompany(Number(id), confirmName);
                     setRefreshKey(prev => prev + 1);
                 } catch (e) {
                     alert("Erro ao apagar empresa.");
@@ -175,7 +190,7 @@ export const SuperAdmin: React.FC<SuperAdminProps> = ({ currentUser, onLogout })
                                             </td>
                                             <td className="p-4 text-sm font-medium text-slate-600">
                                                 <div>{c.email || '-'}</div>
-                                                <div className="text-xs text-slate-400">{c.phone || '-'}</div>
+                                                <div className="text-xs text-slate-400">{c.contact || '-'}</div>
                                             </td>
                                             <td className="p-4">
                                                 <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${c.active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
@@ -183,7 +198,7 @@ export const SuperAdmin: React.FC<SuperAdminProps> = ({ currentUser, onLogout })
                                                 </span>
                                             </td>
                                             <td className="p-4 text-right">
-                                                <button onClick={() => handleDeleteCompany(c.id, c.name)} className="p-2 text-red-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Apagar Empresa">
+                                                <button onClick={() => handleDeleteCompany(String(c.id), c.name)} className="p-2 text-red-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Apagar Empresa">
                                                     <Trash2 size={18} />
                                                 </button>
                                             </td>

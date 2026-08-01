@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { AuthService } from '../services/auth.service';
-import { supabase } from '../services/supabase';
 import { User } from '../types';
 import { Lock, Mail, Loader2, AlertCircle, ArrowRight, ShieldCheck, UserPlus, HelpCircle, ArrowLeft, Building2, Phone, MapPin, FileText, User as UserIcon, Globe } from 'lucide-react';
 import { Privacy } from './Privacy';
@@ -79,28 +78,18 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         setRegisterStep(2);
     };
 
+    /**
+     * O registo aberto deixou de existir.
+     *
+     * Qualquer visitante podia criar uma empresa e uma conta de administrador
+     * a partir daqui — a política da base de dados permitia inserções
+     * anónimas na tabela de empresas. As contas passam a ser criadas por um
+     * administrador, na gestão de equipa, e a pessoa define a palavra-passe
+     * através do convite que recebe por e-mail.
+     */
     const handleRegisterSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
-        setError(null);
-        try {
-            if (!companyName) throw new Error("Nome da Farmácia é obrigatório.");
-
-            const userData = { name: regName, email: regEmail };
-            const companyData = {
-                name: companyName,
-                nuit: companyNuit,
-                phone: companyPhone,
-                address: companyAddress
-            };
-
-            const user = await AuthService.register(userData, regPassword, companyData);
-            onLoginSuccess(user);
-        } catch (err: any) {
-            setError(err.message || 'Erro ao criar conta.');
-        } finally {
-            setLoading(false);
-        }
+        setError('A criação de contas é feita pelo administrador da farmácia. Peça-lhe que o adicione à equipa — receberá um convite por e-mail para definir a sua palavra-passe.');
     };
 
     const handleRecovery = async (e: React.FormEvent) => {
@@ -108,8 +97,8 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         setLoading(true);
         setError(null);
         try {
-            await AuthService.resetPassword(email);
-            setSuccess(`Email de recuperação enviado para ${email}! Verifique a sua caixa de entrada.`);
+            const message = await AuthService.resetPassword(email);
+            setSuccess(message);
         } catch (err: any) {
             setError(err.message || 'Erro ao enviar email de recuperação.');
         } finally {
@@ -117,16 +106,26 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         }
     };
 
+    /**
+     * Primeiro acesso: pede o envio do link de ativação.
+     *
+     * A versão anterior deixava definir a palavra-passe aqui mesmo, sabendo
+     * apenas o endereço de e-mail — e depois reclamava o perfil existente
+     * através de uma função que ligava a conta ao perfil com esse e-mail.
+     * Bastava conhecer o e-mail de um colega para lhe tomar a conta.
+     *
+     * Agora a palavra-passe só pode ser definida através do link enviado
+     * para a caixa de correio, que prova o controlo do endereço.
+     */
     const handleActivate = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
         try {
-            await AuthService.activateAccount(email, password, activateName);
-            setSuccess('Conta ativada com sucesso! Agora pode fazer o seu primeiro acesso.');
-            setView('LOGIN');
+            const message = await AuthService.resetPassword(email);
+            setSuccess(message);
         } catch (err: any) {
-            setError(err.message || 'Erro ao ativar conta.');
+            setError(err.message || 'Erro ao enviar o link de ativação.');
         } finally {
             setLoading(false);
         }
@@ -345,15 +344,6 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                         {view === 'ACTIVATE' && (
                             <form onSubmit={handleActivate} className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300 text-left">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-emerald-300 uppercase tracking-widest ml-1">Seu Nome Completo</label>
-                                    <div className="relative group">
-                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                                            <UserIcon size={18} className="text-white/20 group-focus-within:text-emerald-400" />
-                                        </div>
-                                        <input type="text" required value={activateName} onChange={(e) => setActivateName(e.target.value)} className="block w-full pl-11 pr-4 py-3.5 bg-black/20 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium" placeholder="Ex: Eugénio Daqui" />
-                                    </div>
-                                </div>
-                                <div className="space-y-1.5">
                                     <label className="text-[10px] font-black text-emerald-300 uppercase tracking-widest ml-1">E-mail Corporativo</label>
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
@@ -362,20 +352,11 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                                         <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="block w-full pl-11 pr-4 py-3.5 bg-black/20 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium" placeholder="nome@farmacianobreza.com" />
                                     </div>
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-emerald-300 uppercase tracking-widest ml-1">Escolher Palavra-passe</label>
-                                    <div className="relative group">
-                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors">
-                                            <Lock size={18} className="text-white/20 group-focus-within:text-emerald-400" />
-                                        </div>
-                                        <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="block w-full pl-11 pr-4 py-3.5 bg-black/20 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium" placeholder="••••••••" />
-                                    </div>
-                                </div>
                                 <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 mt-4 hover:scale-[1.02]">
-                                    {loading ? <Loader2 className="animate-spin" /> : <><span>Ativar Conta</span><ShieldCheck size={18} /></>}
+                                    {loading ? <Loader2 className="animate-spin" /> : <><span>Enviar link de acesso</span><ShieldCheck size={18} /></>}
                                 </button>
                                 <p className="text-[11px] text-white/40 text-center px-4 leading-relaxed">
-                                    Ao ativar, confirmamos que é um colaborador autorizado da Farmácia Nobreza.
+                                    Enviamos um link para o seu e-mail. É aí que define a sua palavra-passe.
                                 </p>
                             </form>
                         )}
@@ -402,12 +383,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                         )}
 
                         {/* Navigation Buttons */}
-                        <div className="grid grid-cols-3 gap-2 mt-6 border-t border-white/10 pt-6">
-                            {view !== 'REGISTER' && (
-                                <button type="button" onClick={() => { setView('REGISTER'); resetForm(); }} className="px-2 py-2 text-[10px] uppercase font-bold text-emerald-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors truncate">
-                                    Criar conta
-                                </button>
-                            )}
+                        <div className="grid grid-cols-2 gap-2 mt-6 border-t border-white/10 pt-6">
                             {view !== 'ACTIVATE' && (
                                 <button type="button" onClick={() => { setView('ACTIVATE'); resetForm(); }} className="px-2 py-2 text-[10px] uppercase font-bold text-emerald-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors truncate">
                                     Primeiro acesso

@@ -171,6 +171,26 @@ documentsRouter.get('/documents/:id/download', asyncHandler(async (req, res) => 
     createReadStream(absolutePath).pipe(res);
 }));
 
+/** Altera os metadados de um documento. O ficheiro em si é imutável. */
+documentsRouter.patch('/documents/:id', asyncHandler(async (req, res) => {
+    const id = requireUuid(req.params.id, 'documento');
+    const name = requireString(req.body?.name, 'nome', { max: 255 });
+    const category = optionalString(req.body?.category, 'categoria', { max: 128 });
+
+    const result = await query(
+        `UPDATE documents SET name = ?, category = COALESCE(?, category), last_modified_by = ?
+          WHERE id = ? AND company_id = ?`,
+        [name, category, req.auth.userId, id, req.auth.companyId]
+    );
+    if (result.affectedRows === 0) throw notFound('Documento não encontrado.');
+
+    const row = await queryOne(
+        'SELECT d.*, u.name AS user_name FROM documents d LEFT JOIN users u ON u.id = d.user_id WHERE d.id = ?',
+        [id]
+    );
+    res.json(mapDocument(row));
+}));
+
 documentsRouter.delete('/documents/:id', requireRole('ADMIN', 'ADMINISTRATIVE'), asyncHandler(async (req, res) => {
     const id = requireUuid(req.params.id, 'documento');
 

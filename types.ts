@@ -61,6 +61,7 @@ export interface CompanyInfo {
   language?: 'pt-MZ' | 'en-US';
   timezone?: string;
   emailDomain?: string;
+  active?: boolean;
 }
 
 export interface ResendDomain {
@@ -90,7 +91,9 @@ export interface Product {
 
 export interface SaleItem {
   productId: string;
-  companyId: string | number;
+  // Redundante: o servidor determina a empresa a partir da sessão. Mantido
+  // como opcional porque os dados já gravados o incluem.
+  companyId?: string | number;
   productName: string;
   quantity: number;
   unitPrice: number;
@@ -184,6 +187,7 @@ export interface Customer {
   type: 'NORMAL' | 'INSTITUTIONAL';
   totalSpent: number;
   createdAt: Date;
+  lastVisit?: Date;
 }
 export interface HealthPlan {
   id: string;

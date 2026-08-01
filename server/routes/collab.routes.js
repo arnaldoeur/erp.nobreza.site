@@ -241,7 +241,14 @@ collabRouter.put('/chat/groups/:id', asyncHandler(async (req, res) => {
          id, req.auth.companyId]
     );
 
-    res.json({ ok: true });
+    const row = await queryOne('SELECT * FROM erp_chat_groups WHERE id = ?', [id]);
+    res.json({
+        id: row.id,
+        company_id: String(row.company_id),
+        name: row.name,
+        description: row.description ?? undefined,
+        image_url: row.image_url ?? undefined,
+    });
 }));
 
 collabRouter.delete('/chat/groups/:id', requireRole('ADMIN'), asyncHandler(async (req, res) => {

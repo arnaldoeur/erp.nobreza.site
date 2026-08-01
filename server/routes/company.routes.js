@@ -285,6 +285,63 @@ companyRouter.put('/team/:id', requireAdmin, asyncHandler(async (req, res) => {
     res.json(mapTeamMember(row));
 }));
 
+/**
+ * Próximo número de funcionário disponível.
+ *
+ * Substitui o RPC `get_next_employee_id`. É indicativo: o número definitivo
+ * é atribuído dentro da transação de criação, para que dois formulários
+ * abertos em simultâneo não fiquem ambos com o mesmo.
+ */
+companyRouter.get('/team/next-employee-id', requireAdmin, asyncHandler(async (req, res) => {
+    const row = await queryOne(
+        'SELECT COALESCE(MAX(sequential_id), 0) + 1 AS next_id FROM users WHERE company_id = ?',
+        [req.auth.companyId]
+    );
+    res.json({ nextId: Number(row.next_id) });
+}));
+
+/**
+ * Exportação dos dados da empresa, para cópia de segurança local.
+ *
+ * A versão anterior fazia `select('*')` a seis tabelas a partir do browser,
+ * sem qualquer verificação de permissão. Aqui é uma operação de
+ * administrador, limitada à empresa da sessão, e sem colunas sensíveis:
+ * hashes de palavra-passe e credenciais de e-mail nunca saem do servidor.
+ */
+companyRouter.get('/company/backup', requireAdmin, asyncHandler(async (req, res) => {
+    const companyId = req.auth.companyId;
+
+    const [company, users, products, customers, suppliers, sales, saleItems, expenses] = await Promise.all([
+        queryOne('SELECT * FROM companies WHERE id = ?', [companyId]),
+        query(`SELECT id, name, email, role, employee_id, sequential_id, responsibility,
+                      contact, location, base_salary, base_hours, hire_date, active, created_at
+                 FROM users WHERE company_id = ?`, [companyId]),
+        query('SELECT * FROM products WHERE company_id = ?', [companyId]),
+        query('SELECT * FROM customers WHERE company_id = ?', [companyId]),
+        query('SELECT * FROM suppliers WHERE company_id = ?', [companyId]),
+        query('SELECT * FROM sales WHERE company_id = ?', [companyId]),
+        query('SELECT * FROM sale_items WHERE company_id = ?', [companyId]),
+        query('SELECT * FROM expenses WHERE company_id = ?', [companyId]),
+    ]);
+
+    await logAction({
+        companyId, userId: req.auth.userId,
+        action: 'DATA_EXPORT', details: 'Cópia de segurança dos dados exportada', ip: req.ip,
+    });
+
+    res.json({
+        exportedAt: new Date().toISOString(),
+        company,
+        users,
+        products,
+        customers,
+        suppliers,
+        sales,
+        sale_items: saleItems,
+        expenses,
+    });
+}));
+
 /** Reenvia o convite de ativação a quem ainda não definiu palavra-passe. */
 companyRouter.post('/team/:id/invite', requireAdmin, asyncHandler(async (req, res) => {
     const id = requireUuid(req.params.id, 'utilizador');

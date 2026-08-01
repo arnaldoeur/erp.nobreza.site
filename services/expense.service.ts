@@ -1,5 +1,4 @@
-import { supabase } from './supabase';
-import { AuthService } from './auth.service';
+import { api } from './api';
 
 export interface Expense {
     id: string;
@@ -14,72 +13,18 @@ export interface Expense {
 
 export const ExpenseService = {
     getAll: async (): Promise<Expense[]> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) return [];
-
-        const { data, error } = await supabase
-            .from('expenses')
-            .select('*')
-            .eq('company_id', user.companyId)
-            .order('date', { ascending: false });
-
-        if (error) {
-            console.error('Error fetching expenses:', error);
-            return [];
-        }
-
-        return data.map((e: any) => ({
-            id: e.id,
-            companyId: e.company_id,
-            userId: e.user_id,
-            type: e.type,
-            amount: e.amount,
-            description: e.description,
-            date: e.date,
-            createdAt: e.created_at
-        }));
+        return api.get<Expense[]>('/expenses');
     },
 
     add: async (expense: Partial<Expense>): Promise<Expense> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) throw new Error("Unauthorized");
+        return api.post<Expense>('/expenses', expense);
+    },
 
-        const payload = {
-            company_id: user.companyId,
-            user_id: user.id,
-            type: expense.type,
-            amount: expense.amount,
-            description: expense.description,
-            date: expense.date || new Date().toISOString().split('T')[0]
-        };
-
-        const { data, error } = await supabase
-            .from('expenses')
-            .insert(payload)
-            .select()
-            .single();
-
-        if (error) throw error;
-        return {
-            id: data.id,
-            companyId: data.company_id,
-            userId: data.user_id,
-            type: data.type,
-            amount: data.amount,
-            description: data.description,
-            date: data.date
-        };
+    update: async (id: string, expense: Partial<Expense>): Promise<Expense> => {
+        return api.put<Expense>(`/expenses/${id}`, expense);
     },
 
     delete: async (id: string): Promise<void> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) return;
-
-        const { error } = await supabase
-            .from('expenses')
-            .delete()
-            .eq('id', id)
-            .eq('company_id', user.companyId);
-        if (error) throw error;
-    }
+        await api.delete(`/expenses/${id}`);
+    },
 };

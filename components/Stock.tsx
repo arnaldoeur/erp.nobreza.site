@@ -276,7 +276,7 @@ export const Stock: React.FC<StockProps> = ({ products, setProducts, suppliers, 
         const user = AuthService.getCurrentUser();
         if (user?.companyId) {
           try {
-            const plans = await HealthPlanService.getAll(String(user.companyId));
+            const plans = await HealthPlanService.getAll();
             setHealthPlans(plans);
           } catch (err) {
             console.error('Error fetching plans:', err);
@@ -1081,29 +1081,29 @@ const HealthPlanForm: React.FC<HealthPlanFormProps> = ({ plan, onClose, onSave, 
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-emerald-900/40 dark:text-emerald-400/50 uppercase tracking-[0.2em] px-1">Seguradora / Entidade</label>
-                <input required className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold border-2 border-transparent focus:bg-white dark:focus:bg-white/10 focus:border-emerald-500 outline-none shadow-sm transition-all text-emerald-950 dark:text-white" value={formData.provider} onChange={e => setFormData({ ...formData, provider: e.target.value })} placeholder="Ex: Moçambique Seguros" />
+                <input required className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold border-2 border-transparent focus:bg-white dark:focus:bg-white/10 focus:border-emerald-500 outline-none shadow-sm transition-all text-emerald-950 dark:text-white" value={formData.insurer} onChange={e => setFormData({ ...formData, insurer: e.target.value })} placeholder="Ex: Moçambique Seguros" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-emerald-900/40 dark:text-emerald-400/50 uppercase tracking-[0.2em] px-1">Cobertura (%)</label>
-                <input type="number" required min="1" max="100" className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold border-2 border-transparent focus:bg-white dark:focus:bg-white/10 focus:border-emerald-500 outline-none shadow-sm text-emerald-950 dark:text-white transition-all" value={formData.coveragePercent} onChange={e => setFormData({ ...formData, coveragePercent: parseInt(e.target.value) || 0 })} />
+                <input type="number" required min="1" max="100" className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold border-2 border-transparent focus:bg-white dark:focus:bg-white/10 focus:border-emerald-500 outline-none shadow-sm text-emerald-950 dark:text-white transition-all" value={formData.coveragePercentage} onChange={e => setFormData({ ...formData, coveragePercentage: parseInt(e.target.value) || 0 })} />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-emerald-900/40 dark:text-emerald-400/50 uppercase tracking-[0.2em] px-1">Contato</label>
-                <input className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold border-2 border-transparent focus:bg-white dark:focus:bg-white/10 focus:border-emerald-500 outline-none shadow-sm text-emerald-950 dark:text-white transition-all" value={formData.contactPhone || ''} onChange={e => setFormData({ ...formData, contactPhone: e.target.value })} placeholder="+258..." />
+                <input className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold border-2 border-transparent focus:bg-white dark:focus:bg-white/10 focus:border-emerald-500 outline-none shadow-sm text-emerald-950 dark:text-white transition-all" value={formData.contact || ''} onChange={e => setFormData({ ...formData, contact: e.target.value })} placeholder="+258..." />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-emerald-900/40 dark:text-emerald-400/50 uppercase tracking-[0.2em] px-1">E-mail de Contacto</label>
-                <input type="email" className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold border-2 border-transparent focus:bg-white dark:focus:bg-white/10 focus:border-emerald-500 outline-none shadow-sm text-emerald-950 dark:text-white transition-all" value={formData.contactEmail || ''} onChange={e => setFormData({ ...formData, contactEmail: e.target.value })} />
+                <input type="email" className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold border-2 border-transparent focus:bg-white dark:focus:bg-white/10 focus:border-emerald-500 outline-none shadow-sm text-emerald-950 dark:text-white transition-all" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-emerald-900/40 dark:text-emerald-400/50 uppercase tracking-[0.2em] px-1">Website Portal</label>
-                <input className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold border-2 border-transparent focus:bg-white dark:focus:bg-white/10 focus:border-emerald-500 outline-none shadow-sm text-emerald-950 dark:text-white transition-all" value={formData.portalUrl || ''} onChange={e => setFormData({ ...formData, portalUrl: e.target.value })} />
+                <input className="w-full p-4 bg-gray-50 dark:bg-white/5 rounded-2xl font-bold border-2 border-transparent focus:bg-white dark:focus:bg-white/10 focus:border-emerald-500 outline-none shadow-sm text-emerald-950 dark:text-white transition-all" value={formData.website || ''} onChange={e => setFormData({ ...formData, website: e.target.value })} />
               </div>
             </div>
 
@@ -1114,7 +1114,7 @@ const HealthPlanForm: React.FC<HealthPlanFormProps> = ({ plan, onClose, onSave, 
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-gray-500 dark:text-emerald-400/60 uppercase tracking-[0.2em] px-1">Detalhes Técnicos / Cobertura</label>
-                <textarea className="w-full p-4 bg-gray-50 dark:bg-black/40 border-2 border-transparent focus:border-emerald-500 rounded-2xl font-bold text-emerald-950 dark:text-white shadow-sm outline-none transition-all min-h-[100px]" value={formData.technicalDetails || ''} onChange={e => setFormData({ ...formData, technicalDetails: e.target.value })} />
+                <textarea className="w-full p-4 bg-gray-50 dark:bg-black/40 border-2 border-transparent focus:border-emerald-500 rounded-2xl font-bold text-emerald-950 dark:text-white shadow-sm outline-none transition-all min-h-[100px]" value={formData.coverageDetails || ''} onChange={e => setFormData({ ...formData, coverageDetails: e.target.value })} />
               </div>
             </div>
           </div>

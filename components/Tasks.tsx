@@ -34,7 +34,7 @@ export const Tasks: React.FC<TasksProps> = ({ currentUser, team }) => {
 
         const task: CollabTask = {
             ...editingTask,
-            company_id: currentUser.companyId,
+            company_id: String(currentUser.companyId),
             creator_id: currentUser.id,
             title: formData.get('title') as string,
             description: (formData.get('description') as string) || null,

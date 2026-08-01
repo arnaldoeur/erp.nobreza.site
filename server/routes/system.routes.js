@@ -3,11 +3,12 @@
  */
 
 import { Router } from 'express';
-import { asyncHandler, notFound } from '../utils/errors.js';
-import { query, queryOne } from '../db/pool.js';
+import { asyncHandler, badRequest, conflict, notFound } from '../utils/errors.js';
+import { query, queryOne, transaction } from '../db/pool.js';
 import { newId } from '../utils/ids.js';
 import { requireAuth, requireAdmin, requireSuperAdmin, requireRole } from '../middleware/auth.js';
 import { logAction } from '../services/log.service.js';
+import { sendActivationInvite } from '../services/auth.service.js';
 import {
     requireString, optionalString, requireUuid, optionalUuid,
     parseJson, toJson, toNumber, pagination,
@@ -228,6 +229,86 @@ systemRouter.patch('/platform/companies/:id', requireSuperAdmin, asyncHandler(as
     const result = await query('UPDATE companies SET active = ? WHERE id = ?', [active ? 1 : 0, id]);
     if (result.affectedRows === 0) throw notFound('Empresa não encontrada.');
 
+    res.json({ ok: true });
+}));
+
+/**
+ * Cria uma empresa e o seu primeiro administrador.
+ *
+ * Antes, a criação de empresas era feita por um INSERT anónimo a partir do
+ * ecrã de registo — a política da base de dados permitia-o explicitamente
+ * (`FOR INSERT TO anon WITH CHECK (true)`). Passa a ser uma operação da
+ * gestão da plataforma.
+ */
+systemRouter.post('/platform/companies', requireSuperAdmin, asyncHandler(async (req, res) => {
+    const name = requireString(req.body?.name, 'nome da empresa');
+    const adminName = requireString(req.body?.adminName, 'nome do administrador');
+    const adminEmail = requireString(req.body?.adminEmail, 'e-mail do administrador', { max: 255 }).toLowerCase();
+
+    const duplicate = await queryOne('SELECT id FROM users WHERE email = ?', [adminEmail]);
+    if (duplicate) throw conflict('Já existe uma conta com este endereço de e-mail.');
+
+    const result = await transaction(async (connection) => {
+        const [inserted] = await connection.execute(
+            'INSERT INTO companies (name, nuit, email, contact, active) VALUES (?,?,?,?,1)',
+            [name,
+             optionalString(req.body?.nuit, 'NUIT', { max: 32 }),
+             optionalString(req.body?.email, 'e-mail da empresa', { max: 255 }),
+             optionalString(req.body?.contact, 'contacto', { max: 64 })]
+        );
+        const companyId = inserted.insertId;
+        const userId = newId();
+
+        // Sem palavra-passe: a pessoa define-a pelo convite que recebe.
+        await connection.execute(
+            `INSERT INTO users (id, company_id, name, email, role, sequential_id, active)
+             VALUES (?,?,?,?,'ADMIN',1,1)`,
+            [userId, companyId, adminName, adminEmail]
+        );
+
+        await connection.execute(
+            `INSERT INTO customers (id, company_id, name, address, type)
+             VALUES (?, ?, 'Venda Directa', 'Balcão', 'NORMAL')`,
+            [newId(), companyId]
+        );
+
+        return { companyId, userId };
+    });
+
+    await sendActivationInvite(result.userId);
+    res.status(201).json({ id: Number(result.companyId), name });
+}));
+
+/**
+ * Remove uma empresa e tudo o que lhe pertence.
+ *
+ * As chaves estrangeiras em cascata tratam da remoção dependente. Exige
+ * confirmação explícita do nome, porque não há como desfazer.
+ */
+systemRouter.post('/platform/companies/:id/delete', requireSuperAdmin, asyncHandler(async (req, res) => {
+    const id = Number.parseInt(req.params.id, 10);
+    if (!Number.isInteger(id) || id <= 0) throw notFound('Empresa não encontrada.');
+
+    const company = await queryOne('SELECT id, name FROM companies WHERE id = ?', [id]);
+    if (!company) throw notFound('Empresa não encontrada.');
+
+    if (req.body?.confirmName !== company.name) {
+        throw badRequest('Para confirmar a remoção, escreva o nome exato da empresa.');
+    }
+    if (id === req.auth.companyId) {
+        throw badRequest('Não é possível remover a empresa a que a sua própria conta pertence.');
+    }
+
+    await query('DELETE FROM companies WHERE id = ?', [id]);
+    res.json({ ok: true });
+}));
+
+systemRouter.delete('/platform/users/:id', requireSuperAdmin, asyncHandler(async (req, res) => {
+    const id = requireUuid(req.params.id, 'utilizador');
+    if (id === req.auth.userId) throw badRequest('Não pode remover a sua própria conta.');
+
+    const result = await query('DELETE FROM users WHERE id = ?', [id]);
+    if (result.affectedRows === 0) throw notFound('Utilizador não encontrado.');
     res.json({ ok: true });
 }));
 

@@ -1,9 +1,23 @@
-import { supabase } from './supabase';
+import { api } from './api';
+
+/**
+ * Colaboração: tarefas, conversas internas e biblioteca de ficheiros.
+ *
+ * Duas mudanças de comportamento a assinalar:
+ *
+ *  - As mensagens novas passam a ser obtidas por sondagem com `since`, em
+ *    vez das subscrições em tempo real do Supabase. O parâmetro faz com que
+ *    a esmagadora maioria dos pedidos devolva um conjunto vazio.
+ *
+ *  - `uploadFile` envia o ficheiro para o servidor, que o guarda fora da
+ *    raiz pública. O bucket anterior tinha sido tornado público com
+ *    políticas "Allow all" para leitura, escrita e remoção sem autenticação.
+ */
 
 export interface CollabTask {
     id?: string;
-    company_id: string;
-    creator_id: string;
+    company_id?: string;
+    creator_id?: string;
     assigned_to?: string;
     title: string;
     description?: string;
@@ -11,23 +25,25 @@ export interface CollabTask {
     priority: 'LOW' | 'MEDIUM' | 'HIGH';
     location?: string;
     due_date?: string;
+    creator_name?: string;
+    assignee_name?: string;
 }
 
 export interface CollabMessage {
     id?: string;
-    company_id: string;
-    user_id: string;
-    user_name: string;
+    company_id?: string;
+    user_id?: string;
+    user_name?: string;
     group_id: string;
     content: string;
-    mentions: string[];
+    mentions?: string[];
     created_at?: string;
 }
 
 export interface CollabDoc {
     id?: string;
-    company_id: string;
-    user_id: string;
+    company_id?: string;
+    user_id?: string;
     name: string;
     category: string;
     file_url: string;
@@ -39,255 +55,162 @@ export interface CollabDoc {
 
 export interface SupportTicket {
     id?: string;
-    company_id: string;
-    user_id: string;
     subject: string;
     description: string;
-    status: 'OPEN' | 'IN_ANALYSIS' | 'RESOLVED' | 'CLOSED';
-    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+    status?: 'OPEN' | 'IN_ANALYSIS' | 'RESOLVED' | 'CLOSED';
+    priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 }
 
 export const CollabService = {
-    // Tasks
-    getTasks: async () => {
-        const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
-        return data;
-    },
-    saveTask: async (task: CollabTask) => {
-        const { data: savedTask, error } = await supabase.from('tasks').upsert(task).select().single();
-        if (error) throw error;
+    // ---------------------------------------------------------------------
+    // Tarefas
+    // ---------------------------------------------------------------------
 
-        // Auto-sync to Calendar
-        // Only if it's a new task (no ID provided in input) or we want to update (logic below assumes new for simplicity or upsert)
-        // For robust sync, we might need a link, but let fire-and-forget for now as requested "create -> reflect"
-        try {
-            if (task.due_date) {
-                const eventData = {
-                    company_id: task.company_id,
-                    title: `Tarefa: ${task.title}`,
-                    description: task.description || 'Tarefa sincronizada',
-                    start_time: task.due_date, // Tasks usually have due date
-                    end_time: task.due_date,   // Duration 0 or 1 hour? Let's assume point in time
-                    location: task.location || 'Escritório',
-                    type: 'TASK',
-                    priority: task.priority || 'MEDIUM',
-                    status: task.status === 'DONE' ? 'COMPLETED' : 'PENDING',
-                    is_personal: false,
-                    created_by: task.creator_id
-                    // We could add a 'related_task_id' if schema supported it
-                };
-                await supabase.from('erp_events').insert(eventData);
-            }
-        } catch (syncError) {
-            console.warn("Autosync to calendar failed", syncError);
-            // Don't block task creation
-        }
-
-        return savedTask;
-    },
-    deleteTask: async (id: string) => {
-        const { error } = await supabase.from('tasks').delete().eq('id', id);
-        if (error) throw error;
+    getTasks: async (): Promise<CollabTask[]> => {
+        return api.get<CollabTask[]>('/tasks');
     },
 
-    // Social Chat
+    /**
+     * Cria ou atualiza uma tarefa.
+     *
+     * A sincronização com o calendário é feita no servidor e é idempotente.
+     * Antes, cada gravação inseria um evento novo sem qualquer ligação à
+     * tarefa — editar três vezes deixava três eventos duplicados.
+     */
+    saveTask: async (task: CollabTask): Promise<CollabTask> => {
+        return api.post<CollabTask>('/tasks', task);
+    },
+
+    deleteTask: async (id: string): Promise<void> => {
+        await api.delete(`/tasks/${id}`);
+    },
+
+    // ---------------------------------------------------------------------
+    // Conversas internas
+    // ---------------------------------------------------------------------
+
     getGroups: async () => {
-        const { data, error } = await supabase.from('erp_chat_groups').select('*');
-        if (error) throw error;
-        return data;
+        return api.get<Array<{ id: string; name: string; description?: string; image_url?: string; member_count: number }>>('/chat/groups');
     },
-    getMessages: async (groupId: string) => {
-        const { data, error } = await supabase.from('erp_chat_messages')
-            .select('*')
-            .eq('grupo_id', groupId)
-            .order('created_at', { ascending: true });
-        if (error) throw error;
-        return data;
+
+    createGroup: async (name: string, description?: string) => {
+        return api.post<{ id: string; name: string }>('/chat/groups', { name, description });
     },
-    // Group Members Management
+
+    updateGroup: async (id: string, updates: { name?: string; description?: string; image_url?: string }) => {
+        return api.put<{ id: string; name: string; description?: string; image_url?: string }>(`/chat/groups/${id}`, updates);
+    },
+
+    deleteGroup: async (id: string): Promise<void> => {
+        await api.delete(`/chat/groups/${id}`);
+    },
+
     getGroupMembers: async (groupId: string) => {
-        const { data, error } = await supabase
-            .from('erp_chat_group_members')
-            .select(`
-                *,
-                user:user_id ( id, name, photo, email )
-            `)
-            .eq('group_id', groupId);
-        if (error) throw error;
-        return data;
+        return api.get<Array<{ group_id: string; user_id: string; role: string; user: { id: string; name: string; email: string; photo?: string } }>>(
+            `/chat/groups/${groupId}/members`
+        );
     },
 
     addGroupMember: async (groupId: string, userId: string, role: 'ADMIN' | 'MEMBER' = 'MEMBER') => {
-        const { data, error } = await supabase
-            .from('erp_chat_group_members')
-            .insert({ group_id: groupId, user_id: userId, role })
-            .select()
-            .single();
-        if (error) {
-            // Ignore duplicate key error safely
-            if (error.code === '23505') return null;
-            throw error;
-        }
-        return data;
+        return api.post(`/chat/groups/${groupId}/members`, { userId, role });
     },
 
-    removeGroupMember: async (groupId: string, userId: string) => {
-        const { error } = await supabase
-            .from('erp_chat_group_members')
-            .delete()
-            .eq('group_id', groupId)
-            .eq('user_id', userId);
-        if (error) throw error;
+    removeGroupMember: async (groupId: string, userId: string): Promise<void> => {
+        await api.delete(`/chat/groups/${groupId}/members/${userId}`);
     },
 
-    sendMessage: async (msg: CollabMessage) => {
-        const { data, error } = await supabase.from('erp_chat_messages').insert({
-            company_id: msg.company_id,
-            grupo_id: msg.group_id,
-            user_id: msg.user_id,
-            user_name: msg.user_name,
-            content: msg.content
-        }).select().single();
-        if (error) throw error;
-        return data;
+    /**
+     * Mensagens de um grupo.
+     *
+     * Com `since`, devolve apenas o que chegou depois desse instante — é o
+     * que substitui a subscrição em tempo real na sondagem periódica.
+     */
+    getMessages: async (groupId: string, since?: string | Date): Promise<CollabMessage[]> => {
+        const suffix = since
+            ? `?since=${encodeURIComponent(since instanceof Date ? since.toISOString() : since)}`
+            : '';
+        return api.get<CollabMessage[]>(`/chat/groups/${groupId}/messages${suffix}`);
     },
 
-    // Documents
-    getDocs: async () => {
-        const { data, error } = await supabase
-            .from('documents')
-            .select(`
-                *,
-                users:user_id(name)
-            `)
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error("Supabase Docs Fetch Error:", error);
-            throw error;
-        }
-        console.log("Supabase Docs Response:", data);
-        return data as CollabDoc[];
-    },
-    saveDoc: async (doc: CollabDoc) => {
-        const { data, error } = await supabase.from('documents').upsert(doc).select().single();
-        if (error) throw error;
-        return data;
-    },
-    deleteDoc: async (id: string) => {
-        const { error } = await supabase.from('documents').delete().eq('id', id);
-        if (error) throw error;
+    /**
+     * Envia uma mensagem.
+     *
+     * O autor é determinado pelo servidor a partir da sessão. Antes vinha no
+     * corpo do pedido, o que permitia escrever em nome de outra pessoa.
+     */
+    sendMessage: async (msg: CollabMessage): Promise<CollabMessage> => {
+        return api.post<CollabMessage>(`/chat/groups/${msg.group_id}/messages`, {
+            content: msg.content,
+            mentions: msg.mentions ?? [],
+        });
     },
 
-    // Support
+    // ---------------------------------------------------------------------
+    // Biblioteca de ficheiros
+    // ---------------------------------------------------------------------
+
+    getDocs: async (): Promise<CollabDoc[]> => {
+        return api.get<CollabDoc[]>('/documents');
+    },
+
+    /**
+     * Carrega um ficheiro e cria o registo correspondente.
+     *
+     * O tipo e o tamanho são validados no servidor contra uma lista fechada.
+     * O nome no disco é gerado lá — usar o nome enviado pelo browser
+     * permitiria travessia de diretórios.
+     */
+    uploadFile: async (file: File, name?: string, category?: string): Promise<CollabDoc> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        if (name) formData.append('name', name);
+        if (category) formData.append('category', category);
+
+        return api.upload<CollabDoc>('/documents', formData);
+    },
+
+    /**
+     * Compatibilidade: guardar um documento a partir de um ficheiro.
+     *
+     * O registo e o ficheiro passaram a ser criados no mesmo pedido, pelo que
+     * `uploadFile` já faz tudo. Este método existe para os pontos de chamada
+     * que ainda separavam as duas coisas.
+     */
+    saveDoc: async (doc: CollabDoc & { file?: File }): Promise<CollabDoc> => {
+        if (!doc.file) throw new Error('É necessário selecionar um ficheiro.');
+        return CollabService.uploadFile(doc.file, doc.name, doc.category);
+    },
+
+    /** Altera apenas o nome de um documento já carregado. */
+    renameDoc: async (id: string, name: string): Promise<CollabDoc> => {
+        return api.patch<CollabDoc>(`/documents/${id}`, { name });
+    },
+
+    deleteDoc: async (id: string): Promise<void> => {
+        await api.delete(`/documents/${id}`);
+    },
+
+    // ---------------------------------------------------------------------
+    // Suporte
+    // ---------------------------------------------------------------------
+
     getTickets: async () => {
-        const { data, error } = await supabase.from('support_tickets').select('*');
-        if (error) throw error;
-        return data;
-    },
-    createTicket: async (ticket: SupportTicket) => {
-        const { data, error } = await supabase.from('support_tickets').insert(ticket).select().single();
-        if (error) throw error;
-        return data;
+        return api.get<any[]>('/support/tickets');
     },
 
-    // AI & Support Chat
-    createSupportChat: async (company_id: string, user_id: string, type: 'AI' | 'HUMAN') => {
-        const { data, error } = await supabase.from('support_chats').insert({
-            company_id: parseInt(company_id), // Ensure INT for BigInt column
-            user_id,
-            type,
-            title: type === 'AI' ? 'Assistente Virtual' : 'Suporte Especializado'
-        }).select().single();
-        if (error) throw error;
-        return data;
+    createTicket: async (ticket: SupportTicket) => {
+        return api.post<any>('/support/tickets', ticket);
     },
 
     getSupportChats: async (type: 'AI' | 'HUMAN') => {
-        const { data, error } = await supabase
-            .from('support_chats')
-            .select('*')
-            .eq('type', type)
-            .order('updated_at', { ascending: false });
-        if (error) throw error;
-        return data;
+        return api.get<any[]>(`/support/chats?type=${type}`);
+    },
+
+    createSupportChat: async (type: 'AI' | 'HUMAN') => {
+        return api.post<any>('/support/chats', { type });
     },
 
     getSupportMessages: async (chatId: string) => {
-        const { data, error } = await supabase
-            .from('support_messages')
-            .select('*')
-            .eq('chat_id', chatId)
-            .order('created_at', { ascending: true });
-        if (error) throw error;
-        return data;
+        return api.get<any[]>(`/support/chats/${chatId}/messages`);
     },
-
-    sendSupportMessage: async (chatId: string, role: 'user' | 'assistant', content: string) => {
-        const { data, error } = await supabase.from('support_messages').insert({
-            chat_id: chatId,
-            role,
-            content
-        }).select().single();
-
-        if (error) throw error;
-
-        // Update chat timestamp
-        await supabase.from('support_chats').update({ updated_at: new Date() }).eq('id', chatId);
-
-        return data;
-    },
-
-    // Storage & Utilities
-    uploadFile: async (file: File, bucket: string = 'documents') => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-            .from(bucket)
-            .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data } = supabase.storage
-            .from(bucket)
-            .getPublicUrl(filePath);
-
-        return data.publicUrl;
-    },
-
-    updateGroup: async (id: string, updates: { name?: string, description?: string, image_url?: string }) => {
-        const { data, error } = await supabase.from('erp_chat_groups').update(updates).eq('id', id).select().single();
-        if (error) throw error;
-        return data;
-    },
-
-    deleteGroup: async (id: string) => {
-        const { error } = await supabase.from('erp_chat_groups').delete().eq('id', id);
-        if (error) throw error;
-    },
-
-    getSupportGroup: async (companyId: string) => {
-        // Find a group named "Suporte Zyph" for this company
-        const { data, error } = await supabase
-            .from('erp_chat_groups')
-            .select('*')
-            .eq('company_id', companyId)
-            .eq('name', 'Suporte Zyph')
-            .single();
-
-        if (data) return data;
-
-        // If not exists, create it
-        const { data: newGroup, error: createError } = await supabase
-            .from('erp_chat_groups')
-            .insert({ company_id: companyId, name: 'Suporte Zyph' })
-            .select()
-            .single();
-
-        if (createError) throw createError;
-        return newGroup;
-    }
 };

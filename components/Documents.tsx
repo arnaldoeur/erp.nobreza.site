@@ -63,18 +63,13 @@ export const Documents: React.FC<DocumentsProps> = ({ currentUser }) => {
         }
 
         try {
-            const file_url = await CollabService.uploadFile(file);
-
-            const doc: CollabDoc = {
-                company_id: currentUser.companyId,
-                user_id: currentUser.id,
-                name: formData.get('name') as string || file.name,
-                category: formData.get('category') as string,
-                file_url: file_url,
-                file_type: file.type || 'unknown'
-            };
-
-            await CollabService.saveDoc(doc);
+            // O ficheiro e o respetivo registo são criados no mesmo pedido.
+            // A empresa e o autor vêm da sessão no servidor, não daqui.
+            await CollabService.uploadFile(
+                file,
+                (formData.get('name') as string) || file.name,
+                formData.get('category') as string
+            );
             setIsModalOpen(false);
             setPreviewUrl(null);
             setSelectedFile(null);
@@ -98,10 +93,7 @@ export const Documents: React.FC<DocumentsProps> = ({ currentUser }) => {
     const handleUpdateDoc = async () => {
         if (!viewDoc || !viewDoc.id) return;
         try {
-            await CollabService.saveDoc({
-                ...viewDoc,
-                name: editName
-            });
+            await CollabService.renameDoc(viewDoc.id, editName);
             setIsEditMode(false);
             setViewDoc(prev => prev ? { ...prev, name: editName } : null);
             loadDocs();

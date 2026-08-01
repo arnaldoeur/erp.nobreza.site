@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Lock, Loader2 } from 'lucide-react';
-import { supabase } from '../services/supabase';
+import { AuthService } from '../services/auth.service';
 
 interface PasswordConfirmationModalProps {
     isOpen: boolean;
@@ -29,14 +29,10 @@ export const PasswordConfirmationModal: React.FC<PasswordConfirmationModalProps>
         setError(null);
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password
-            });
-
-            if (error) {
-                throw error;
-            }
+            // Confirmação pura: não emite nem rotaciona tokens, ao contrário
+            // do início de sessão que era usado aqui antes.
+            const valid = await AuthService.verifyPassword(password);
+            if (!valid) throw new Error('Palavra-passe incorreta.');
 
             onConfirm();
         } catch (err) {

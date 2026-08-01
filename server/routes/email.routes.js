@@ -19,9 +19,9 @@ import rateLimit from 'express-rate-limit';
 import { asyncHandler, badRequest, forbidden, notFound } from '../utils/errors.js';
 import { query, queryOne } from '../db/pool.js';
 import { newId } from '../utils/ids.js';
-import { encrypt } from '../utils/crypto.js';
+import { encrypt, decrypt } from '../utils/crypto.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
-import { sendMail } from '../services/mail.service.js';
+import { sendMail, verifySmtpAccount } from '../services/mail.service.js';
 import { logAction } from '../services/log.service.js';
 import {
     requireString, optionalString, requireEmail, optionalEmail, requireUuid,
@@ -164,6 +164,34 @@ emailRouter.post('/email/accounts', requireAdmin, asyncHandler(async (req, res) 
 
     const row = await queryOne(`SELECT ${ACCOUNT_COLUMNS} FROM erp_email_accounts WHERE id = ?`, [newAccountId]);
     res.status(201).json(mapAccount(row));
+}));
+
+/**
+ * Testa a ligação SMTP de uma conta configurada.
+ *
+ * O teste corre no servidor, com a credencial decifrada em memória. Antes
+ * esta operação não existia de facto — devolvia sempre sucesso.
+ */
+emailRouter.post('/email/accounts/:id/test', requireAdmin, asyncHandler(async (req, res) => {
+    const id = requireUuid(req.params.id, 'conta');
+
+    const account = await queryOne(
+        `SELECT smtp_host, smtp_port, smtp_user, smtp_pass_encrypted, smtp_secure
+           FROM erp_email_accounts WHERE id = ? AND company_id = ?`,
+        [id, req.auth.companyId]
+    );
+    if (!account) throw notFound('Conta de e-mail não encontrada.');
+    if (!account.smtp_host) throw badRequest('Esta conta não tem servidor SMTP configurado.');
+
+    const result = await verifySmtpAccount({
+        host: account.smtp_host,
+        port: account.smtp_port,
+        secure: account.smtp_secure === 1,
+        user: account.smtp_user,
+        password: decrypt(account.smtp_pass_encrypted),
+    });
+
+    res.json(result);
 }));
 
 emailRouter.delete('/email/accounts/:id', requireAdmin, asyncHandler(async (req, res) => {

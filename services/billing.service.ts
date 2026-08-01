@@ -1,74 +1,44 @@
 import { BillingDocument } from '../types';
-import { supabase } from './supabase';
-import { AuthService } from './auth.service';
+import { api } from './api';
+
+/**
+ * Documentos de faturação.
+ *
+ * A numeração deixa de ser gerada no browser a partir do relógio local — o
+ * que produzia saltos e podia repetir com dois postos em simultâneo — e
+ * passa a vir de um contador sequencial por empresa e por tipo, mantido pelo
+ * servidor com bloqueio de linha.
+ */
+
+function toDocument(raw: any): BillingDocument {
+    return { ...raw, timestamp: new Date(raw.timestamp) } as BillingDocument;
+}
 
 export const BillingService = {
     getAll: async (): Promise<BillingDocument[]> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) return [];
+        const documents = await api.get<any[]>('/billing-documents');
+        return documents.map(toDocument);
+    },
 
-        const { data, error } = await supabase
-            .from('documents')
-            .select('*')
-            .eq('company_id', user.companyId)
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('Error fetching documents:', error);
-            return [];
-        }
-
-        return (data || []).map(d => ({
-            id: d.id,
-            companyId: String(d.company_id),
-            type: d.type as any,
-            timestamp: new Date(d.created_at),
-            items: d.items || [],
-            total: d.total || 0,
-            targetName: d.customer_name || 'Consumidor Final',
-            status: d.status as any,
-            performedBy: d.created_by || 'Sistema'
+    add: async (doc: BillingDocument): Promise<BillingDocument> => {
+        return toDocument(await api.post<any>('/billing-documents', {
+            type: doc.type,
+            status: doc.status,
+            targetName: doc.targetName,
+            targetDetails: doc.targetDetails,
+            total: doc.total,
+            items: doc.items,
+            customerId: (doc as any).customerId,
+            saleId: (doc as any).saleId,
+            performedBy: doc.performedBy,
         }));
     },
 
-    add: async (doc: BillingDocument): Promise<void> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) throw new Error("Unauthorized");
-
-        const { error } = await supabase
-            .from('documents')
-            .insert({
-                company_id: user.companyId,
-                customer_name: doc.targetName,
-                name: doc.id,
-                total: doc.total,
-                status: doc.status,
-                items: doc.items,
-                type: doc.type,
-                created_by: user.name,
-                user_id: user.id,
-                created_at: new Date()
-            });
-
-        if (error) {
-            console.error('Error adding document:', error);
-            throw error;
-        }
+    updateStatus: async (id: string, status: BillingDocument['status']): Promise<BillingDocument> => {
+        return toDocument(await api.patch<any>(`/billing-documents/${id}`, { status }));
     },
 
     delete: async (id: string): Promise<void> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) return;
-
-        const { error } = await supabase
-            .from('documents')
-            .delete()
-            .eq('id', id)
-            .eq('company_id', user.companyId);
-
-        if (error) {
-            console.error('Error deleting document:', error);
-            throw error;
-        }
-    }
+        await api.delete(`/billing-documents/${id}`);
+    },
 };

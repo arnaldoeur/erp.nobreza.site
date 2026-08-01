@@ -69,6 +69,22 @@ financeRouter.post('/expenses', requireRole(...FINANCE_ROLES), asyncHandler(asyn
     res.status(201).json(mapExpense(row));
 }));
 
+financeRouter.put('/expenses/:id', requireRole(...FINANCE_ROLES), asyncHandler(async (req, res) => {
+    const id = requireUuid(req.params.id, 'despesa');
+    const description = requireString(req.body?.description, 'descrição', { max: 500 });
+    const amount = requireMoney(req.body?.amount, 'valor', { min: 0 });
+    const type = optionalEnum(req.body?.type, 'tipo', EXPENSE_TYPES, 'Operational');
+
+    const result = await query(
+        'UPDATE expenses SET description = ?, amount = ?, type = ? WHERE id = ? AND company_id = ?',
+        [description, amount, type, id, req.auth.companyId]
+    );
+    if (result.affectedRows === 0) throw notFound('Despesa não encontrada.');
+
+    const row = await queryOne('SELECT * FROM expenses WHERE id = ?', [id]);
+    res.json(mapExpense(row));
+}));
+
 financeRouter.delete('/expenses/:id', requireRole('ADMIN', 'ADMINISTRATIVE'), asyncHandler(async (req, res) => {
     const id = requireUuid(req.params.id, 'despesa');
     const result = await query('DELETE FROM expenses WHERE id = ? AND company_id = ?', [id, req.auth.companyId]);
