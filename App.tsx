@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from './services/supabase'; // Import REAL supabase client
+import { SESSION_EXPIRED_EVENT } from './services/api';
 import { Login } from './components/Login';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
@@ -30,6 +30,7 @@ import {
   TimeTrackingService
 } from './services';
 import { InitialLoader } from './components/InitialLoader';
+import { SetPassword } from './components/SetPassword';
 // import { Expenses } from './components/Expenses'; // Ensure this exists or comment out if removed
 import { Expenses } from './components/Expenses';
 
@@ -53,6 +54,18 @@ const App: React.FC = () => {
   const [showIntro, setShowIntro] = useState(true);
   const [showLanding, setShowLanding] = useState(window.location.pathname === '/landing-page');
 
+  // Ecrã de definição de palavra-passe, aberto a partir do link enviado por
+  // e-mail. É o único ecrã acessível sem sessão além do início de sessão.
+  const [passwordFlow, setPasswordFlow] = useState<{ token: string; mode: 'RESET' | 'ACTIVATE' } | null>(() => {
+    const path = window.location.pathname;
+    if (path !== '/redefinir-senha' && path !== '/ativar-conta') return null;
+
+    const token = new URLSearchParams(window.location.search).get('token');
+    if (!token) return null;
+
+    return { token, mode: path === '/ativar-conta' ? 'ACTIVATE' : 'RESET' };
+  });
+
   // Handle URL changes (simple routing)
   useEffect(() => {
     const handlePopState = () => {
@@ -61,6 +74,12 @@ const App: React.FC = () => {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  /** Sai do ecrã de palavra-passe e limpa o token da barra de endereço. */
+  const closePasswordFlow = () => {
+    setPasswordFlow(null);
+    window.history.replaceState({}, '', '/');
+  };
 
   // Data State
   const [products, setProducts] = useState<Product[]>([]);
@@ -85,51 +104,38 @@ const App: React.FC = () => {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [activeShift, setActiveShift] = useState<WorkShift | null>(null);
 
-  // 1. Initial Auth Check (Supabase)
+  // 1. Verificação inicial da sessão.
+  //
+  // É o servidor que decide quem somos, a partir do cookie assinado. O perfil
+  // em localStorage serve apenas para o primeiro render não ficar em branco;
+  // se o servidor não confirmar a sessão, é descartado.
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        // Logic to fetch full profile if needed, or rely on AuthService.getCurrentUser() cache
-        // Since login() saves to localStorage, we might be good.
-        // But if we reload, we might want to refresh from DB.
-        console.log("Session found:", session.user.email);
-        // Optional: Re-fetch profile to ensure 'currentUser' is up to date
-        // const updatedUser = await AuthService.syncProfile(session.user.id); // If we implemented this
-      } else {
-        console.log("No session found.");
-        // If local storage has user but session is invalid, clear it?
-        // For now, trust Supabase Auth.
-      }
+      const user = await AuthService.syncSession();
+      setCurrentUser(user);
       setLoading(false);
     };
 
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT') {
-        setCurrentUser(null);
-        localStorage.removeItem('nobreza_current_user');
-        setActiveView('dashboard');
-      } else if (event === 'SIGNED_IN' && session) {
-        // We assume AuthService.login was called and set the user in LocalStorage/State
-        // Or we could fetch it here.
-        const user = AuthService.getCurrentUser();
-        if (user) setCurrentUser(user);
-      }
-    });
+    // A sessão pode terminar a meio da utilização — token de renovação
+    // expirado ou revogado noutro dispositivo. O cliente HTTP emite este
+    // evento e a aplicação volta ao ecrã de entrada.
+    const handleSessionExpired = () => {
+      setCurrentUser(null);
+      setActiveView('dashboard');
+    };
 
     const handleUserUpdate = (e: Event) => {
       const customEvent = e as CustomEvent<User>;
-      if (customEvent.detail) {
-        console.log("User updated event received:", customEvent.detail);
-        setCurrentUser(customEvent.detail);
-      }
+      if (customEvent.detail) setCurrentUser(customEvent.detail);
     };
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
     window.addEventListener('nobreza-user-updated', handleUserUpdate);
 
     return () => {
-      subscription.unsubscribe();
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
       window.removeEventListener('nobreza-user-updated', handleUserUpdate);
     };
   }, []);
@@ -233,11 +239,16 @@ const App: React.FC = () => {
 
   const handleSale = async (newSale: Sale) => {
     try {
-      await SalesService.addSale(newSale);
-      setSalesHistory(prev => [newSale, ...prev]);
-      addLog('VENDA', `Venda #${newSale.id} realizada. Total: MT ${newSale.total}`);
+      // O servidor devolve o número e o total que efetivamente registou —
+      // os preços são os do catálogo, não os que o browser enviou.
+      const registered = await SalesService.addSale(newSale);
+      const persistedSale = { ...newSale, id: registered.id, total: registered.total };
+
+      setSalesHistory(prev => [persistedSale, ...prev]);
+      addLog('VENDA', `Venda #${registered.saleNumber} realizada. Total: MT ${registered.total}`);
+
+      // O acumulado do cliente é atualizado dentro da transação da venda.
       if (newSale.customerName) {
-        await CustomerService.updateTotalSpent(newSale.customerName, newSale.total);
         setCustomers(await CustomerService.getAll());
       }
 
@@ -261,11 +272,8 @@ const App: React.FC = () => {
         // Don't block the sale flow, just log it
       }
 
-      const itemsToUpdate = newSale.items.map(item => ({
-        productId: item.productId,
-        quantityToRemove: item.quantity
-      }));
-      await ProductService.updateStock(itemsToUpdate);
+      // O stock foi abatido na mesma transação da venda; aqui apenas
+      // recarregamos para a interface refletir os novos valores.
       setProducts(await ProductService.getAll());
 
       // REAL-TIME NOTIFICATIONS
@@ -345,6 +353,12 @@ const App: React.FC = () => {
 
   // Render Logic
 
+  // Antes de tudo o resto: quem chega com um token de e-mail vai definir a
+  // palavra-passe, mesmo que haja uma sessão em cache no dispositivo.
+  if (passwordFlow) {
+    return <SetPassword token={passwordFlow.token} mode={passwordFlow.mode} onDone={closePasswordFlow} />;
+  }
+
   if (showLanding) {
     return <LandingPage onEnter={() => {
       window.history.pushState({}, '', '/');
@@ -378,7 +392,7 @@ const App: React.FC = () => {
       activeShift={activeShift}
       onCheckIn={async () => {
         try {
-          const shift = await TimeTrackingService.checkIn(currentUser.id);
+          const shift = await TimeTrackingService.checkIn();
           setActiveShift(shift);
           addLog('SHIFT', 'Iniciou turno de trabalho.');
         } catch (e) { alert("Erro ao iniciar turno."); }
@@ -405,10 +419,10 @@ const App: React.FC = () => {
       {activeView === 'social' && <SocialChat currentUser={currentUser} team={team} />}
       {activeView === 'calendar' && <Calendar currentUser={currentUser} team={team} />}
       {activeView === 'support' && <Support currentUser={currentUser} sales={salesHistory} products={products} customers={customers} dailyClosures={dailyClosures} />}
-      {activeView === 'SUPER_ADMIN' && <SuperAdmin />}
+      {activeView === 'SUPER_ADMIN' && <SuperAdmin currentUser={currentUser} onLogout={async () => { await AuthService.logout(); setCurrentUser(null); }} />}
       {activeView === 'administration' &&
         <Settings
-          companyInfo={companyInfo || { name: 'Nome da Empresa', address: '', contact: '', nuit: '', email: '' }}
+          companyInfo={companyInfo}
           setCompanyInfo={setCompanyInfo}
           team={team}
           onUpdateTeam={setTeam}

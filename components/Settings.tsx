@@ -63,7 +63,9 @@ import { CompanyInfo, User, UserRole, DailyClosure, SystemLog, Sale, Product, Pa
 import { AuthService } from '../services/auth.service';
 import { LogService, NotificationService, CompanyService, TimeTrackingService } from '../services';
 import { WorkShift } from '../services/time-tracking.service';
-import { supabase } from '../services/supabase';
+import { CompanyService as CompanySvc, ReportService } from '../services/company.service';
+import { ProductService } from '../services/product.service';
+import { ExpenseService, Expense } from '../services/expense.service';
 import { Support } from './Support';
 import { PerformanceReport } from './PerformanceReport';
 import { EmailAccountService } from '../services/email-accounts.service';
@@ -202,14 +204,14 @@ export const Settings: React.FC<SettingsProps> = ({
 
   const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-  const [activeTab, setActiveTab] = useState<'REPORTS' | 'FINANCE' | 'EXPENSES' | 'CAIXA' | 'COMPANY' | 'TEAM' | 'PROFILE' | 'PERFORMANCE' | 'SYSTEM'>('REPORTS');
-  const [nextEmployeeId, setNextEmployeeId] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'REPORTS' | 'FINANCE' | 'EXPENSES' | 'CAIXA' | 'COMPANY' | 'TEAM' | 'PROFILE' | 'PERFORMANCE' | 'SYSTEM' | 'EMAIL' | 'SUPPORT'>('REPORTS');
+  const [nextEmployeeId, setNextEmployeeId] = useState<string | number>('');
 
   useEffect(() => {
     const fetchNextEmpId = async () => {
       try {
-        const { data } = await supabase.rpc('get_next_employee_id');
-        if (data) setNextEmployeeId(data);
+        const nextId = await CompanySvc.getNextEmployeeId();
+        if (nextId) setNextEmployeeId(nextId);
       } catch (e) {
         console.error("Failed to fetch next employee ID:", e);
       }
@@ -276,17 +278,7 @@ export const Settings: React.FC<SettingsProps> = ({
 
   const saveReportToDB = async (type: string, period: string, data: any, summary: string) => {
     try {
-      const { error } = await supabase.from('reports').insert({
-        company_id: currentUser.companyId,
-        user_id: currentUser.id,
-        type,
-        period,
-        summary,
-        data,
-        metadata: { version: '1.0', generated_via: 'WEB_PREVIEW' }
-      });
-      if (error) console.error('Error saving report:', error);
-      else console.log('Relatório salvo no histórico.');
+      await ReportService.save(type, period, summary, data);
     } catch (e) {
       console.error('Failed to save report to DB', e);
     }
@@ -298,7 +290,7 @@ export const Settings: React.FC<SettingsProps> = ({
   const requestAdjustment = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const type = formData.get('type') as string;
+    const type = formData.get('type') as Expense['type'];
     const method = formData.get('method') as string;
     const amount = parseFloat(formData.get('amount') as string);
     const description = formData.get('description') as string;
@@ -487,9 +479,8 @@ export const Settings: React.FC<SettingsProps> = ({
 
     setAdjustingPrices(true);
     try {
-      const { error } = await supabase.rpc('adjust_all_prices', { percentage: priceAdjustmentAmount });
-      if (error) throw error;
-      alert("Preços ajustados com sucesso!");
+      const updated = await ProductService.adjustAllPrices(priceAdjustmentAmount);
+      alert(`Preços ajustados com sucesso em ${updated} produto(s).`);
       window.location.reload();
     } catch (e: any) {
       console.error(e);
@@ -767,14 +758,14 @@ export const Settings: React.FC<SettingsProps> = ({
                         </td>
                         <td className="p-5">
                           <div className="flex flex-col gap-1 max-w-[200px]">
-                            <span className="font-bold text-emerald-950 text-xs truncate" title={sale.items?.map(i => i.name).join(', ')}>
-                              {sale.items?.map(i => i.name).join(', ') || 'N/A'}
+                            <span className="font-bold text-emerald-950 text-xs truncate" title={sale.items?.map(i => i.productName).join(', ')}>
+                              {sale.items?.map(i => i.productName).join(', ') || 'N/A'}
                             </span>
                             <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded w-fit uppercase">{sale.items?.length || 0} Itens</span>
                           </div>
                         </td>
                         <td className="p-5">
-                          <span className="font-bold text-emerald-950 text-xs">{sale.clientName || '-'}</span>
+                          <span className="font-bold text-emerald-950 text-xs">{sale.customerName || '-'}</span>
                         </td>
                         <td className="p-5">
                           <div className="flex items-center gap-2">
@@ -1088,7 +1079,7 @@ export const Settings: React.FC<SettingsProps> = ({
               <div className="absolute top-6 left-6 flex items-center gap-2 text-emerald-400/50 hover:text-emerald-400 transition-colors cursor-pointer group/id"
                 title="Clique para copiar ID"
                 onClick={() => {
-                  navigator.clipboard.writeText(`NE-${1000 + parseInt(companyInfo.id)}`);
+                  navigator.clipboard.writeText(`NE-${1000 + Number(companyInfo.id)}`);
                   alert("ID da Empresa copiado!");
                 }}>
                 <Hash size={14} className="group-hover/id:scale-110 transition-transform" />
@@ -1296,7 +1287,7 @@ export const Settings: React.FC<SettingsProps> = ({
       } {
         activeTab === 'SUPPORT' && (
           <div className="space-y-6">
-            <Support currentUser={currentUser} />
+            <Support currentUser={currentUser} sales={sales} products={products} customers={[]} dailyClosures={dailyClosures} />
           </div>
         )
       } {
@@ -1436,7 +1427,7 @@ export const Settings: React.FC<SettingsProps> = ({
                           type="email"
                           placeholder="admin@nobreza.site"
                           required
-                          defaultValue={editingEmployee?.email || (nextEmployeeId ? `${nextEmployeeId.toLowerCase().replace('nu-', '')}@${companyInfo.emailDomain || 'nobreza.site'}` : '')}
+                          defaultValue={editingEmployee?.email || (nextEmployeeId ? `${String(nextEmployeeId).toLowerCase().replace('nu-', '')}@${companyInfo.emailDomain || 'nobreza.site'}` : '')}
                           className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl font-bold focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-emerald-950 text-sm transition-all placeholder:font-medium placeholder:text-gray-300"
                         />
                       </div>
@@ -1531,9 +1522,13 @@ export const Settings: React.FC<SettingsProps> = ({
                         type="button"
                         onClick={async () => {
                           try {
-                            if (window.confirm(`Deseja enviar um link de acesso rápido (Magic Link) para ${editingEmployee.email}?`)) {
-                              await AuthService.sendMagicLink(editingEmployee.email);
-                              alert("✅ Magic Link enviado com sucesso!");
+                            // O "magic link" anterior não era um link de acesso:
+                            // apontava para a página inicial sem token nenhum e
+                            // não autenticava ninguém. Isto envia o convite real
+                            // para a pessoa definir a sua palavra-passe.
+                            if (window.confirm(`Enviar a ${editingEmployee.email} o convite para definir a palavra-passe?`)) {
+                              await AuthService.resendInvite(editingEmployee.id);
+                              alert("✅ Convite enviado com sucesso.");
                             }
                           } catch (e: any) {
                             alert("❌ Erro ao enviar Magic Link: " + e.message);
@@ -1588,15 +1583,12 @@ export const Settings: React.FC<SettingsProps> = ({
                   await onAddSale?.(adjustmentSale);
                   alert("Ajuste de entrada realizado com sucesso!");
                 } else {
-                  const { error } = await supabase.from('expenses').insert([{
-                    company_id: currentUser.companyId,
-                    user_id: currentUser.id,
-                    amount: amount,
+                  await ExpenseService.add({
+                    amount,
                     description: desc || 'Ajuste de Saída',
                     type: 'Other',
-                    date: new Date().toISOString()
-                  }]);
-                  if (error) throw error;
+                    date: new Date().toISOString().slice(0, 10)
+                  });
                   alert("Ajuste de saída realizado com sucesso!");
                   window.location.reload();
                 }
@@ -1812,8 +1804,8 @@ export const Settings: React.FC<SettingsProps> = ({
                           .map((sale, idx) => (
                             <tr key={idx} className="border-b border-gray-100 break-inside-avoid page-break-avoid">
                               <td className="py-2 text-gray-600">{new Date(sale.timestamp).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
-                              <td className="py-2 font-bold text-gray-900">{sale.clientName || 'Consumidor Final'}</td>
-                              <td className="py-2 text-gray-600 truncate max-w-[200px]">{sale.items.map(i => i.name).join(', ')}</td>
+                              <td className="py-2 font-bold text-gray-900">{sale.customerName || 'Consumidor Final'}</td>
+                              <td className="py-2 text-gray-600 truncate max-w-[200px]">{sale.items.map(i => i.productName).join(', ')}</td>
                               <td className="py-2 uppercase text-gray-500 text-[7px] font-bold tracking-wider">{sale.paymentMethod}</td>
                               <td className="py-2 text-right font-black text-gray-900">MT {sale.total.toLocaleString()}</td>
                             </tr>
@@ -2367,17 +2359,11 @@ function ExpensesView({ expenses, team, currentUser }: { expenses: any[], team: 
     const formData = new FormData(e.currentTarget);
     const amount = parseFloat(formData.get('amount') as string);
     const description = formData.get('description') as string;
-    const type = formData.get('type') as string;
+    const type = formData.get('type') as Expense['type'];
 
     try {
       if (editingExpense) {
-        const { error } = await supabase.from('expenses').update({
-          amount,
-          description,
-          type
-        }).eq('id', editingExpense.id);
-
-        if (error) throw error;
+        await ExpenseService.update(editingExpense.id, { amount, description, type });
 
         const updated = { ...editingExpense, amount, description, type };
         setLocalExpenses(localExpenses.map(exp => exp.id === editingExpense.id ? updated : exp));
@@ -2393,17 +2379,13 @@ function ExpensesView({ expenses, team, currentUser }: { expenses: any[], team: 
         setEditingExpense(null);
         alert("Despesa atualizada com sucesso!");
       } else {
-        const { data, error } = await supabase.from('expenses').insert([{
-          company_id: currentUser.companyId,
-          user_id: currentUser.id,
+        const created = await ExpenseService.add({
           amount,
           description,
           type,
-          date: new Date().toISOString()
-        }]).select();
-
-        if (error) throw error;
-        setLocalExpenses([data[0], ...localExpenses]);
+          date: new Date().toISOString().slice(0, 10)
+        });
+        setLocalExpenses([created, ...localExpenses]);
 
         await LogService.add({
           action: 'ADD_EXPENSE',
@@ -2423,9 +2405,7 @@ function ExpensesView({ expenses, team, currentUser }: { expenses: any[], team: 
   const handleDelete = async (id: string) => {
     if (!confirm("Tem a certeza que deseja apagar? Isso é irreversível.")) return;
     try {
-      // Hard Delete
-      const { error } = await supabase.from('expenses').delete().eq('id', id);
-      if (error) throw error;
+      await ExpenseService.delete(id);
 
       setLocalExpenses(localExpenses.filter(e => e.id !== id));
 

@@ -100,7 +100,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                         </div>
                         <div className="mt-12 text-center max-w-4xl animate-slide-up">
                             <div className="flex items-center justify-center gap-3 mb-4">
-                                {React.cloneElement(SYSTEM_SCREENS[activeScreenIndex].icon as React.ReactElement, { size: 40 })}
+                                {React.cloneElement(SYSTEM_SCREENS[activeScreenIndex].icon as React.ReactElement<{ size?: number }>, { size: 40 })}
                                 <h4 className="text-3xl md:text-4xl font-black text-emerald-400 tracking-tighter italic">{SYSTEM_SCREENS[activeScreenIndex].title}</h4>
                             </div>
                             <p className="text-white/60 text-lg md:text-xl font-medium leading-relaxed tracking-tight">{SYSTEM_SCREENS[activeScreenIndex].longDesc}</p>
@@ -131,7 +131,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                         <div className="p-12">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-emerald-500/30">
-                                    {React.cloneElement(detailModule.icon as React.ReactElement, { size: 32 })}
+                                    {React.cloneElement(detailModule.icon as React.ReactElement<{ size?: number }>, { size: 32 })}
                                 </div>
                                 <div>
                                     <h2 className="text-[12px] font-black text-emerald-500 uppercase tracking-[0.4em] mb-1">Módulo do Sistema</h2>
@@ -293,7 +293,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
 
                                 <div className="w-full lg:w-2/5 flex flex-col items-start translate-y-0 group-hover:-translate-y-6 transition-all duration-1000 pr-4">
                                     <div className="w-20 h-20 bg-emerald-500 rounded-[1.5rem] flex items-center justify-center text-white font-black text-2xl mb-10 shadow-3xl shadow-emerald-500/40 transform group-hover:rotate-12 transition-transform duration-700">
-                                        {React.cloneElement(item.icon as React.ReactElement, { size: 40 })}
+                                        {React.cloneElement(item.icon as React.ReactElement<{ size?: number }>, { size: 40 })}
                                     </div>
                                     <h4 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-950 italic tracking-tight leading-none mb-6">{item.title}</h4>
                                     <h5 className="text-2xl font-bold text-emerald-600 mb-8 tracking-tight leading-snug">{item.desc}</h5>
@@ -371,7 +371,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                                 return (
                                     <div key={i} className="flex gap-8 group cursor-default">
                                         <div className="shrink-0 w-16 h-16 bg-white/5 border border-white/10 flex items-center justify-center rounded-[2rem] text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-700 shadow-2xl">
-                                            {React.cloneElement(box.icon as React.ReactElement, { size: 32 })}
+                                            {React.cloneElement(box.icon as React.ReactElement<{ size?: number }>, { size: 32 })}
                                         </div>
                                         <div>
                                             <h4 className="font-black text-2xl mb-2 uppercase tracking-tight italic">{box.title}</h4>

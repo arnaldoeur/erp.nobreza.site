@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from './api';
 
 export interface WorkShift {
     id: string;
@@ -6,92 +6,36 @@ export interface WorkShift {
     start_time: string;
     end_time?: string;
     status: 'OPEN' | 'CLOSED';
-    duration_minutes?: number; // Computed on client
+    notes?: string;
+    duration_minutes?: number;
 }
 
+/**
+ * Registo de entradas e saídas ao serviço.
+ *
+ * O utilizador é sempre o da sessão: o identificador deixou de ser um
+ * argumento aceite do cliente, para que ninguém possa marcar ponto por
+ * outra pessoa.
+ */
 export const TimeTrackingService = {
-    // Start a new shift
-    checkIn: async (userId: string): Promise<WorkShift> => {
-        // 1. Check if there is already an open shift, if so, return it
-        const current = await TimeTrackingService.getCurrentShift(userId);
-        if (current) return current;
-
-        const currentUser = (await supabase.auth.getUser()).data.user;
-        if (!currentUser) throw new Error("Not authenticated");
-
-        // Fetch user profile to get company_id
-        const { data: profile } = await supabase.from('users').select('company_id').eq('id', userId).single();
-
-        const { data, error } = await supabase
-            .from('work_shifts')
-            .insert({
-                user_id: userId,
-                company_id: profile?.company_id,
-                status: 'OPEN'
-            })
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data;
+    checkIn: async (): Promise<WorkShift> => {
+        return api.post<WorkShift>('/shifts/check-in');
     },
 
-    // End current shift
-    checkOut: async (shiftId: string, notes?: string): Promise<void> => {
-        const { error } = await supabase
-            .from('work_shifts')
-            .update({
-                end_time: new Date().toISOString(),
-                status: 'CLOSED',
-                notes
-            })
-            .eq('id', shiftId);
-
-        if (error) throw error;
+    checkOut: async (shiftId: string, notes?: string): Promise<WorkShift> => {
+        return api.post<WorkShift>(`/shifts/${shiftId}/check-out`, { notes });
     },
 
-    // Get active shift for user
-    getCurrentShift: async (userId: string): Promise<WorkShift | null> => {
-        const { data, error } = await supabase
-            .from('work_shifts')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('status', 'OPEN')
-            .maybeSingle();
-
-        if (error) throw error;
-        return data;
+    getCurrentShift: async (): Promise<WorkShift | null> => {
+        return api.get<WorkShift | null>('/shifts/current');
     },
 
-    // Get history for reporting
     getShifts: async (userId?: string, startDate?: string, endDate?: string): Promise<WorkShift[]> => {
-        const { data: profile } = await supabase.from('users').select('company_id').eq('id', userId || (await supabase.auth.getUser()).data.user?.id).single();
-        if (!profile) return [];
-
-        let query = supabase
-            .from('work_shifts')
-            .select('*')
-            .eq('company_id', profile.company_id)
-            .order('start_time', { ascending: false });
-
-        if (userId) {
-            query = query.eq('user_id', userId);
-        }
-        if (startDate) {
-            // Adjust to start of local day in UTC
-            const start = new Date(startDate);
-            start.setHours(0, 0, 0, 0);
-            query = query.gte('start_time', start.toISOString());
-        }
-        if (endDate) {
-            // Ensure end date includes the whole day
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59, 999);
-            query = query.lte('start_time', end.toISOString());
-        }
-
-        const { data, error } = await query;
-        if (error) throw error;
-        return data || [];
-    }
+        const params = new URLSearchParams();
+        if (userId) params.set('userId', userId);
+        if (startDate) params.set('startDate', startDate);
+        if (endDate) params.set('endDate', endDate);
+        const suffix = params.toString() ? `?${params}` : '';
+        return api.get<WorkShift[]>(`/shifts${suffix}`);
+    },
 };

@@ -9,28 +9,56 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null }> {
-  public state = { hasError: false, error: null as Error | null };
-  constructor(props: any) {
+interface ErrorBoundaryProps { children: React.ReactNode }
+interface ErrorBoundaryState { hasError: boolean; error: Error | null }
+
+/**
+ * Rede de segurança para erros de renderização.
+ *
+ * Em produção mostra uma mensagem legível e um botão para recarregar. O
+ * rastreio da pilha só aparece em desenvolvimento — apresentá-lo ao
+ * utilizador final revela a estrutura interna da aplicação e não o ajuda em
+ * nada.
+ */
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
   }
-  static getDerivedStateFromError(error: any) {
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[erro] Falha na renderização:', error, info.componentStack);
+  }
+
   render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{ padding: '2rem', color: 'red', fontFamily: 'monospace', backgroundColor: 'white', height: '100vh', width: '100vw', zIndex: 9999, position: 'fixed', top: 0, left: 0, overflow: 'auto' }}>
-          <h1>Something went wrong.</h1>
-          <p style={{ fontWeight: 'bold' }}>{this.state.error?.message}</p>
-          <pre style={{ backgroundColor: '#fee2e2', padding: '1rem', borderRadius: '0.5rem', marginTop: '1rem' }}>
-            {this.state.error?.stack}
-          </pre>
+    if (!this.state.hasError) return this.props.children;
+
+    return (
+      <div style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
+        <div style={{ maxWidth: '32rem', margin: '4rem auto', backgroundColor: 'white', padding: '2rem', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
+          <h1 style={{ fontSize: '1.25rem', color: '#0f172a', marginBottom: '0.75rem' }}>Ocorreu um erro inesperado</h1>
+          <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            A aplicação encontrou um problema e não conseguiu continuar. Recarregue a página.
+            Se o erro se repetir, contacte o suporte.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', fontWeight: 600, cursor: 'pointer' }}
+          >
+            Recarregar
+          </button>
+          {import.meta.env.DEV && (
+            <pre style={{ backgroundColor: '#fef2f2', color: '#991b1b', padding: '1rem', borderRadius: '0.5rem', marginTop: '1.5rem', fontSize: '0.75rem', overflow: 'auto' }}>
+              {this.state.error?.stack}
+            </pre>
+          )}
         </div>
-      );
-    }
-    return this.props.children;
+      </div>
+    );
   }
 }
 

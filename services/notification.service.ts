@@ -1,456 +1,212 @@
-import { supabase } from './supabase';
 import { DailyClosure, CompanyInfo, User, AppNotification, Sale } from '../types';
 import { NotificationTemplates } from './notification-templates';
+import { api } from './api';
 
 /**
- * Service to handle system notifications via Email.
- * Refactored to send emails NATIVELY via Resend API to ensure maximum reliability.
+ * Notificações do sistema: por e-mail e dentro da aplicação.
+ *
+ * A superfície pública mantém-se, mas o transporte mudou por completo:
+ *
+ *  - O envio deixa de passar pela Edge Function `resend-domains`, que não
+ *    validava autenticação, respondia a qualquer origem e aceitava remetente,
+ *    destinatário e corpo livres. Era um relay aberto para o domínio.
+ *
+ *  - O remetente deixa de ser escolhido aqui. A versão anterior construía um
+ *    endereço dinâmico a partir do nome do utilizador e enviava-o ao serviço
+ *    de e-mail, que o aceitava sem verificar. Agora o servidor usa sempre o
+ *    remetente configurado, e o campo nem sequer é enviado.
+ *
+ * Os modelos de mensagem continuam a ser preenchidos aqui, porque dependem
+ * de dados que a interface já tem em mãos.
  */
+
+/** Preenche um modelo, escapando os valores para não permitir injeção de HTML. */
+function renderTemplate(templateName: string | undefined, data: Record<string, any>, fallbackSubject?: string) {
+    const escape = (value: any) => String(value ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+    const template = templateName ? (NotificationTemplates as any)[templateName] : null;
+
+    if (template) {
+        let subject = template.subject as string;
+        let html = template.html as string;
+        for (const [key, value] of Object.entries(data)) {
+            const pattern = new RegExp(`{{${key}}}`, 'g');
+            subject = subject.replace(pattern, escape(value));
+            html = html.replace(pattern, escape(value));
+        }
+        return { subject, html };
+    }
+
+    const generic = (NotificationTemplates as any).GENERIC_ACTION;
+    const subject = fallbackSubject || 'Notificação Nobreza ERP';
+    const details = typeof data === 'string' ? data : (data.details || data.message || '');
+    const html = (generic?.html as string || '<p>{{details}}</p>')
+        .replace(/{{title}}/g, escape(subject))
+        .replace(/{{details}}/g, escape(details));
+
+    return { subject, html };
+}
+
+async function deliver(to: string | string[], subject: string, html: string): Promise<boolean> {
+    const recipients = (Array.isArray(to) ? to : [to]).filter(Boolean);
+    if (recipients.length === 0) return false;
+
+    try {
+        await api.post('/email/send', { to: recipients, subject, html });
+        return true;
+    } catch (error) {
+        // Uma notificação que não sai não pode fazer falhar a venda, o fecho
+        // de caixa ou o registo que a originou.
+        console.error('[notificações] Falha no envio:', error);
+        return false;
+    }
+}
+
 export const NotificationService = {
-
-    /**
-     * Sends a summary email upon Daily Closure.
-     */
+    /** Resumo do fecho de caixa, para o responsável e para a empresa. */
     sendDailyClosureEmail: async (closure: DailyClosure, companyInfo: CompanyInfo, user: User) => {
-        return NotificationService.invokeNativeEmail({
-            type: 'DAILY_REPORT', // Or a custom mapping
-            template: 'MONTHLY_REPORT',
-            to: Array.from(new Set([user.email, companyInfo.email])).filter(Boolean),
-            data: {
-                user_name: user.name,
-                user_id: user.id,
-                company_name: companyInfo.name,
-                month: new Date(closure.closureDate).toLocaleDateString('pt-PT', { month: 'long' }),
-                // Custom data for the template if needed
-            }
-        });
+        const { subject, html } = renderTemplate('MONTHLY_REPORT', {
+            user_name: user.name,
+            company_name: companyInfo.name,
+            month: new Date(closure.closureDate).toLocaleDateString('pt-PT', { month: 'long' }),
+        }, `[${companyInfo.name}] Fecho de Caixa`);
+
+        return deliver([user.email, companyInfo.email], subject, html);
     },
 
-    /**
-     * Sends a Welcome email to a new user and a notification to the administrator.
-     */
     sendUserOnboarding: async (newUser: User, companyInfo: CompanyInfo) => {
-        // 1. Welcome to the User
-        await NotificationService.invokeNativeEmail({
-            type: 'USER_WELCOME',
-            template: 'USER_WELCOME',
-            to: Array.from(new Set([newUser.email, companyInfo.email])).filter(Boolean),
-            data: {
-                user_name: newUser.name,
-                user_id: newUser.id,
-                company_name: companyInfo.name,
-                role: newUser.role
-            }
-        });
+        const { subject, html } = renderTemplate('USER_WELCOME', {
+            user_name: newUser.name,
+            company_name: companyInfo.name,
+            role: newUser.role,
+        }, `Bem-vindo(a) ao ${companyInfo.name}`);
 
-        // 2. Alert the Admin (Standard Email for now since no template provided for "Admin Alert")
-        return NotificationService.invokeNativeEmail({
-            type: 'ADMIN_ALERT_NEW_USER',
-            to: [companyInfo.email],
-            subject: `[${companyInfo.name}] Novo Utilizador Registado`,
-            data: {
-                userName: newUser.name,
-                role: newUser.role,
-                timestamp: new Date().toISOString()
-            }
-        });
+        return deliver([newUser.email, companyInfo.email], subject, html);
     },
 
-    /**
-     * Sends a Stock Alert Report for all low stock items.
-     */
     sendStockAlert: async (lowStockItems: any[], companyInfo: CompanyInfo) => {
-        if (!lowStockItems || lowStockItems.length === 0) return;
+        if (!lowStockItems || lowStockItems.length === 0) return false;
 
-        // 1. Send In-App to Warehouse/Admins
-        await NotificationService.notifyRole(String(companyInfo.id), ['ADMIN', 'TECHNICIAN'], {
-            type: 'STOCK',
-            title: '⚠️ Alerta de Stock Baixo',
-            content: `${lowStockItems.length} produtos atingiram o nível mínimo. Verifique o inventário.`,
-            metadata: { count: lowStockItems.length }
-        });
+        const rows = lowStockItems
+            .map((item) => `<li><strong>${item.name}</strong> — ${item.quantity} em stock (mínimo ${item.minStock ?? item.min_stock})</li>`)
+            .join('');
 
-        // 2. Send Emails for the first few items to avoid giant emails, or summarized
-        const summary = lowStockItems.map(i => `${i.name}: ${i.quantity} unidades (Min: ${i.minStock})`).join('\n');
+        const { subject, html } = renderTemplate(undefined, {
+            details: `<ul style="padding-left:18px;">${rows}</ul>`,
+        }, `[${companyInfo.name}] Alerta de Stock Baixo`);
 
-        return NotificationService.invokeNativeEmail({
-            type: 'STOCK_ALERT',
-            template: 'STOCK_LOW',
-            to: Array.from(new Set([companyInfo.email])).filter(Boolean),
-            data: {
-                user_name: 'Gestor de Stock',
-                company_name: companyInfo.name,
-                product_name: lowStockItems.length === 1 ? lowStockItems[0].name : `${lowStockItems.length} Produtos`,
-                quantity: lowStockItems.length === 1 ? lowStockItems[0].quantity : 'Vários',
-                details: summary
-            }
-        });
+        return deliver([companyInfo.email], subject, html);
     },
 
-    /**
-     * Sends a real-time notification for a Sale.
-     */
     sendSaleEmail: async (sale: Sale, companyInfo: CompanyInfo, user: User) => {
-        return NotificationService.invokeNativeEmail({
-            type: 'SALE_NOTIFICATION',
-            template: 'INVOICE_EMITTED',
-            to: [companyInfo.email],
-            data: {
-                invoice_number: sale.id,
-                company_name: companyInfo.name,
-                total: sale.total.toLocaleString(),
-                customer_name: sale.customerName || 'Consumidor Final',
-                performed_by: user.name,
-                items_count: sale.items.length
-            }
-        });
+        const { subject, html } = renderTemplate(undefined, {
+            details: `Venda registada por ${user.name} no valor de ${sale.total.toFixed(2)} MT (${sale.paymentMethod}).`,
+        }, `[${companyInfo.name}] Nova Venda`);
+
+        return deliver([companyInfo.email], subject, html);
+    },
+
+    sendManagementAlert: async (
+        type: 'TASK' | 'AGENDA' | 'CHAT' | 'CUSTOMER' | 'SUPPLIER',
+        title: string,
+        details: string,
+        companyInfo: CompanyInfo,
+        recipientEmail?: string
+    ) => {
+        const { subject, html } = renderTemplate(undefined, { details }, `[${companyInfo.name}] ${title}`);
+        return deliver([recipientEmail || companyInfo.email], subject, html);
+    },
+
+    sendSystemAlert: async (type: string, companyInfo: CompanyInfo, user: User, details: string) => {
+        const { subject, html } = renderTemplate(undefined, { details }, `[${companyInfo.name}] ${type}`);
+        return deliver([companyInfo.email], subject, html);
     },
 
     /**
-     * Generic method for Task/Agenda/Chat alerts.
+     * Envio genérico com modelo.
+     *
+     * Mantido para os pontos do sistema que compõem a mensagem à medida. O
+     * campo `from` do payload é ignorado: o remetente é fixado pelo servidor.
+     * Era precisamente a liberdade de o escolher que tornava o mecanismo
+     * anterior utilizável como relay para o domínio.
      */
-    sendManagementAlert: async (type: 'TASK' | 'AGENDA' | 'CHAT' | 'CUSTOMER' | 'SUPPLIER', title: string, details: string, companyInfo: CompanyInfo, recipientEmail?: string, recipientId?: string) => {
-        const templateMap: Record<string, string> = {
-            'TASK': 'TASK_PENDING',
-            'CUSTOMER': 'BRAND_MSG_2', // Fallback or specific
-            'SUPPLIER': 'PURCHASE_RECOMMENDATION'
-        };
-
-        // 1. In-App Notification (if recipientId provided)
-        if (recipientId) {
-            await NotificationService.sendInApp({
-                userId: recipientId,
-                type: type === 'TASK' ? 'SYSTEM' : 'SYSTEM',
-                title: `Nova Atualização: ${type}`,
-                content: `${title}: ${details}`,
-                metadata: { type, title }
-            });
-        }
-
-        return NotificationService.invokeNativeEmail({
-            type: `MANAGEMENT_${type}`,
-            template: templateMap[type] || 'BRAND_MSG_2',
-            to: Array.from(new Set([recipientEmail || companyInfo.email, companyInfo.email])).filter(Boolean),
-            data: {
-                company_name: companyInfo.name,
-                task_name: title,
-                product_name: title, // For recommendations
-                details
-            }
-        });
+    invokeNativeEmail: async (payload: {
+        to: string | string[];
+        subject?: string;
+        template?: string;
+        data?: Record<string, any>;
+    }): Promise<boolean> => {
+        const { subject, html } = renderTemplate(payload.template, payload.data ?? {}, payload.subject);
+        return deliver(payload.to, subject, html);
     },
 
+    // -------------------------------------------------------------------------
+    // Notificações dentro da aplicação
+    // -------------------------------------------------------------------------
+
     /**
-     * Broadcasts an notification to all users with specific roles in a company.
+     * Cria uma notificação para membros da equipa.
+     *
+     * Restrita a administradores no servidor. Sem essa restrição, qualquer
+     * utilizador poderia emitir avisos em nome do sistema.
      */
-    notifyRole: async (companyId: string, roles: string[], notification: Partial<AppNotification>) => {
+    sendInApp: async (notification: Partial<AppNotification> & { userIds?: string[] }) => {
         try {
-            const { data: users } = await supabase
-                .from('users')
-                .select('id')
-                .eq('company_id', companyId)
-                .in('role', roles);
-
-            if (users && users.length > 0) {
-                const notifications = users.map(u => ({
-                    user_id: u.id,
-                    type: notification.type || 'SYSTEM',
-                    title: notification.title,
-                    content: notification.content,
-                    metadata: notification.metadata || {}
-                }));
-
-                await supabase.from('notifications').insert(notifications);
-            }
-        } catch (error) {
-            console.error('Failed to broadcast notification:', error);
-        }
-    },
-
-    /**
-     * Creates an In-App notification in the database.
-     */
-    sendInApp: async (notification: Partial<AppNotification>) => {
-        try {
-            const { data, error } = await supabase.from('notifications').insert([{
-                user_id: notification.userId,
-                type: notification.type,
+            await api.post('/notifications', {
                 title: notification.title,
                 content: notification.content,
-                metadata: notification.metadata || {}
-            }]).select();
-
-            if (error) throw error;
-            return data[0];
-        } catch (error) {
-            console.error('Failed to create In-App notification:', error);
-            return null;
-        }
-    },
-
-    /**
-     * Gets notifications for a user.
-     */
-    getNotifications: async (userId: string): Promise<AppNotification[]> => {
-        try {
-            const { data, error } = await supabase
-                .from('notifications')
-                .select('*')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            return data.map((n: any) => ({
-                id: n.id,
-                userId: n.user_id,
-                type: n.type,
-                title: n.title,
-                content: n.content,
-                read: n.read,
-                metadata: n.metadata,
-                createdAt: new Date(n.created_at)
-            }));
-        } catch (error) {
-            console.error('Failed to fetch notifications:', error);
-            return [];
-        }
-    },
-
-    /**
-     * Mark a notification as read.
-     */
-    markAsRead: async (id: string) => {
-        try {
-            const { error } = await supabase
-                .from('notifications')
-                .update({ read: true })
-                .eq('id', id);
-
-            if (error) throw error;
+                type: notification.type,
+                metadata: notification.metadata,
+                userIds: notification.userIds ?? (notification.userId ? [notification.userId] : undefined),
+            });
             return true;
         } catch (error) {
-            console.error('Failed to mark notification as read:', error);
+            console.error('[notificações] Falha ao criar notificação:', error);
+            return false;
+        }
+    },
+
+    /** Notifica todos os membros com determinados perfis. */
+    notifyRole: async (_companyId: string, roles: string[], notification: Partial<AppNotification>) => {
+        try {
+            const team = await api.get<Array<{ id: string; role: string }>>('/team');
+            const userIds = team.filter((member) => roles.includes(member.role)).map((member) => member.id);
+            if (userIds.length === 0) return false;
+
+            return NotificationService.sendInApp({ ...notification, userIds });
+        } catch (error) {
+            console.error('[notificações] Falha ao notificar perfis:', error);
             return false;
         }
     },
 
     /**
-     * Sends a System Alert.
+     * Notificações do utilizador da sessão.
+     *
+     * O identificador deixou de ser um argumento: o servidor devolve apenas
+     * as notificações de quem faz o pedido. Antes era possível pedir as de
+     * outra pessoa passando o identificador dela.
      */
-    sendSystemAlert: async (type: string, companyInfo: CompanyInfo, user: User, details: string) => {
-        // 1. Notify Admins In-App
-        await NotificationService.notifyRole(String(companyInfo.id), ['ADMIN'], {
-            type: 'SYSTEM',
-            title: `🚨 Alerta de Sistema: ${type}`,
-            content: `Ação por ${user.name}: ${details}`,
-            metadata: { type, user: user.name }
-        });
-
-        // 2. Send Email
-        return NotificationService.invokeNativeEmail({
-            type: `SYSTEM_${type}`,
-            to: [companyInfo.email],
-            subject: `[${companyInfo.name}] Alerta de Sistema: ${type}`,
-            data: {
-                type,
-                userName: user.name,
-                details,
-                timestamp: new Date().toISOString()
-            }
-        });
+    getNotifications: async (): Promise<AppNotification[]> => {
+        const notifications = await api.get<any[]>('/notifications');
+        return notifications.map((item) => ({
+            ...item,
+            createdAt: new Date(item.createdAt),
+        })) as AppNotification[];
     },
 
-    /**
-     * Native implementation of email sending via Resend API.
-     */
-    invokeNativeEmail: async (payload: any) => {
-        console.log(`Sending Email (Native): ${payload.type} to ${payload.to}`);
-
-        const d = payload.data || {};
-        let html = '';
-        let subject = payload.subject;
-
-        // Apply Template if provided
-        if (payload.template && (NotificationTemplates as any)[payload.template]) {
-            const tmpl = (NotificationTemplates as any)[payload.template];
-            subject = tmpl.subject;
-            html = tmpl.html;
-
-            // Replace Placeholders
-            Object.keys(d).forEach(key => {
-                const regex = new RegExp(`{{${key}}}`, 'g');
-                subject = subject.replace(regex, d[key]);
-                html = html.replace(regex, d[key]);
-            });
-        } else {
-            // HIGH-QUALITY Fallback for non-templated emails
-            const tmpl = (NotificationTemplates as any).GENERIC_ACTION;
-            subject = payload.subject || "Notificação Nobreza ERP";
-            html = tmpl.html;
-
-            const details = typeof d === 'string' ? d : (d.details || d.message || JSON.stringify(d));
-            const replacements: any = {
-                title: subject,
-                details: details
-            };
-
-            Object.keys(replacements).forEach(key => {
-                const regex = new RegExp(`{{${key}}}`, 'g');
-                html = html.replace(regex, replacements[key]);
-            });
-        }
-
-        try {
-            console.log('[NotificationService] Routing email via edge function...');
-
-            // Determine Sender
-            let fromAddr = 'Nobreza ERP <sistema@nobreza.site>';
-
-            // Priority: Explicit Sender > Dynamic User Email > System Default
-            if (payload.from) {
-                fromAddr = payload.from;
-            } else if (payload.data && payload.data.user_name && payload.data.user_id) {
-                // Generate dynamic email: name + last 4 chars of ID
-                const cleanName = payload.data.user_name.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const idSuffix = String(payload.data.user_id).slice(-4);
-                const dynamicEmail = `${cleanName}${idSuffix}@nobreza.site`;
-                fromAddr = `Nobreza ERP <${dynamicEmail}>`;
-            }
-
-            const { data: result, error } = await supabase.functions.invoke('resend-domains', {
-                body: {
-                    action: 'SEND_EMAIL',
-                    from: fromAddr,
-                    to: (Array.isArray(payload.to) ? payload.to : [payload.to]).filter(Boolean),
-                    subject: subject || 'Nobreza ERP Notification',
-                    html: html || '<p>Mensagem sem conteúdo</p>'
-                }
-            });
-
-            console.log('[NotificationService] Edge function raw result:', result);
-            if (error) console.error('[NotificationService] Supabase Invoke Error:', error);
-
-            if (error) {
-                console.error('Edge function error:', error);
-                throw new Error(error.message || 'Erro na Edge Function');
-            }
-
-            if (result?.error) {
-                console.error('Resend API error:', result.error);
-                throw new Error(result.error);
-            }
-
-            // Log to System Mailbox
-            await NotificationService.logEmailToSystemMailbox({
-                from_addr: fromAddr,
-                from_name: 'Nobreza ERP',
-                to_addr: Array.isArray(payload.to) ? payload.to : [payload.to],
-                subject: payload.subject,
-                snippet: html.replace(/<[^>]*>?/gm, '').substring(0, 100),
-                body_structure: { html },
-                resend_id: result?.id
-            });
-
-            // TRIGGER IN-APP NOTIFICATION FOR SENDER/ADMIN
-            // We notify the current user (if known) or just log it as a system event that might reach admins
-            // attempting to extract user_id from payload data if available, or just broadcast to admin if generic
-            const recipientId = payload.data?.user_id;
-
-            if (recipientId) {
-                await NotificationService.sendInApp({
-                    userId: recipientId,
-                    type: 'EMAIL_SENT',
-                    title: '📧 E-mail Enviado',
-                    content: `E-mail "${payload.subject}" enviado para ${payload.to}`,
-                    metadata: { type: 'EMAIL', resend_id: result?.id }
-                });
-            } else {
-                // If we don't know the specific user context, maybe notify the company admin?
-                // For now, let's just log it if we have a company ID. 
-                // We'll skip generic broadcast to avoid spamming everyone for every system email unless critical.
-            }
-
-            return true;
-        } catch (error: any) {
-            console.error('Native email sending failed:', error);
-            throw new Error(error.message || 'Falha no envio de e-mail');
-        }
+    getUnreadCount: async (): Promise<number> => {
+        const { count } = await api.get<{ count: number }>('/notifications/unread-count');
+        return count;
     },
 
-    /**
-     * Logs an email to the virtual system mailbox table.
-     */
-    logEmailToSystemMailbox: async (data: any) => {
-        try {
-            const SYSTEM_ACCOUNT_ID = '00000000-0000-0000-0000-000000000000';
-
-            // Try to find the correct folder ID for 'SENT' instead of hardcoding
-            const { data: folder } = await supabase
-                .from('erp_email_folders')
-                .select('id')
-                .eq('account_id', SYSTEM_ACCOUNT_ID)
-                .eq('type', 'SENT')
-                .single();
-
-            const targetFolderId = folder?.id || '00000000-0000-0000-0000-000000000001';
-
-            const { error: logError } = await supabase
-                .from('erp_emails_metadata')
-                .insert([{
-                    account_id: SYSTEM_ACCOUNT_ID,
-                    folder_id: targetFolderId,
-                    from_addr: data.from_addr,
-                    from_name: data.from_name,
-                    to_addr: Array.isArray(data.to_addr) ? data.to_addr : [data.to_addr],
-                    subject: data.subject,
-                    snippet: data.snippet,
-                    body_structure: data.body_structure,
-                    resend_id: data.resend_id,
-                    date: new Date().toISOString(),
-                    flags: ['SEEN']
-                }]);
-
-            if (logError) {
-                console.error('Failed to log email to system mailbox:', logError);
-            } else {
-                console.log('[NotificationService] System email logged successfully to folder:', targetFolderId);
-            }
-        } catch (e) {
-            console.error('Exception logging to system mailbox:', e);
-        }
+    markAsRead: async (id: string): Promise<void> => {
+        await api.patch(`/notifications/${id}/read`);
     },
 
-    /**
-     * Comprehensive test for notifications (In-App + Email).
-     */
-    sendTestNotifications: async (user: User, companyInfo: CompanyInfo) => {
-        console.log('[NotificationService] Starting system test...');
-
-        try {
-            // 1. In-App Notification
-            await NotificationService.sendInApp({
-                userId: user.id,
-                type: 'SYSTEM',
-                title: '🛠️ Teste de Sistema',
-                content: `Este é um alerta de teste iniciado em ${new Date().toLocaleTimeString()}. Se você vê isto, as notificações In-App estão OK!`,
-                metadata: { test: true, timestamp: new Date().toISOString() }
-            });
-
-            // 2. Native Email Notification
-            await NotificationService.invokeNativeEmail({
-                type: 'TEST_CONNECTION',
-                to: [user.email, companyInfo.email].filter(Boolean),
-                subject: '🚀 Teste de Conexão Nobreza ERP',
-                data: {
-                    tester: user.name,
-                    company: companyInfo.name,
-                    timestamp: new Date().toISOString()
-                }
-            });
-
-            return { success: true };
-        } catch (error: any) {
-            return { success: false, error: error.message };
-        }
-    }
+    markAllAsRead: async (): Promise<void> => {
+        await api.post('/notifications/read-all');
+    },
 };

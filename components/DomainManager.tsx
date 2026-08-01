@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../services/supabase';
+import { EmailClientService } from '../services/email-client.service';
 import { ResendDomain } from '../types';
 import { Globe, Plus, Trash2, CheckCircle2, AlertCircle, Copy, Loader, RefreshCw, X, Database } from 'lucide-react';
 
@@ -17,12 +17,9 @@ export const DomainManager: React.FC<DomainManagerProps> = ({ companyId }) => {
     const fetchDomains = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('erp_domains')
-                .select('*')
-                .eq('company_id', companyId);
-            if (error) throw error;
-            setDomains(data || []);
+            // O filtro por empresa é aplicado no servidor, a partir da sessão.
+            const data = await EmailClientService.getDomains();
+            setDomains(data as any);
         } catch (e) {
             console.error(e);
         } finally {
@@ -38,23 +35,10 @@ export const DomainManager: React.FC<DomainManagerProps> = ({ companyId }) => {
         if (!newDomain.includes('.')) return alert("Domínio inválido");
         setAdding(true);
         try {
-            // 1. Call Edge Function to Add to Resend
-            const { data: resendData, error: funcError } = await supabase.functions.invoke('resend-domains', {
-                body: { action: 'ADD_DOMAIN', domain: newDomain }
-            });
-
-            if (funcError || !resendData) throw new Error(funcError?.message || "Erro ao contactar Resend");
-
-            // 2. Save to DB
-            const { error: dbError } = await supabase.from('erp_domains').insert({
-                company_id: Number(companyId), // Changed to Number as per updated schema
-                domain: newDomain,
-                status: 'pending',
-                resend_id: resendData.id,
-                dns_records: resendData.records
-            });
-
-            if (dbError) throw dbError;
+            // Com o e-mail a passar pelo SMTP da Hostinger, o domínio deixa de
+            // ser registado num serviço externo. O sistema guarda-o e indica
+            // os registos de DNS a criar no painel; a verificação é feita lá.
+            await EmailClientService.addDomain(newDomain);
 
             setNewDomain('');
             fetchDomains();
@@ -65,36 +49,26 @@ export const DomainManager: React.FC<DomainManagerProps> = ({ companyId }) => {
         }
     };
 
+    /**
+     * Marca o domínio como verificado.
+     *
+     * A verificação real acontece no painel da Hostinger, ao criar os
+     * registos de DNS indicados. Aqui apenas se regista esse estado, para
+     * que a interface saiba que endereços pode oferecer como remetente.
+     */
     const verifyDomain = async (domain: ResendDomain) => {
-        if (!domain.resend_id) return;
         try {
-            const { data, error } = await supabase.functions.invoke('resend-domains', {
-                body: { action: 'VERIFY_DOMAIN', id: domain.resend_id }
-            });
-            if (error) throw error;
-
-            // Update DB status and records
-            await supabase.from('erp_domains').update({
-                status: data.status,
-                dns_records: data.records // Sync fresh records status
-            }).eq('id', domain.id);
-
-            alert(`Status atual: ${data.status}`);
+            await EmailClientService.setDomainStatus(domain.id, 'verified');
             fetchDomains();
         } catch (e: any) {
-            alert("Erro ao verificar: " + e.message);
+            alert("Erro ao atualizar o estado: " + e.message);
         }
     };
 
-    const deleteDomain = async (id: string, resendId?: string) => {
+    const deleteDomain = async (id: string) => {
         if (!confirm("Remover este domínio?")) return;
         try {
-            if (resendId) {
-                await supabase.functions.invoke('resend-domains', {
-                    body: { action: 'DELETE_DOMAIN', id: resendId }
-                });
-            }
-            await supabase.from('erp_domains').delete().eq('id', id);
+            await EmailClientService.deleteDomain(id);
             fetchDomains();
         } catch (e) {
             console.error(e);
@@ -145,7 +119,7 @@ export const DomainManager: React.FC<DomainManagerProps> = ({ companyId }) => {
                                 <button onClick={() => setSelectedDomain(selectedDomain?.id === d.id ? null : d)} className="p-2 text-gray-400 hover:bg-gray-50 rounded-lg text-[10px] font-bold uppercase">
                                     DNS Info
                                 </button>
-                                <button onClick={() => deleteDomain(d.id, d.resend_id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg">
+                                <button onClick={() => deleteDomain(d.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg">
                                     <Trash2 size={14} />
                                 </button>
                             </div>

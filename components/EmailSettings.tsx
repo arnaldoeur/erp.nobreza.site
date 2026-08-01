@@ -3,7 +3,7 @@ import {
     Mail, Key, ShieldCheck, CheckCircle2, XCircle, Trash2, Plus,
     RefreshCw, AlertCircle, Database, Server, ArrowLeft, Globe
 } from 'lucide-react';
-import { supabase } from '../services/supabase';
+import { EmailClientService } from '../services/email-client.service';
 import { EmailAccountService } from '../services/email-accounts.service'; // Ensure local interface is removed if conflict
 import { CompanyService } from '../services/company.service';
 import { EmailAccount } from '../types';
@@ -68,19 +68,13 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ companyId, current
     const fetchAccounts = async () => {
         setLoading(true);
         try {
-            const data = await EmailAccountService.getAccounts(companyId);
+            const data = await EmailAccountService.getAccounts();
             setAccounts(data);
 
-            // Fetch verified domains
-            const { data: domains } = await supabase
-                .from('erp_domains')
-                .select('domain')
-                .eq('company_id', companyId)
-                .eq('status', 'verified');
-
-            if (domains) {
-                setVerifiedDomains(domains.map(d => d.domain));
-            }
+            // Domínios verificados. O filtro por empresa é aplicado no
+            // servidor, a partir da sessão.
+            const domains = await EmailClientService.getDomains();
+            setVerifiedDomains(domains.filter(d => d.status === 'verified').map(d => d.domain));
         } catch (e) {
             console.error(e);
         } finally {
@@ -127,12 +121,10 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ companyId, current
     const handleTest = async (id: string) => {
         setTestingId(id);
         try {
+            // O teste corre no servidor, onde a credencial existe. Antes esta
+            // função devolvia sempre sucesso sem testar coisa nenhuma.
             const result = await EmailAccountService.testConnection(id);
-            if (result.success) {
-                alert('Conexão SMTP efetuada! (IMAP será testado ao sincronizar)');
-            } else {
-                alert(`Erro: ${result.error || result.message}`);
-            }
+            alert(result.ok ? `✅ ${result.message}` : `❌ ${result.message}`);
         } catch (e: any) {
             alert(`Erro: ${e.message}`);
         } finally {

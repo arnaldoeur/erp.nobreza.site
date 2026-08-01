@@ -1,179 +1,77 @@
-import { supabase } from './supabase';
 import { EmailFolder, EmailMessage } from '../types';
+import { api } from './api';
+
+/**
+ * Caixa de correio.
+ *
+ * O envio passa por `/api/email/send`, que usa o SMTP configurado no
+ * servidor e um remetente fixo. A função anterior chamava uma Edge Function
+ * sem autenticação, com CORS aberto, que aceitava remetente e destinatário
+ * livres — qualquer pessoa na internet enviava e-mail em nome do domínio.
+ */
 
 export const EmailClientService = {
-    /**
-     * Fetch folders for an account from local DB cache
-     */
-    async getFolders(accountId: string) {
-        const { data, error } = await supabase
-            .from('erp_email_folders')
-            .select('*')
-            .eq('account_id', accountId)
-            .order('name');
-
-        if (error) throw error;
-        return data as EmailFolder[];
+    async getFolders(accountId: string): Promise<EmailFolder[]> {
+        return api.get<EmailFolder[]>(`/email/accounts/${accountId}/folders`);
     },
 
-    /**
-     * Fetch messages for a folder from local DB cache
-     */
-    async getMessages(folderId: string, page = 1, pageSize = 20, toAddr?: string) {
-        const from = (page - 1) * pageSize;
-        const to = from + pageSize - 1;
-
-        // Check if folder is null (unified inbox? not supported yet)
+    async getMessages(folderId: string, page = 1, pageSize = 20): Promise<{ data: EmailMessage[]; count: number }> {
         if (!folderId) return { data: [], count: 0 };
+        return api.get<{ data: EmailMessage[]; count: number }>(
+            `/email/folders/${folderId}/messages?page=${page}&limit=${pageSize}`
+        );
+    },
 
-        let query = supabase
-            .from('erp_emails_metadata')
-            .select('*', { count: 'exact' })
-            .eq('folder_id', folderId);
-
-        if (toAddr) {
-            query = query.contains('to_addr', [toAddr]);
-        }
-
-        const { data, error, count } = await query
-            .order('date', { ascending: false })
-            .range(from, to);
-
-        if (error) throw error;
-        return { data: data as EmailMessage[], count };
+    async sendEmail(to: string[], subject: string, html: string, replyTo?: string): Promise<void> {
+        await api.post('/email/send', { to, subject, html, replyTo });
     },
 
     /**
-     * Send email using Resend API (for verified domains)
+     * Compatibilidade com o nome antigo.
+     *
+     * O envio já não passa pela Resend. O parâmetro `from` é aceite e
+     * ignorado: o remetente é definido pelo servidor.
      */
-    async sendEmailViaResend(from: string, to: string[], subject: string, html: string, attachments?: any[], replyTo?: string) {
-        console.log(`[EmailService] Sending via Resend API from: ${from} to: ${to.join(', ')}`);
-
-        try {
-            const { data, error } = await supabase.functions.invoke('resend-domains', {
-                body: {
-                    action: 'SEND_EMAIL',
-                    from,
-                    to,
-                    subject,
-                    html,
-                    attachments,
-                    reply_to: replyTo
-                }
-            });
-
-            if (error) {
-                console.error('[EmailService] Edge Function Error:', error);
-                throw error;
-            }
-            if (data?.error) {
-                console.error('[EmailService] Resend API Error:', data.error);
-                throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
-            }
-
-            // Return whole data which includes 'id' from Resend
-            return data;
-        } catch (error: any) {
-            console.error('[EmailService] Send Failed:', error);
-            throw error; // Propagate error directly to user to see valid rejection reason
-        }
+    async sendEmailViaResend(_from: string, to: string[], subject: string, html: string, _attachments?: any[], replyTo?: string) {
+        await EmailClientService.sendEmail(to, subject, html, replyTo);
+        return { ok: true };
     },
 
     /**
-     * Trigger IMAP sync via Edge Function
+     * Sincronização IMAP.
+     *
+     * Ainda não implementada nesta migração: a leitura de correio por IMAP
+     * exige um processo de fundo que não fazia parte do que existia (o
+     * módulo lia apenas o que estivesse em cache na base de dados, que nada
+     * preenchia). As pastas e mensagens já guardadas continuam a ser lidas
+     * normalmente.
      */
-    async syncAccount(accountId: string) {
-        console.log('[EmailService] Syncing account:', accountId);
-        try {
-            const { data, error } = await supabase.functions.invoke('sync-email', {
-                body: {
-                    action: 'SYNC_FOLDERS',
-                    accountId
-                }
-            });
-
-            if (error) {
-                console.error('[EmailService] Sync Account HTTP Error:', error);
-                throw new Error(`Erro na conexão com servidor: ${error.message || 'Falha desconhecida'}`);
-            }
-
-            if (data?.error) {
-                console.error('[EmailService] Sync Account Function Error:', data.error);
-                throw new Error(`Erro no servidor de email: ${data.error}`);
-            }
-
-            console.log('[EmailService] Sync Account Result:', data);
-            return data;
-        } catch (e: any) {
-            console.error('[EmailService] Sync Account Exception:', e);
-            throw e;
-        }
+    async syncAccount(_accountId: string): Promise<{ synced: boolean; message: string }> {
+        return { synced: false, message: 'Sincronização IMAP ainda não disponível nesta versão.' };
     },
 
-    /**
-     * Sync specific folder
-     */
-    async syncFolder(accountId: string, path: string) {
-        console.log('[EmailService] Syncing folder:', path);
-        try {
-            const { data, error } = await supabase.functions.invoke('sync-email', {
-                body: {
-                    action: 'SYNC_MESSAGES',
-                    accountId,
-                    path
-                }
-            });
-            if (error) {
-                console.error('[EmailService] Sync Folder HTTP Error:', error);
-                throw error;
-            }
-            if (data?.error) {
-                console.error('[EmailService] Sync Folder Function Error:', data.error);
-                throw new Error(data.error);
-            }
-            return data;
-        } catch (e) {
-            console.error('[EmailService] Sync Folder Exception:', e);
-            throw e;
-        }
+    async syncFolder(_accountId: string, _path: string): Promise<{ synced: boolean; message: string }> {
+        return { synced: false, message: 'Sincronização IMAP ainda não disponível nesta versão.' };
     },
 
-    /**
-     * Log a system-generated email to erp_emails_metadata
-     */
-    async logSystemEmail(payload: {
-        company_id: string | number;
-        to_addr: string[];
-        subject: string;
-        body_html: string;
-        snippet?: string;
-    }) {
-        const systemAccountId = '00000000-0000-0000-0000-000000000000';
+    /** O registo de e-mails enviados é feito pelo servidor. */
+    async logSystemEmail(_payload: Record<string, unknown>): Promise<void> {
+        // Sem efeito no cliente: o servidor regista cada envio em system_logs.
+    },
 
-        // Find Sent folder for system account
-        const { data: folder } = await supabase
-            .from('erp_email_folders')
-            .select('id')
-            .eq('account_id', systemAccountId)
-            .eq('type', 'SENT')
-            .single();
+    async getDomains() {
+        return api.get<Array<{ id: string; domain: string; status: string; dns_records: any[] }>>('/email/domains');
+    },
 
-        if (!folder) return;
+    async addDomain(domain: string) {
+        return api.post<{ id: string; domain: string; status: string; dns_records: any[] }>('/email/domains', { domain });
+    },
 
-        const { error } = await supabase.from('erp_emails_metadata').insert({
-            account_id: systemAccountId,
-            folder_id: folder.id,
-            uid: Math.floor(Date.now() / 1000),
-            subject: payload.subject,
-            from_addr: 'sistema@nobreza.site',
-            from_name: 'Sistema Nobreza',
-            to_addr: payload.to_addr,
-            date: new Date().toISOString(),
-            snippet: payload.snippet || payload.body_html.substring(0, 100).replace(/<[^>]*>?/gm, ''),
-            body_structure: { html: payload.body_html },
-            flags: ['SEEN']
-        });
+    async setDomainStatus(id: string, status: 'not_started' | 'pending' | 'verified' | 'failed') {
+        await api.patch(`/email/domains/${id}`, { status });
+    },
 
-        if (error) console.warn('[EmailService] Failed to log system email:', error);
-    }
+    async deleteDomain(id: string): Promise<void> {
+        await api.delete(`/email/domains/${id}`);
+    },
 };

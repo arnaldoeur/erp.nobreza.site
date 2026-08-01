@@ -1,3 +1,4 @@
+import { CompanyService } from '../services/company.service';
 import React, { useState, useEffect } from 'react';
 import { Download, Globe, Moon, Sun, Shield, Save, RefreshCw, LayoutTemplate, Palette, Eye, Clock } from 'lucide-react';
 import { CompanyInfo, User } from '../types';
@@ -27,15 +28,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
     const handleBackup = async () => {
         setLoading(true);
         try {
-            const tables = ['sales', 'products', 'users', 'expenses', 'suppliers', 'customers'];
-            const backupData: Record<string, any> = {};
-
-            const { supabase } = await import('../services/supabase');
-
-            for (const table of tables) {
-                const { data } = await supabase.from(table).select('*');
-                backupData[table] = data;
-            }
+            // A exportação passou para o servidor: uma só chamada, limitada à
+            // empresa da sessão e sem colunas sensíveis. Antes eram seis
+            // `select('*')` a partir do browser, sem verificação de permissão.
+            const backupData = await CompanyService.exportBackup();
 
             const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -315,14 +311,12 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ companyInfo, cur
 
                                         // Trigger a few email templates for the user to see in Email Center
                                         await NotificationService.invokeNativeEmail({
-                                            type: 'TEST_PREMIUM_WELCOME',
                                             template: 'USER_WELCOME',
                                             to: [currentUser.email],
                                             data: { user_name: currentUser.name, company_name: companyInfo.name }
                                         });
 
                                         await NotificationService.invokeNativeEmail({
-                                            type: 'TEST_PREMIUM_STOCK',
                                             template: 'STOCK_LOW',
                                             to: [currentUser.email],
                                             data: { user_name: currentUser.name, product_name: 'Paracetamol 500mg', quantity: 5 }

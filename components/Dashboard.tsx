@@ -29,11 +29,12 @@ interface DashboardProps {
   onQuickAction?: (view: string, action: string) => void;
   user?: User;
   companyInfo?: CompanyInfo;
+  expenses?: Array<{ amount: number; date: string; type: string; description: string }>;
 }
 
 type DashboardModalType = 'SALES_TODAY' | 'STOCK_VALUE' | 'LOW_STOCK' | 'CASH_DETAILS' | null;
 
-export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAction, user, companyInfo }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAction, user, companyInfo, expenses = [] }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeModal, setActiveModal] = useState<DashboardModalType>(null);
 
@@ -117,7 +118,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ products, sales, onQuickAc
     if (!companyInfo) return false;
 
     // 1. Resolve Effective Opening/Closing Times (Check both legacy and workingHours)
-    const openingTime = companyInfo.openingTime || companyInfo.workingHours?.start;
+    const openingTime = companyInfo.workingHours?.start;
     const closingTime = companyInfo.closingTime || companyInfo.workingHours?.end;
 
     // 2. Check general business hours if set

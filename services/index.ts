@@ -1,3 +1,4 @@
+export * from './api';
 export * from './storage.service';
 export * from './auth.service';
 export * from './product.service';
@@ -8,7 +9,6 @@ export * from './billing.service';
 export * from './closure.service';
 export * from './log.service';
 export * from './expense.service';
-
 export * from './company.service';
 export * from './healthPlan.service';
 export * from './superAdmin.service';
@@ -17,3 +17,5 @@ export * from './collab.service';
 export * from './support.service';
 export * from './calendar.service';
 export * from './time-tracking.service';
+export * from './email-accounts.service';
+export * from './email-client.service';

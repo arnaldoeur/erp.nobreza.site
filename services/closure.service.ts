@@ -1,62 +1,37 @@
-
 import { DailyClosure } from '../types';
-import { supabase } from './supabase';
-import { AuthService } from './auth.service';
+import { api } from './api';
+
+/**
+ * Fechos de caixa.
+ *
+ * A diferença entre o total do sistema e o numerário contado é recalculada
+ * no servidor. Antes vinha calculada do browser, o que permitia gravar um
+ * fecho aparentemente certo com valores que não batiam.
+ */
+
+function toClosure(raw: any): DailyClosure {
+    return {
+        ...raw,
+        closureDate: new Date(raw.closureDate),
+        createdAt: new Date(raw.createdAt),
+    } as DailyClosure;
+}
 
 export const ClosureService = {
     getAll: async (): Promise<DailyClosure[]> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) return [];
-
-        const { data, error } = await supabase
-            .from('daily_closures')
-            .select('*')
-            .eq('company_id', user.companyId)
-            .order('closure_date', { ascending: false });
-
-        if (error) {
-            console.error('Error fetching closures:', error);
-            return [];
-        }
-
-        return data.map((c: any) => ({
-            id: c.id,
-            companyId: c.company_id,
-            closureDate: new Date(c.closure_date),
-            shift: c.shift,
-            responsibleId: c.responsible_id,
-            responsibleName: c.responsible_name,
-            systemTotal: c.system_total,
-            manualCash: c.manual_cash,
-            difference: c.difference,
-            observations: c.observations,
-            status: c.status,
-            createdAt: new Date(c.created_at || c.closure_date)
-        }));
+        const closures = await api.get<any[]>('/closures');
+        return closures.map(toClosure);
     },
 
-    add: async (closure: DailyClosure): Promise<void> => {
-        const user = AuthService.getCurrentUser();
-        if (!user) return;
-
-        const dbClosure = {
-            company_id: user.companyId,
-            closure_date: closure.closureDate,
+    add: async (closure: DailyClosure): Promise<DailyClosure> => {
+        return toClosure(await api.post<any>('/closures', {
+            closureDate: closure.closureDate,
             shift: closure.shift,
-            responsible_id: closure.responsibleId,
-            responsible_name: closure.responsibleName,
-            system_total: closure.systemTotal,
-            manual_cash: closure.manualCash,
-            difference: closure.difference,
+            responsibleName: closure.responsibleName,
+            systemTotal: closure.systemTotal,
+            manualCash: closure.manualCash,
             observations: closure.observations,
-            status: closure.status || 'CLOSED'
-        };
-
-        const { error } = await supabase.from('daily_closures').insert(dbClosure);
-
-        if (error) {
-            console.error('Error adding closure:', error);
-            throw error;
-        }
-    }
+            status: closure.status,
+        }));
+    },
 };

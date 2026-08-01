@@ -46,7 +46,7 @@ export const Support: React.FC<SupportProps> = ({ currentUser, sales, products, 
 
     const loadThreads = async () => {
         try {
-            const data = await SupportService.getThreads(currentUser.companyId, currentUser.id);
+            const data = await SupportService.getThreads();
             setThreads(data);
             // If threads exist but none selected, select the first one (Desktop behavior)
             if (data.length > 0 && !activeThread) {
@@ -71,20 +71,21 @@ export const Support: React.FC<SupportProps> = ({ currentUser, sales, products, 
 
     const handleNewChat = async () => {
         try {
-            const newThread = await SupportService.createThread(currentUser.companyId, currentUser.id);
+            const newThread = await SupportService.createThread();
             setThreads([newThread, ...threads]);
             setActiveThread(newThread);
 
-            // Send welcome message from AI automatically
-            setIsAiTyping(true);
-            setTimeout(async () => {
-                await SupportService.sendMessage(newThread.id, 'assistant', `Olá ${currentUser.name}! Sou a IA da Nobreza. Como posso ajudar?`);
-                loadMessages(newThread.id);
-                setIsAiTyping(false);
-            }, 1000);
-
-        } catch (e) {
-            alert("Erro ao criar conversa. Verifique se correu o script SQL 41.");
+            // A saudação é apresentada localmente. Antes era gravada na base de
+            // dados como se tivesse vindo do assistente, o que enchia o
+            // histórico de mensagens que ninguém tinha gerado.
+            setMessages([{
+                id: 'welcome',
+                role: 'assistant',
+                content: `Olá ${currentUser.name}! Sou a assistente do Nobreza ERP. Em que posso ajudar?`,
+                created_at: new Date().toISOString()
+            }]);
+        } catch (e: any) {
+            alert(`Erro ao criar conversa: ${e.message}`);
         }
     };
 
@@ -113,28 +114,13 @@ export const Support: React.FC<SupportProps> = ({ currentUser, sales, products, 
         setIsAiTyping(true);
 
         try {
-            // 1. Save User Message to DB
-            await SupportService.sendMessage(activeThread.id, 'user', content);
+            // Um único pedido: o servidor grava a pergunta, reúne o contexto
+            // de negócio da empresa da sessão, consulta o modelo e grava a
+            // resposta. Antes eram duas chamadas a partir do browser, e a
+            // pergunta ficava gravada sem resposta se a segunda falhasse.
+            await SupportService.sendMessage(activeThread.id, content);
 
-            // Re-fetch threads to update timestamp/sorting if needed
             loadThreads();
-
-            // 2. Generate AI Response
-            await SupportService.generateAIResponse(
-                activeThread.id,
-                messages.concat(optimisticMsg),
-                content,
-                {
-                    userName: currentUser.name,
-                    role: currentUser.role,
-                    companyId: currentUser.companyId,
-                    sales: sales || [],
-                    products: products || [],
-                    dailyClosures: dailyClosures || []
-                }
-            );
-
-            // 3. Reload Full History (to get real IDs and AI response)
             loadMessages(activeThread.id);
 
         } catch (error) {
@@ -142,7 +128,7 @@ export const Support: React.FC<SupportProps> = ({ currentUser, sales, products, 
             const errorMsg: ChatMessage = {
                 id: 'err',
                 role: 'system',
-                content: 'Erro ao enviar mensagem. (Verifique conexão/SQL)',
+                content: 'Não foi possível enviar a mensagem. Verifique a ligação e tente de novo.',
                 created_at: new Date().toISOString()
             };
             setMessages(prev => [...prev, errorMsg]);

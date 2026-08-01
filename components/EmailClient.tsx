@@ -40,7 +40,7 @@ export const EmailClient: React.FC<EmailClientProps> = ({ companyId, currentUser
                 setCompanyInfo(info);
 
                 // Load Accounts
-                const accs = await EmailAccountService.getAccounts(companyId);
+                const accs = await EmailAccountService.getAccounts();
                 setAccounts(accs);
 
                 // Auto-select first account (Personal)
@@ -100,9 +100,7 @@ export const EmailClient: React.FC<EmailClientProps> = ({ companyId, currentUser
             const { data } = await EmailClientService.getMessages(
                 folderId,
                 1,
-                20,
-                isSystemFolder ? currentUser.email : undefined
-            );
+                20);
             setMessages(data);
             setSelectedMessage(null);
         } finally {
@@ -130,9 +128,7 @@ export const EmailClient: React.FC<EmailClientProps> = ({ companyId, currentUser
             const msgs = await EmailClientService.getMessages(
                 selectedFolder || '',
                 1,
-                20,
-                selectedAccount.account_type === 'SYSTEM' ? currentUser.email : undefined
-            );
+                20);
             setMessages(msgs.data);
             alert('Sincronização concluída!');
         } catch (e: any) {

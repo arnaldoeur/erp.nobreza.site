@@ -237,7 +237,7 @@ const Receipt: React.FC<ReceiptProps> = ({ sale, companyInfo, onClose, currentUs
           <button onClick={handleDownloadPDF} className="flex-1 bg-white border border-gray-200 text-gray-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-[10px] uppercase hover:bg-gray-50">
             <Download size={16} /> PDF
           </button>
-          <button onClick={handlePrint} className="flex-1 bg-emerald-950 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-[10px] uppercase shadow-lg hover:bg-emerald-900">
+          <button onClick={() => handlePrint('THERMAL')} className="flex-1 bg-emerald-950 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-[10px] uppercase shadow-lg hover:bg-emerald-900">
             <Printer size={16} /> Imprimir
           </button>
         </div>
@@ -397,9 +397,10 @@ export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSa
     setCurrentSale(newSale);
 
     // Trigger In-App Notification
-    if (currentUser?.id) {
+    const notifyUserId = (currentUser as { id?: string } | undefined)?.id;
+    if (notifyUserId) {
       NotificationService.sendInApp({
-        userId: currentUser.id,
+        userId: notifyUserId,
         type: 'SALE',
         title: 'Nova Venda Realizada',
         content: `Venda de MT ${total.toLocaleString()} finalizada por ${newSale.performedBy}.`,
@@ -529,7 +530,7 @@ export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSa
                   onChange={e => setCustomerSearch(e.target.value)}
                 />
                 <button
-                  onClick={() => onQuickAddCustomer({ id: `c-${Date.now()}`, name: customerSearch, companyId: companyInfo.id, totalSpent: 0, lastVisit: new Date(), phone: '', email: '' })}
+                  onClick={() => onQuickAddCustomer({ id: `c-${Date.now()}`, name: customerSearch, companyId: companyInfo.id, totalSpent: 0, lastVisit: new Date(), contact: '', email: '', nuit: '', address: '', type: 'NORMAL', createdAt: new Date() })}
                   className="text-emerald-600 hover:bg-emerald-50 p-1.5 rounded-lg"
                   title="Novo Cliente"
                 >
@@ -553,7 +554,7 @@ export const POS: React.FC<POSProps> = ({ products, customers, companyInfo, onSa
                       >
                         <div className="flex flex-col">
                           <span className="text-xs font-bold text-emerald-950 uppercase">{c.name}</span>
-                          <span className="text-[10px] text-gray-400 font-bold uppercase">{c.phone || 'Sem telefone'}</span>
+                          <span className="text-[10px] text-gray-400 font-bold uppercase">{c.contact || 'Sem telefone'}</span>
                         </div>
                         <Check size={14} className="text-emerald-500 opacity-0 group-hover:opacity-100" />
                       </div>

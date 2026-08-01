@@ -16,7 +16,7 @@ export const EmailCenter: React.FC<EmailCenterProps> = ({ companyId, currentUser
 
     const checkAccounts = async () => {
         try {
-            const accs = await EmailAccountService.getAccounts(companyId);
+            const accs = await EmailAccountService.getAccounts();
             const hasPersonalAccounts = accs.some(a => a.account_type !== 'SYSTEM');
 
             if (accs.length > 0) {

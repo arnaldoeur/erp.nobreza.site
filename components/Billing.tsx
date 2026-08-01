@@ -115,7 +115,7 @@ export const Billing: React.FC<BillingProps> = ({ products, companyInfo, documen
             targetName,
             targetDetails: targetInfo ? {
                nuit: targetInfo.nuit,
-               address: targetInfo.address || (targetInfo as any).location,
+               address: (targetInfo as any).address || (targetInfo as any).location,
                contact: targetInfo.contact,
                email: targetInfo.email
             } : undefined,
