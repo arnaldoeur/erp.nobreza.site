@@ -74,15 +74,7 @@ jobs:
           # Barreira adicional: se o artefacto vier a ser colocado numa raiz
           # servida por Apache, isto impede a leitura direta do código do
           # servidor e de ficheiros de ambiente.
-          cat > .deploy/.htaccess <<'HTACCESS'
-          # Bloquear acesso direto a ficheiros que nunca devem ser servidos.
-          <FilesMatch "^\.env">
-              Require all denied
-          </FilesMatch>
-          RedirectMatch 404 ^/server/
-          RedirectMatch 404 ^/scripts/
-          RedirectMatch 404 ^/node_modules/
-          HTACCESS
+          cp scripts/deploy.htaccess .deploy/.htaccess
 
       - name: Publicar no branch deploy
         run: |

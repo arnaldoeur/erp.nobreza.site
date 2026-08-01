@@ -1,0 +1,24 @@
+# =============================================================================
+# Barreira de segurança do artefacto de deploy
+# =============================================================================
+# Copiado para a raiz do artefacto pelo workflow de publicação.
+#
+# Com a aplicação a correr em Node.js, o Apache não deveria sequer servir
+# estes ficheiros. Isto existe como segunda camada, para o caso de a
+# aplicação parar e o Apache passar a servir a pasta diretamente — foi
+# exatamente assim que o código-fonte ficou exposto no deploy anterior.
+# =============================================================================
+
+# Ficheiros de ambiente: contêm credenciais e nunca devem ser servidos.
+<FilesMatch "^\.env">
+    Require all denied
+</FilesMatch>
+
+# Código do servidor, scripts e dependências não são conteúdo web.
+RedirectMatch 404 ^/server/
+RedirectMatch 404 ^/scripts/
+RedirectMatch 404 ^/node_modules/
+RedirectMatch 404 ^/uploads/
+
+# Impedir a listagem de diretórios sem ficheiro de índice.
+Options -Indexes
