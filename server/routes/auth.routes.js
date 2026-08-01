@@ -7,7 +7,7 @@
  */
 
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import { createLimiter } from '../middleware/rate-limit.js';
 import { asyncHandler, badRequest, unauthorized } from '../utils/errors.js';
 import { requireEmail, requireString } from '../utils/validate.js';
 import { ACCESS_COOKIE, REFRESH_COOKIE, cookieOptions, requireAuth } from '../middleware/auth.js';
@@ -16,22 +16,18 @@ import { logAction } from '../services/log.service.js';
 
 export const authRouter = Router();
 
-const loginLimiter = rateLimit({
+const loginLimiter = createLimiter({
     windowMs: 15 * 60 * 1000,
     limit: 10,
-    standardHeaders: 'draft-7',
-    legacyHeaders: false,
-    message: { error: 'Demasiadas tentativas de início de sessão. Aguarde 15 minutos.' },
+    message: 'Demasiadas tentativas de início de sessão. Aguarde 15 minutos.',
 });
 
 // Mais restritivo: cada pedido aceite envia um e-mail, pelo que sem limite
 // isto seria uma forma de inundar a caixa de correio de terceiros.
-const resetLimiter = rateLimit({
+const resetLimiter = createLimiter({
     windowMs: 60 * 60 * 1000,
     limit: 5,
-    standardHeaders: 'draft-7',
-    legacyHeaders: false,
-    message: { error: 'Demasiados pedidos de recuperação. Tente novamente dentro de uma hora.' },
+    message: 'Demasiados pedidos de recuperação. Tente novamente dentro de uma hora.',
 });
 
 /** Coloca os tokens em cookies httpOnly. O JavaScript da página não lhes acede. */

@@ -10,7 +10,7 @@ import express from 'express';
 import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import rateLimit from 'express-rate-limit';
+import { createLimiter } from './middleware/rate-limit.js';
 import path from 'node:path';
 import fs from 'node:fs';
 
@@ -69,12 +69,10 @@ export function createApp() {
     // -------------------------------------------------------------------------
     // As rotas sensíveis têm limites próprios, mais apertados, definidas em
     // cada router. Este é a rede de segurança para tudo o resto.
-    app.use('/api', rateLimit({
+    app.use('/api', createLimiter({
         windowMs: 60 * 1000,
         limit: 300,
-        standardHeaders: 'draft-7',
-        legacyHeaders: false,
-        message: { error: 'Demasiados pedidos. Aguarde um momento.' },
+        message: 'Demasiados pedidos. Aguarde um momento.',
     }));
 
     // -------------------------------------------------------------------------

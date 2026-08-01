@@ -15,7 +15,7 @@
  */
 
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import { createLimiter } from '../middleware/rate-limit.js';
 import { asyncHandler, badRequest, forbidden, notFound } from '../utils/errors.js';
 import { query, queryOne } from '../db/pool.js';
 import { newId } from '../utils/ids.js';
@@ -286,12 +286,10 @@ emailRouter.get('/email/folders/:id/messages', asyncHandler(async (req, res) => 
 // ENVIO
 // =============================================================================
 
-const sendLimiter = rateLimit({
+const sendLimiter = createLimiter({
     windowMs: 60 * 60 * 1000,
     limit: 100,
-    standardHeaders: 'draft-7',
-    legacyHeaders: false,
-    message: { error: 'Limite de envio atingido nesta hora. Tente mais tarde.' },
+    message: 'Limite de envio atingido nesta hora. Tente mais tarde.',
 });
 
 /**

@@ -1,0 +1,98 @@
+name: Build e publicação
+
+# =============================================================================
+# Prepara o artefacto de deploy para a Hostinger.
+#
+# O deploy por Git da Hostinger faz apenas `git pull` — não corre `npm run
+# build`. Sem este passo, o que chegava ao servidor era o código-fonte por
+# compilar: os componentes React, os serviços TypeScript e o código do
+# servidor, todos dentro da raiz pública do site.
+#
+# Este workflow compila a aplicação e publica num branch `deploy` que contém
+# só o necessário para correr:
+#
+#   dist/              aplicação compilada, servida pelo Express
+#   server/            código da API
+#   server.js          ponto de entrada
+#   package.json       dependências de produção
+#   package-lock.json
+#   scripts/           migrações e cópias de segurança
+#
+# O que fica de fora: App.tsx, components/, services/, contexts/, utils/,
+# tsconfig, testes e configuração de build. Nada disso precisa de estar no
+# servidor, e no alojamento anterior era servido publicamente.
+#
+# -----------------------------------------------------------------------------
+# Configurar na Hostinger
+# -----------------------------------------------------------------------------
+# hPanel → Advanced → GIT → alterar o branch de `main` para `deploy`.
+# =============================================================================
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Impede que dois deploys em curso escrevam no branch ao mesmo tempo.
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Verificar tipos
+        run: npm run typecheck
+
+      - name: Compilar
+        run: npm run build
+
+      - name: Montar o artefacto de deploy
+        run: |
+          rm -rf .deploy
+          mkdir -p .deploy
+          cp -r dist server scripts .deploy/
+          cp server.js package.json package-lock.json .deploy/
+          # .env.example serve de referência ao configurar as variáveis no
+          # painel. Não contém valores.
+          cp .env.example .deploy/
+
+          # Barreira adicional: se o artefacto vier a ser colocado numa raiz
+          # servida por Apache, isto impede a leitura direta do código do
+          # servidor e de ficheiros de ambiente.
+          cat > .deploy/.htaccess <<'HTACCESS'
+          # Bloquear acesso direto a ficheiros que nunca devem ser servidos.
+          <FilesMatch "^\.env">
+              Require all denied
+          </FilesMatch>
+          RedirectMatch 404 ^/server/
+          RedirectMatch 404 ^/scripts/
+          RedirectMatch 404 ^/node_modules/
+          HTACCESS
+
+      - name: Publicar no branch deploy
+        run: |
+          cd .deploy
+          git init -q
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "build: ${GITHUB_SHA::7}"
+          # Force: o branch `deploy` e um artefacto, nao historico de trabalho.
+          git push -q --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

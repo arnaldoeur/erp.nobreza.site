@@ -10,7 +10,7 @@
  */
 
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import { createLimiter } from '../middleware/rate-limit.js';
 import { asyncHandler, badRequest, notFound } from '../utils/errors.js';
 import { query, queryOne } from '../db/pool.js';
 import { newId } from '../utils/ids.js';
@@ -132,12 +132,10 @@ supportRouter.get('/support/chats/:id/messages', asyncHandler(async (req, res) =
 
 // O assistente custa dinheiro a cada pergunta. Sem limite, uma página aberta
 // em ciclo esgotaria o saldo da conta OpenRouter.
-const aiLimiter = rateLimit({
+const aiLimiter = createLimiter({
     windowMs: 60 * 1000,
     limit: 10,
-    standardHeaders: 'draft-7',
-    legacyHeaders: false,
-    message: { error: 'Demasiadas perguntas seguidas ao assistente. Aguarde um momento.' },
+    message: 'Demasiadas perguntas seguidas ao assistente. Aguarde um momento.',
 });
 
 /**
